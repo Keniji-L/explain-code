@@ -7,6 +7,7 @@ import {
   UserRole,
 } from "@/app/lib/supabase";
 import { APP_SESSION_COOKIE, AppUserSession } from "@/app/lib/supabase/server";
+import { signSessionToken } from "@/app/lib/session-cookie";
 import {
   BlockCellId,
   INITIAL_CLASSROOMS,
@@ -24,20 +25,19 @@ function sha256(input: string): string {
 const SERVER_PEPPER = process.env.SERVER_PEPPER || "_explain_code_pepper_2026";
 const TEACHER_INVITE_CODE = process.env.TEACHER_INVITE_CODE || "TEACHER2026";
 
-function withSessionCookie(
+async function withSessionCookie(
   res: NextResponse,
   session: AppUserSession | null
-): NextResponse {
+): Promise<NextResponse> {
   if (!session) {
     res.cookies.delete(APP_SESSION_COOKIE);
     return res;
   }
-  const encoded = Buffer.from(JSON.stringify(session), "utf-8").toString(
-    "base64"
-  );
-  res.cookies.set(APP_SESSION_COOKIE, encoded, {
+  const signedToken = await signSessionToken(session);
+  res.cookies.set(APP_SESSION_COOKIE, signedToken, {
     httpOnly: true,
     sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge: 60 * 60 * 24 * 14, // 14 days
   });

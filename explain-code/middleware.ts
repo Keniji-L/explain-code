@@ -1,8 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { normalizeSupabaseUrl } from "./app/lib/supabase";
-
-const APP_SESSION_COOKIE = "explain_code_session";
+import {
+  APP_SESSION_COOKIE,
+  verifySessionToken,
+} from "./app/lib/session-cookie";
 
 // เส้นทางที่บังคับต้องล็อกอินก่อนเข้าใช้งาน
 const PROTECTED_PREFIXES = ["/my-learning", "/my-history", "/teacher"];
@@ -57,13 +59,7 @@ export async function middleware(request: NextRequest) {
 
   const rawCookie = request.cookies.get(APP_SESSION_COOKIE)?.value;
   if (rawCookie) {
-    try {
-      appSession = JSON.parse(
-        Buffer.from(rawCookie, "base64").toString("utf-8")
-      );
-    } catch {
-      appSession = null;
-    }
+    appSession = await verifySessionToken(rawCookie);
   }
 
   const isAuthenticated = Boolean(supabaseUser || appSession?.userId);
