@@ -223,6 +223,23 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
     return t("นักเรียน", "Student");
   };
 
+  const getDisplayNameLabel = (user: ClientAuthSession) => {
+    const raw = (user.displayName || user.username || "User").trim();
+    if (raw.startsWith("ครูตัวอย่าง")) {
+      return t(raw, "Demo Teacher");
+    }
+    if (raw.startsWith("ครูสมชาย")) {
+      return t(raw, "Teacher Somchai");
+    }
+    if (raw.startsWith("แมวส้ม")) {
+      return t(raw, "Orange Cat");
+    }
+    if (raw.startsWith("นักเรียนตัวอย่าง")) {
+      return t(raw, "Demo Student");
+    }
+    return raw;
+  };
+
   return (
     <>
       <header className="sticky top-3 z-50 mx-auto w-full max-w-7xl px-3 sm:px-6 pt-1.5">
@@ -232,18 +249,18 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
           rounded="2xl"
           className="px-3 sm:px-4 py-2.5"
         >
-          <div className="flex md:grid md:grid-cols-[1fr_auto_1fr] min-h-11 items-center justify-between gap-2 sm:gap-3">
+          <div className="flex xl:grid xl:grid-cols-[1fr_auto_1fr] min-h-11 items-center justify-between gap-3 lg:gap-4">
             {/* Left: Brand Logo */}
-            <div className="flex items-center justify-start shrink-0 min-w-0">
+            <div className="flex items-center justify-start shrink-0">
               <Link
                 href="/"
-                aria-label={t("CODE COOL หน้าแรก", "ExplainCode Home")}
+                aria-label={t("CODE COOL หน้าแรก", "CODE COOL Home")}
                 className="flex items-center gap-2.5 sm:gap-3 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f6c945]"
               >
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden bg-[#0d0b14] border border-[#f6c945]/60 shadow-sm shrink-0">
                   <Image
                     src="/logo.png"
-                    alt={t("โลโก้ CODE COOL", "ExplainCode Logo")}
+                    alt={t("โลโก้ CODE COOL", "CODE COOL Logo")}
                     width={40}
                     height={40}
                     className="h-full w-full object-contain"
@@ -252,7 +269,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                 </div>
                 <div className="leading-tight whitespace-nowrap">
                   <span className="block text-sm sm:text-base font-extrabold tracking-tight text-[#f4efe6]">
-                    {t("CODE COOL", "ExplainCode")}
+                    CODE COOL
                   </span>
                   <span className="hidden 2xl:block text-[11px] font-semibold text-[#9a93ad]">
                     {t(
@@ -299,7 +316,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
             </nav>
 
             {/* Right: Auth Controls & Language Toggle */}
-            <div className="flex items-center justify-end gap-1.5 sm:gap-2 min-w-0 shrink">
+            <div className="flex items-center justify-end justify-self-end gap-1.5 sm:gap-2 shrink-0">
               <UiLanguageToggle variant="dungeon" />
 
               {mounted && session ? (
@@ -329,7 +346,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                       }`}
                     >
                       <Icon name="users" className="h-3.5 w-3.5 shrink-0" />
-                      <span>{t("แดชบอร์ดครู", "Teacher Dashboard")}</span>
+                      <span>{t("แดชบอร์ดครู", "Dashboard")}</span>
                     </Link>
                   )}
 
@@ -344,13 +361,13 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                       className="liquid-glass-btn flex items-center gap-2 whitespace-nowrap shrink-0 rounded-full py-1 pl-1.5 pr-2.5 text-left cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f6c945]"
                     >
                       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#5a2d91] to-[#9b5de5] border border-[#f6c945]/50 text-xs font-extrabold text-[#ffe27a] shadow-2xs">
-                        {(session.displayName || session.username || "U")
+                        {getDisplayNameLabel(session)
                           .charAt(0)
                           .toUpperCase()}
                       </div>
-                      <div className="hidden sm:block md:hidden lg:block leading-tight min-w-0">
-                        <p className="max-w-[96px] xl:max-w-[115px] truncate text-xs font-extrabold text-[#f4efe6]">
-                          {session.displayName || session.username}
+                      <div className="hidden sm:block md:hidden xl:block leading-tight min-w-0">
+                        <p className="max-w-[92px] 2xl:max-w-[115px] truncate text-xs font-extrabold text-[#f4efe6]">
+                          {getDisplayNameLabel(session)}
                         </p>
                         <p className="text-[10px] font-semibold text-[#9a93ad]">
                           {getRoleLabel(session)}
@@ -373,13 +390,13 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                       >
                         <div className="flex items-center gap-2.5 border-b border-[#2f2d45] px-3 py-2.5 mb-1">
                           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#5a2d91] to-[#9b5de5] border border-[#f6c945]/60 text-xs font-extrabold text-[#ffe27a]">
-                            {(session.displayName || session.username || "U")
+                            {getDisplayNameLabel(session)
                               .charAt(0)
                               .toUpperCase()}
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-xs font-extrabold text-[#f4efe6]">
-                              {session.displayName || session.username}
+                              {getDisplayNameLabel(session)}
                             </p>
                             <p className="truncate text-[11px] font-semibold text-[#ffe27a]">
                               {t("บทบาท:", "Role:")} {getRoleLabel(session)}
