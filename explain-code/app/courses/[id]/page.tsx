@@ -436,7 +436,7 @@ function CourseDetailContent() {
                       <div className="flex flex-wrap items-center gap-2 shrink-0 self-end sm:self-auto">
                         <Link
                           href={`/courses/${course.id}/lessons/${lesson.id}?mode=dungeon`}
-                          className="px-3 py-1.5 rounded-lg border border-[#9b5de5] bg-[#5a2d91] text-xs font-bold text-[#ffe27a] hover:bg-[#6d3fc0] flex items-center gap-1 transition-colors whitespace-nowrap"
+                          className="min-w-[104px] px-3 py-1.5 rounded-lg border border-[#9b5de5] bg-[#5a2d91] text-xs font-bold text-[#ffe27a] hover:bg-[#6d3fc0] inline-flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap"
                           title={t("ลุยห้องดันเจี้ยนของบทนี้", "Enter this lesson's dungeon room")}
                         >
                           <Icon name="gamepad" size={13} />
@@ -444,10 +444,10 @@ function CourseDetailContent() {
                         </Link>
                         <Link
                           href={`/courses/${course.id}/lessons/${lesson.id}`}
-                          className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition-colors whitespace-nowrap ${
+                          className={`min-w-[124px] inline-flex items-center justify-center rounded-lg border px-3.5 py-1.5 text-xs font-bold transition-colors whitespace-nowrap ${
                             isDone
-                              ? "border border-[#2fbf71]/40 bg-[#102a1e] text-[#86efac] hover:bg-[#1a3d2d]"
-                              : "bg-[#2fbf71] text-[#0b0b14] hover:bg-[#34d37d]"
+                              ? "border-[#2fbf71]/40 bg-[#102a1e] text-[#86efac] hover:bg-[#1a3d2d]"
+                              : "border-[#2fbf71] bg-[#2fbf71] text-[#0b0b14] hover:bg-[#34d37d]"
                           }`}
                         >
                           {isDone ? t("ทบทวนบทเรียน", "Review Lesson") : t("เข้าเรียน →", "Start →")}
