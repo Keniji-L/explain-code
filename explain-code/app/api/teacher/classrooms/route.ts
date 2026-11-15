@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/app/lib/supabase";
+import { getServerUserSession } from "@/app/lib/supabase/server";
 import { BlockCellId } from "@/app/lib/curriculum";
+
+async function requireTeacherSession(): Promise<NextResponse | null> {
+  const session = await getServerUserSession();
+  if (!session) {
+    return NextResponse.json(
+      { error: "กรุณาเข้าสู่ระบบก่อนใช้งาน" },
+      { status: 401 }
+    );
+  }
+  if (session.role !== "teacher" && session.role !== "admin") {
+    return NextResponse.json(
+      { error: "ไม่มีสิทธิ์เข้าถึง: เฉพาะครูผู้สอนหรือแอดมินเท่านั้น" },
+      { status: 403 }
+    );
+  }
+  return null;
+}
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -54,6 +72,9 @@ export interface UpdateClassroomBody {
  */
 export async function GET(req: NextRequest) {
   try {
+    const authError = await requireTeacherSession();
+    if (authError) return authError;
+
     const searchParams = req.nextUrl.searchParams;
     const teacherId = searchParams.get("teacherId");
     const teacherUsername = searchParams.get("teacherUsername");
@@ -346,6 +367,9 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
+    const authError = await requireTeacherSession();
+    if (authError) return authError;
+
     const body = (await req.json()) as CreateClassroomBody;
     const { roomName, teacherId, teacherUsername, pinnedTopicId, pinnedNote } =
       body;
@@ -479,6 +503,9 @@ export async function POST(req: NextRequest) {
  */
 export async function PATCH(req: NextRequest) {
   try {
+    const authError = await requireTeacherSession();
+    if (authError) return authError;
+
     const body = (await req.json()) as UpdateClassroomBody;
     const { roomCode, pinnedTopicId, pinnedNote } = body;
 

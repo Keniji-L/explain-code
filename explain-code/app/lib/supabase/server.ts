@@ -3,20 +3,17 @@ import { cookies } from "next/headers";
 import {
   Database,
   normalizeSupabaseUrl,
-  TeacherApprovalStatus,
   UserRole,
 } from "../supabase";
 
-export const APP_SESSION_COOKIE = "explain_code_session";
+import {
+  APP_SESSION_COOKIE,
+  AppUserSession,
+  verifySessionToken,
+} from "../session-cookie";
 
-export interface AppUserSession {
-  userId: string;
-  username: string;
-  displayName: string;
-  role: UserRole;
-  teacherStatus?: TeacherApprovalStatus;
-  roomCode?: string;
-}
+export { APP_SESSION_COOKIE };
+export type { AppUserSession };
 
 export async function createSupabaseServerClient() {
   const url = normalizeSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
@@ -54,11 +51,9 @@ export async function getServerUserSession(): Promise<AppUserSession | null> {
     const cookieStore = await cookies();
     const rawCookie = cookieStore.get(APP_SESSION_COOKIE)?.value;
     if (rawCookie) {
-      const parsed = JSON.parse(
-        Buffer.from(rawCookie, "base64").toString("utf-8")
-      ) as AppUserSession;
-      if (parsed && parsed.userId && parsed.role) {
-        return parsed;
+      const verified = await verifySessionToken(rawCookie);
+      if (verified) {
+        return verified;
       }
     }
 

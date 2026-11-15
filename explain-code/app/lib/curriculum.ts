@@ -1596,16 +1596,16 @@ export const AI_USAGE_LOGS: AiUsageLogItem[] = [
     id: 3,
     category: "security",
     categoryLabel: "ระบบ AI หลังบ้านและความปลอดภัยของ API Key (Backend & AI API)",
-    aiTool: "Google Gemini 2.5 Flash API + Antigravity IDE",
+    aiTool: "Google Gemini (gemini-3.5-flash-lite + Auto-Fallback) + Antigravity IDE",
     promptTitle: "Prompt 3 · พัฒนา API หลังบ้านอธิบายโค้ด 6 ภาษาและแปลงโค้ดเป็นดันเจี้ยน 3 เฟส",
     promptText:
       "สร้าง Next.js Route Handlers (/api/explain, /api/explain/to-dungeon และ /api/interrogate) สำหรับส่งโค้ดไปวิเคราะห์ทีละบรรทัดและสร้างโจทย์ดันเจี้ยน 3 เฟส (Predict, Trace, Modify) ด้วย Gemini API โดยเก็บ GEMINI_API_KEY ไว้ที่ฝั่งเซิร์ฟเวอร์เท่านั้น พร้อมทำ Rate Limit ป้องกันการยิงสแปม",
     problemFound:
       "เมื่อไม่มีการตั้งค่า API Key ในเครื่องทดสอบ หรือเมื่ออินเทอร์เน็ตขัดข้อง/ติดโควตา หน้าเว็บเกิด Error และไม่สามารถใช้งานฟีเจอร์อธิบายโค้ดหรือสร้างดันเจี้ยนต่อได้",
     solutionApplied:
-      "เพิ่มระบบ Hybrid Fallback Engine (Deterministic Code Analyzer & Heuristic Evaluator) ที่สลับมาวิเคราะห์โครงสร้างโค้ดและสร้างโจทย์ดันเจี้ยน 3 เฟสได้อัตโนมัติภายในเสี้ยววินาทีแม้ไม่มี API Key พร้อมระบบจำกัดอัตราเรียกใช้ (Rate Limiting ต่อ IP และโควตา Guest)",
+      "เพิ่มระบบ Hybrid Fallback Engine (Deterministic Code Analyzer & Heuristic Evaluator) ที่สลับมาวิเคราะห์โครงสร้างโค้ดและสร้างโจทย์ดันเจี้ยน 3 เฟสได้อัตโนมัติภายในเสี้ยววินาทีแม้ไม่มี API Key พร้อมระบบสลับโมเดล Gemini สำรองอัตโนมัติเมื่อโควตาเต็ม และจำกัดอัตราเรียกใช้ (Rate Limiting ต่อ IP และโควตา Guest)",
     codeExplanation:
-      "Route Handlers ฝั่งเซิร์ฟเวอร์อ่านค่า process.env.GEMINI_API_KEY เฉพาะใน Node.js runtime (ไม่ส่งออกไปที่ฝั่ง Client เด็ดขาดตามกติกาหน้า 4) เรียก Gemini 2.5 Flash แบบกำหนด JSON Schema และหากเกิดข้อผิดพลาดจะสลับไปใช้ฟังก์ชันวิเคราะห์โครงสร้างโค้ดใน explain-code.ts และ to-dungeon-questions.ts ทันที",
+      "Route Handlers ฝั่งเซิร์ฟเวอร์อ่านค่า process.env.GEMINI_API_KEY เฉพาะใน Node.js runtime (ไม่ส่งออกไปที่ฝั่ง Client เด็ดขาดตามกติกาหน้า 4) เรียก gemini-3.5-flash-lite แบบกำหนด JSON Schema ผ่าน gemini-client.ts ซึ่งจะสลับไปโมเดลสำรอง (gemini-3.6-flash / gemini-3.7-flash / gemini-2.0-flash-lite) อัตโนมัติเมื่อโควตาเต็ม และหากเกิดข้อผิดพลาดทั้งหมดจะสลับไปใช้ฟังก์ชันวิเคราะห์โครงสร้างโค้ดใน explain-code.ts ทันที",
     relatedFiles: [
       "app/api/explain/route.ts",
       "app/api/explain/to-dungeon/route.ts",
