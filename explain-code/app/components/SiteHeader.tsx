@@ -301,7 +301,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                       navItemRefs.current[item.href] = el;
                     }}
                     aria-current={isActive ? "page" : undefined}
-                    className={`liquid-press relative z-10 whitespace-nowrap shrink-0 rounded-full px-2.5 lg:px-3.5 py-1.5 text-xs lg:text-[13px] font-extrabold tracking-wide focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f6c945] ${
+                    className={`liquid-press relative z-10 inline-flex items-center justify-center whitespace-nowrap shrink-0 rounded-full border border-transparent px-3 lg:px-4 py-2 text-xs lg:text-[13px] font-extrabold leading-none tracking-wide focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f6c945] ${
                       isActive
                         ? "liquid-active-nav-item text-[#ffe27a]"
                         : "text-[#c4bdd6] hover:text-[#f4efe6] hover:bg-[#252238]"
