@@ -12,6 +12,12 @@ import {
 } from "../gemini-client";
 import { LearningLanguage, runCodeByLanguage } from "../language-tracks";
 import { CustomDungeonPayload, normalizeLearningLanguage } from "../custom-dungeon";
+import {
+  condenseProseForChoice,
+  measureChoiceLengthBalance,
+  rebalanceChoicesIfNeeded,
+  shuffleChoicesPreservingCorrect,
+} from "../question-choice-balance";
 import { DungeonQuestion, DungeonTraceStep } from "./questions";
 import { hashString } from "./seed";
 
@@ -34,35 +40,62 @@ function normalizeCellId(raw?: string | null, fallback: BlockCellId = "E4"): Blo
   return VALID_CELLS.has(upper) ? upper : fallback;
 }
 
-function uniqueChoices(primary: string, distractors: string[]): { choices: string[]; correctIndex: number } {
-  const cleanPrimary = primary.trim() || "ดำเนินการตามลำดับคำสั่งของโปรแกรม";
+function uniqueChoices(
+  primary: string,
+  distractors: string[],
+  options?: { condenseProse?: boolean; maxChoiceChars?: number }
+): { choices: string[]; correctIndex: number } {
+  const condenseProse = options?.condenseProse ?? true;
+  const maxChoiceChars = options?.maxChoiceChars ?? 68;
+
+  const rawPrimary = primary.trim() || "ดำเนินการตามลำดับคำสั่งของโปรแกรม";
+  let cleanPrimary = condenseProse
+    ? condenseProseForChoice(rawPrimary, maxChoiceChars)
+    : rawPrimary;
+
   const pool: string[] = [cleanPrimary];
   for (const d of distractors) {
-    const trimmed = d.trim();
-    if (trimmed && !pool.includes(trimmed)) {
-      pool.push(trimmed);
+    const rawD = d.trim();
+    const cleaned = condenseProse
+      ? condenseProseForChoice(rawD, maxChoiceChars)
+      : rawD;
+    if (cleaned && !pool.includes(cleaned)) {
+      pool.push(cleaned);
     }
     if (pool.length >= 4) break;
   }
   const fallbacks = [
-    "เกิด Syntax Error ทันทีก่อนเริ่มทำงาน",
-    "ข้ามการทำงานทั้งหมดและคืนค่า undefined",
-    "วนลูปไม่รู้จบ (Infinite Loop)",
-    "ลบข้อมูลในตัวแปรทั้งหมดทิ้ง",
+    "เกิด Syntax Error ทันทีก่อนเริ่มทำงานตามคำสั่ง",
+    "ข้ามการทำงานทั้งหมดและคืนค่า undefined ทันที",
+    "วนลูปไม่รู้จบ (Infinite Loop) จนหน่วยความจำเต็ม",
+    "ลบข้อมูลในตัวแปรทั้งหมดทิ้งก่อนประมวลผลบรรทัดถัดไป",
   ];
   for (const fb of fallbacks) {
     if (pool.length >= 4) break;
     if (!pool.includes(fb)) pool.push(fb);
   }
 
-  // Deterministic rotation so correctIndex isn't always 0
-  const shift = cleanPrimary.length % pool.length;
-  const rotated = [...pool.slice(shift), ...pool.slice(0, shift)];
-  const correctIndex = rotated.indexOf(cleanPrimary);
-  return {
-    choices: rotated,
-    correctIndex: correctIndex >= 0 ? correctIndex : 0,
-  };
+  // Ensure deterministic prose fallback does not make the correct option noticeably longest
+  if (condenseProse) {
+    const metrics = measureChoiceLengthBalance(pool, 0);
+    if (!metrics.balanced && metrics.maxDistractorLength >= 16) {
+      const targetCap = Math.max(
+        24,
+        Math.min(
+          maxChoiceChars,
+          metrics.maxDistractorLength,
+          Math.floor(metrics.avgDistractorLength * 1.2)
+        )
+      );
+      const shortened = condenseProseForChoice(cleanPrimary, targetCap);
+      if (shortened.length >= 16 && !pool.slice(1).includes(shortened)) {
+        cleanPrimary = shortened;
+        pool[0] = shortened;
+      }
+    }
+  }
+
+  return shuffleChoicesPreservingCorrect(pool, 0, `${cleanPrimary}|${pool.join("|")}`);
 }
 
 function buildTraceStepsFromCode(
@@ -185,7 +218,7 @@ function buildDeterministicDungeon(
           "undefined",
           "Error: Invalid syntax",
         ];
-    const p1 = uniqueChoices(actualOutput, distractors);
+    const p1 = uniqueChoices(actualOutput, distractors, { condenseProse: false });
     questions.push({
       id: "custom-phase-1",
       language: lang,
@@ -382,6 +415,7 @@ Return ONLY valid JSON (no markdown fences) with this exact structure:
 Rules:
 - Create exactly 3 questions covering: (1) Predict Output / Execution (E2 or E4), (2) Code Structure / Syntax (T1 or T2), and (3) Function / Purpose (F2 or F3).
 - Each question MUST have exactly 4 distinct choices and correctIndex in 0..3.
+- CRITICAL CHOICE-LENGTH RULE: All 4 choices in each question MUST have very similar character length and level of detail (within ~20% of each other). NEVER make the correct choice noticeably longer or add extra parenthetical explanations only to the correct option. Write equally specific, plausible distractors and vary correctIndex across 0..3.
 ${verifiedOutput ? `- Verified runtime output of this code is: ${JSON.stringify(verifiedOutput)}. For the Predict Output question, the correct choice MUST match this exact output.` : ""}
 ${explanation?.summary ? `- Code summary context: ${explanation.summary}` : ""}
 
@@ -411,6 +445,7 @@ ${numberedLines}`
 กติกา:
 - สร้างคำถาม 3 ข้อ ครอบคลุม: (1) ทำนายผลลัพธ์/การทำงาน (E2 หรือ E4), (2) โครงสร้าง/ไวยากรณ์โค้ด (T1 หรือ T2), (3) หน้าที่และเป้าหมายของโค้ด (F2 หรือ F3)
 - ทุกข้อต้องมี 4 ตัวเลือกที่ไม่ซ้ำกัน และ correctIndex อยู่ระหว่าง 0 ถึง 3
+- กติกาสำคัญเรื่องความยาวตัวเลือก: ตัวเลือกทั้ง 4 ข้อในแต่ละคำถามต้องมีความยาวตัวอักษร โครงสร้างประโยค และระดับความละเอียดใกล้เคียงกันมาก (ต่างกันไม่เกิน ~20%) ห้ามทำให้ข้อที่ถูกต้องยาวที่สุดหรือใส่คำอธิบายในวงเล็บเพิ่มเฉพาะข้อที่ถูก ต้องเขียนตัวลวงให้สมจริงและละเอียดพอๆ กัน รวมถึงกระจายตำแหน่ง correctIndex ระหว่าง 0–3
 ${verifiedOutput ? `- ผลลัพธ์จริงจากการรันโค้ดคือ: ${JSON.stringify(verifiedOutput)} ดังนั้นข้อทำนายผลลัพธ์ต้องใช้ค่านี้เป็นตัวเลือกที่ถูกต้อง` : ""}
 ${explanation?.summary ? `- บริบทสรุปโค้ด: ${explanation.summary}` : ""}
 
@@ -476,22 +511,56 @@ ${numberedLines}`;
       explanation: s.explanation,
     }));
 
-    const questions: DungeonQuestion[] = parsed.questions
+    const rawQuestions = parsed.questions
       .filter(
         (q: unknown): q is Record<string, unknown> =>
           Boolean(q && typeof q === "object" && !Array.isArray(q))
       )
-      .slice(0, 4)
-      .map((q: Record<string, unknown>, idx: number) => {
+      .slice(0, 4);
+
+    const questions: DungeonQuestion[] = await Promise.all(
+      rawQuestions.map(async (q: Record<string, unknown>, idx: number) => {
         const rawChoices = Array.isArray(q.choices)
           ? q.choices
               .filter((c) => c !== null && c !== undefined)
               .map((c) => String(c).trim())
               .filter((c) => c.length > 0)
           : [];
-        const choices = rawChoices.length >= 2 ? rawChoices.slice(0, 4) : ["Option A", "Option B", "Option C", "Option D"];
-        const rawIdx = typeof q.correctIndex === "number" && Number.isInteger(q.correctIndex) ? q.correctIndex : 0;
-        const correctIndex = rawIdx >= 0 && rawIdx < choices.length ? rawIdx : 0;
+        const baseChoices =
+          rawChoices.length >= 2
+            ? rawChoices.slice(0, 4)
+            : ["Option A", "Option B", "Option C", "Option D"];
+        while (baseChoices.length < 4) {
+          baseChoices.push(`Option ${String.fromCharCode(65 + baseChoices.length)}`);
+        }
+
+        const rawIdx =
+          typeof q.correctIndex === "number" && Number.isInteger(q.correctIndex)
+            ? q.correctIndex
+            : 0;
+        const initialCorrectIndex =
+          rawIdx >= 0 && rawIdx < baseChoices.length ? rawIdx : 0;
+
+        const questionText =
+          typeof q.question === "string" && q.question.trim()
+            ? q.question.trim()
+            : `Phase ${idx + 1}`;
+
+        const rebalanced = await rebalanceChoicesIfNeeded({
+          apiKey,
+          question: questionText,
+          choices: baseChoices,
+          correctIndex: initialCorrectIndex,
+          uiLang,
+          timeoutMs: 4500,
+        });
+
+        const { choices, correctIndex } = shuffleChoicesPreservingCorrect(
+          rebalanced.choices,
+          rebalanced.correctIndex,
+          `${code}:${idx}:${questionText}`
+        );
+
         const difficulty =
           q.difficulty === "easy" || q.difficulty === "medium" || q.difficulty === "hard"
             ? q.difficulty
@@ -502,7 +571,7 @@ ${numberedLines}`;
         return {
           id: `custom-ai-phase-${idx + 1}`,
           language: lang,
-          question: typeof q.question === "string" && q.question.trim() ? q.question.trim() : `Phase ${idx + 1}`,
+          question: questionText,
           questionEn: typeof q.question === "string" ? q.question.trim() : undefined,
           codeSnippet: code,
           choices,
@@ -521,7 +590,8 @@ ${numberedLines}`;
           expectedOutput: idx === 0 && verifiedOutput ? verifiedOutput : undefined,
           phaseLabel: typeof q.phaseLabel === "string" ? q.phaseLabel : undefined,
         };
-      });
+      })
+    );
 
     if (questions.length < 2) {
       return null;

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUserSession } from "@/app/lib/supabase/server";
 import { callGeminiGenerateJson } from "@/app/lib/gemini-client";
 import {
+  rebalanceChoicesIfNeeded,
+  shuffleChoicesPreservingCorrect,
+} from "@/app/lib/question-choice-balance";
+import {
   BLOCK_MODEL_CELLS,
   BlockCellId,
   BlockCellMeta,
@@ -201,9 +205,10 @@ ${existingQuestions.length > 0 ? `- ห้ามตั้งคำถามซ�
 1. คำถามต้องวัดทักษะในช่อง Block Model "${targetCell.id}" อย่างแท้จริง ไม่ถามท่องจำไวยากรณ์ลอยๆ
 2. สร้างตัวเลือก 4 ข้อ (choices) โดย 1 ข้อถูกต้อง และ 3 ข้อที่ผิดต้องเป็น "ตัวลวงที่อิงจากความเข้าใจผิดที่พบบ่อยของมือใหม่ (Misconception-driven distractors)" เช่น นับรอบลูปขาด/เกิน 1 (off-by-one), ลืมอัปเดตตัวแปร, สลับเงื่อนไข if/else, หรือเข้าใจลำดับการ return ผิด
 3. ${mode === "lesson" ? "ตัวเลือกแต่ละข้อต้องสั้น กระชับ อ่านง่าย และหลีกเลี่ยงการใช้เครื่องหมายจุลภาค (,) ภายในข้อความตัวเลือก" : "ตัวเลือกแต่ละข้อสั้น กระชับ ชัดเจน เหมาะกับการกดตอบระหว่างสู้มอนสเตอร์"}
-4. อธิบายเฉลย (explanation) เป็นภาษาไทยที่เชื่อมโยงกับลำดับการทำงานของโค้ดจริง
-5. ระบุ misconceptionReason สั้นๆ 1 ประโยค ว่าตัวเลือกที่ผิดดักจับความเข้าใจผิดเรื่องใดของนักเรียน
-6. แนะนำมอนสเตอร์ที่เหมาะสม (recommendedMonster):
+4. **สำคัญมาก — ห้ามเดาคำตอบจากความยาวได้**: ตัวเลือกทั้ง 4 ข้อต้องมีความยาวตัวอักษร โครงสร้างประโยค และระดับความละเอียดใกล้เคียงกันมาก (ต่างกันไม่เกิน ~20%) ห้ามทำให้ข้อที่ถูกต้องยาวที่สุดหรือใส่คำอธิบายขยายความ/วงเล็บเพิ่มเฉพาะข้อที่ถูก ต้องเขียนตัวลวงให้มีรายละเอียดเฉพาะเจาะจงพอๆ กัน และสุ่มตำแหน่ง correctIndex กระจายระหว่าง 0–3 (อย่าไว้ที่ 0 ตลอด)
+5. อธิบายเฉลย (explanation) เป็นภาษาไทยที่เชื่อมโยงกับลำดับการทำงานของโค้ดจริง
+6. ระบุ misconceptionReason สั้นๆ 1 ประโยค ว่าตัวเลือกที่ผิดดักจับความเข้าใจผิดเรื่องใดของนักเรียน
+7. แนะนำมอนสเตอร์ที่เหมาะสม (recommendedMonster):
    - "slime" (ระดับ Atom / ง่าย)
    - "skeleton" (ระดับ Block / ลูปหรือเงื่อนไขปานกลาง)
    - "goblin" (ระดับ Relation / จับบั๊กหรือ trace ค่าข้ามบล็อก)
@@ -253,15 +258,31 @@ ${existingQuestions.length > 0 ? `- ห้ามตั้งคำถามซ�
   }
 
   // Ensure exact 4 choices
-  const choices = rawChoices.slice(0, 4);
-  while (choices.length < 4) {
-    choices.push(`ตัวเลือกที่ ${choices.length + 1}`);
+  const initialChoices = rawChoices.slice(0, 4);
+  while (initialChoices.length < 4) {
+    initialChoices.push(`ตัวเลือกที่ ${initialChoices.length + 1}`);
   }
 
-  const correctIndex =
+  const initialCorrectIndex =
     typeof raw.correctIndex === "number" && Number.isFinite(raw.correctIndex)
       ? Math.min(3, Math.max(0, Math.round(raw.correctIndex)))
       : 0;
+
+  const questionText = raw.question.trim();
+  const rebalanced = await rebalanceChoicesIfNeeded({
+    apiKey,
+    question: questionText,
+    choices: initialChoices,
+    correctIndex: initialCorrectIndex,
+    uiLang: "th",
+    avoidCommas: mode === "lesson",
+    timeoutMs: 6000,
+  });
+
+  const { choices, correctIndex } = shuffleChoicesPreservingCorrect(
+    rebalanced.choices,
+    rebalanced.correctIndex
+  );
 
   const finalDifficulty = normalizeDifficulty(raw.difficulty, requestedDifficulty);
   const finalMonster = normalizeMonster(raw.recommendedMonster, finalDifficulty);
@@ -276,7 +297,7 @@ ${existingQuestions.length > 0 ? `- ห้ามตั้งคำถามซ�
     generated: {
       targetCellId: validatedCellId,
       targetCellLabel: `${targetCell.id} · ${targetCell.shortTitle}`,
-      question: raw.question.trim(),
+      question: questionText,
       codeSnippet: (raw.codeSnippet || codeSnippet || "").trim(),
       choices,
       correctIndex,
