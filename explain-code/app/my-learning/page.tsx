@@ -284,7 +284,8 @@ export default function MyLearningPage() {
                               className="flex items-center justify-between text-[11px] text-[#e8e1cf]"
                             >
                               <span className="truncate pr-2">{h.topicTitle}</span>
-                              {h.topicTitle.includes("(จุดเซฟเกม") ? (
+                              {h.topicTitle.includes("(จุดเซฟเกม") ||
+                              h.topicTitle.includes("(Game Save") ? (
                                 <span className="shrink-0 font-bold text-[#ffe27a]">
                                   {h.timestamp}
                                 </span>

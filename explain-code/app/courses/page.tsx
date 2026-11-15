@@ -150,11 +150,11 @@ function getJoinCodePlaceholder(lang: LearningLanguage): string {
   }
 }
 
-function formatAttemptTimestamp(isoStr?: string): string {
-  if (!isoStr) return "เมื่อสักครู่";
+function formatAttemptTimestamp(isoStr?: string, uiLang: "th" | "en" = "th"): string {
+  if (!isoStr) return uiLang === "en" ? "Just now" : "เมื่อสักครู่";
   try {
     const d = new Date(isoStr);
-    return d.toLocaleString("th-TH", {
+    return d.toLocaleString(uiLang === "en" ? "en-US" : "th-TH", {
       timeZone: "Asia/Bangkok",
       month: "short",
       day: "numeric",
@@ -162,7 +162,7 @@ function formatAttemptTimestamp(isoStr?: string): string {
       minute: "2-digit",
     });
   } catch {
-    return "เมื่อสักครู่";
+    return uiLang === "en" ? "Just now" : "เมื่อสักครู่";
   }
 }
 
@@ -244,7 +244,7 @@ function isCourseForLanguage(
 function CoursesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { t } = useUiLanguage();
+  const { uiLang, t } = useUiLanguage();
   const rawLangParam = searchParams.get("lang");
   const langParam = isValidLearningLanguage(rawLangParam) ? rawLangParam : null;
   const customDungeonParam = searchParams.get("customDungeon");
@@ -466,14 +466,18 @@ function CoursesContent() {
                         ...(sbStudent.badges || []),
                       ])
                     );
-                    const localSaveHistory = (s.history || []).filter((h) =>
-                      h.topicTitle.includes("(จุดเซฟเกม")
+                    const localSaveHistory = (s.history || []).filter(
+                      (h) =>
+                        h.topicTitle.includes("(จุดเซฟเกม") ||
+                        h.topicTitle.includes("(Game Save")
                     );
                     const remoteHistory =
                       sbStudent.history && sbStudent.history.length > 0
                         ? sbStudent.history
                         : (s.history || []).filter(
-                            (h) => !h.topicTitle.includes("(จุดเซฟเกม")
+                            (h) =>
+                              !h.topicTitle.includes("(จุดเซฟเกม") &&
+                              !h.topicTitle.includes("(Game Save")
                           );
                     return {
                       ...s,
@@ -514,17 +518,19 @@ function CoursesContent() {
               topicTitle:
                 allTopics.find((tp) => tp.id === att.topic_id)?.title ||
                 TOPICS.find((tp) => tp.id === att.topic_id)?.title ||
-                `เรื่องที่ ${att.topic_id}`,
+                t(`เรื่องที่ ${att.topic_id}`, `Topic ${att.topic_id}`),
               scorePercent: att.score_percent,
               xpEarned: att.xp_earned,
-              timestamp: formatAttemptTimestamp(att.created_at),
+              timestamp: formatAttemptTimestamp(att.created_at, uiLang),
             }));
 
             setStudents((prev) => {
               const stu = prev.find((s) => s.id === sid);
               if (!stu) return prev;
-              const localSaveHistory = (stu.history || []).filter((h) =>
-                h.topicTitle.includes("(จุดเซฟเกม")
+              const localSaveHistory = (stu.history || []).filter(
+                (h) =>
+                  h.topicTitle.includes("(จุดเซฟเกม") ||
+                  h.topicTitle.includes("(Game Save")
               );
               const synced: StudentRecord = {
                 ...stu,
@@ -547,7 +553,7 @@ function CoursesContent() {
         // offline fallback
       }
     },
-    [currentStudentId]
+    [currentStudentId, uiLang, t]
   );
 
   useEffect(() => {
@@ -942,26 +948,33 @@ function CoursesContent() {
     const currentFloorNumber = activeTopicIndex + 1;
     const totalFloors = currentLanguageTopics.length;
 
-    const savedTimeLabel = new Date().toLocaleTimeString("th-TH", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const savedTimeLabel = new Date().toLocaleTimeString(
+      uiLang === "en" ? "en-US" : "th-TH",
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
 
     const saveHistoryItem = {
       topicId: activeTopic.id,
-      topicTitle: `${currentTrackMeta.name} · ด่านที่ ${currentFloorNumber}/${totalFloors} ${activeTopic.title} (จุดเซฟเกม · เฟส ${currentPhaseNumber}/${totalPhases})`,
+      topicTitle: t(
+        `${currentTrackMeta.name} · ด่านที่ ${currentFloorNumber}/${totalFloors} ${activeTopic.title} (จุดเซฟเกม · เฟส ${currentPhaseNumber}/${totalPhases})`,
+        `${currentTrackMeta.name} · Stage ${currentFloorNumber}/${totalFloors} ${activeTopic.title} (Game Save · Phase ${currentPhaseNumber}/${totalPhases})`
+      ),
       scorePercent: currentStudent.completedTopics.includes(activeTopic.id)
         ? 100
         : 0,
       xpEarned: 0,
-      timestamp: `เซฟเมื่อ ${savedTimeLabel}`,
+      timestamp: t(`เซฟเมื่อ ${savedTimeLabel}`, `Saved at ${savedTimeLabel}`),
     };
 
     const dedupedHistory = currentStudent.history.filter(
       (item) =>
         !(
           item.topicId === activeTopic.id &&
-          item.topicTitle.includes("(จุดเซฟเกม")
+          (item.topicTitle.includes("(จุดเซฟเกม") ||
+            item.topicTitle.includes("(Game Save"))
         )
     );
 
@@ -1059,7 +1072,10 @@ function CoursesContent() {
       topicId: result.topicId,
       topicTitle:
         topicObj?.title ||
-        `${currentTrackMeta.name} เรื่องที่ ${result.topicId}`,
+        t(
+          `${currentTrackMeta.name} เรื่องที่ ${result.topicId}`,
+          `${currentTrackMeta.name} Topic ${result.topicId}`
+        ),
       scorePercent: result.scorePercent,
       xpEarned: result.earnedXp,
       timestamp: t("เมื่อสักครู่", "Just now"),

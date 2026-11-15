@@ -32,21 +32,29 @@ export default function AiUsageLogPage() {
 
   const handleCopyFullReport = async () => {
     const lines: string[] = [
-      "บันทึกการใช้ AI (AI Usage Log) — โครงการ CODE COOL (ExplainCode)",
-      "การแข่งขัน Vibe Coding 2026: Innovating Classrooms for a Sustainable Future",
+      t(
+        "บันทึกการใช้ AI (AI Usage Log) — โครงการ CODE COOL (ExplainCode)",
+        "AI Usage Log — CODE COOL (ExplainCode)"
+      ),
+      t(
+        "การแข่งขัน Vibe Coding 2026: Innovating Classrooms for a Sustainable Future",
+        "Vibe Coding 2026 Competition: Innovating Classrooms for a Sustainable Future"
+      ),
       "==================================================================",
       "",
     ];
 
     AI_USAGE_LOGS.forEach((log) => {
       lines.push(`${log.promptTitle}`);
-      lines.push(`- หมวดหมู่: ${log.categoryLabel}`);
-      lines.push(`- เครื่องมือ AI ที่ใช้: ${log.aiTool}`);
-      lines.push(`- คำสั่ง (Prompt) ที่ใช้จริง: ${log.promptText}`);
-      lines.push(`- ปัญหาที่พบจากผลลัพธ์ของ AI: ${log.problemFound}`);
-      lines.push(`- วิธีการปรับปรุงแก้ไขของทีม: ${log.solutionApplied}`);
-      lines.push(`- คำอธิบายโครงสร้างและการทำงานของโค้ด: ${log.codeExplanation}`);
-      lines.push(`- ไฟล์ที่เกี่ยวข้อง: ${log.relatedFiles.join(", ")}`);
+      lines.push(`- ${t("หมวดหมู่", "Category")}: ${log.categoryLabel}`);
+      lines.push(`- ${t("เครื่องมือ AI ที่ใช้", "AI Tool")}: ${log.aiTool}`);
+      lines.push(`- ${t("คำสั่ง (Prompt) ที่ใช้จริง", "Prompt")}: ${log.promptText}`);
+      lines.push(`- ${t("ปัญหาที่พบจากผลลัพธ์ของ AI", "Problem Found")}: ${log.problemFound}`);
+      lines.push(`- ${t("วิธีการปรับปรุงแก้ไขของทีม", "Solution Applied")}: ${log.solutionApplied}`);
+      lines.push(
+        `- ${t("คำอธิบายโครงสร้างและการทำงานของโค้ด", "Code Structure & Execution")}: ${log.codeExplanation}`
+      );
+      lines.push(`- ${t("ไฟล์ที่เกี่ยวข้อง", "Related Files")}: ${log.relatedFiles.join(", ")}`);
       lines.push("");
     });
 

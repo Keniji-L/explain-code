@@ -420,7 +420,7 @@ export default function TeacherLMSDashboardPage() {
             pinnedReviewNote:
               data.classroom.pinnedReviewNote ??
               "เริ่มต้นฝึกอ่านโค้ดเรื่องที่ 1 ตัวแปรและการคำนวณ",
-            createdAt: data.classroom.createdAt || "วันนี้",
+            createdAt: data.classroom.createdAt || t("วันนี้", "Today"),
           };
           setClassrooms((prev) => [
             created,
@@ -1226,7 +1226,8 @@ export default function TeacherLMSDashboardPage() {
                               className="flex items-center justify-between text-[11px] text-[#e8e1cf]"
                             >
                               <span className="truncate pr-2">{h.topicTitle}</span>
-                              {h.topicTitle.includes("(จุดเซฟเกม") ? (
+                              {h.topicTitle.includes("(จุดเซฟเกม") ||
+                              h.topicTitle.includes("(Game Save") ? (
                                 <span className="shrink-0 font-bold text-[#ffe27a]">
                                   {h.timestamp}
                                 </span>

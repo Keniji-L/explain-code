@@ -274,10 +274,11 @@ export default function ExplainCodeApp() {
           const formattedHistory = attData.attempts.map((att: any) => ({
             topicId: att.topic_id,
             topicTitle:
-              TOPICS.find((t) => t.id === att.topic_id)?.title || `เรื่องที่ ${att.topic_id}`,
+              TOPICS.find((tp) => tp.id === att.topic_id)?.title ||
+              t(`เรื่องที่ ${att.topic_id}`, `Topic ${att.topic_id}`),
             scorePercent: att.score_percent,
             xpEarned: att.xp_earned,
-            timestamp: formatAttemptTimestamp(att.created_at),
+            timestamp: formatAttemptTimestamp(att.created_at, uiLang),
           }));
 
           setStudents((prev) => {
