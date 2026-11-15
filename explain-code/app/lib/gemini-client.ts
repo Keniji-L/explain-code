@@ -7,7 +7,6 @@ export const GEMINI_MODEL_FALLBACK_CHAIN = [
   "gemini-3.5-flash-lite",
   "gemini-3.6-flash",
   "gemini-3.7-flash",
-  "gemini-2.0-flash-lite",
 ] as const;
 
 export type GeminiModelName = (typeof GEMINI_MODEL_FALLBACK_CHAIN)[number];
