@@ -14,7 +14,7 @@ import { TopicDungeonArena } from "../components/dungeon/TopicDungeonArena";
 import { DungeonRunScreen } from "../components/DungeonRunScreen";
 import { PixelSpriteView } from "../components/dungeon/PixelSpriteView";
 import { useUiLanguage } from "../components/LanguageProvider";
-import { getMonsterDef, MonsterType } from "../lib/dungeon/monsters";
+import { getMonsterDef, getLocalizedMonster, MonsterType } from "../lib/dungeon/monsters";
 import {
   AVATARS,
   AvatarKey,
@@ -30,6 +30,8 @@ import {
   INITIAL_STUDENTS,
   StudentRecord,
   getMasteryStatus,
+  getLocalizedTopicMeta,
+  getLocalizedSecretBadge,
 } from "../lib/curriculum";
 import {
   LANGUAGE_TRACKS,
@@ -960,7 +962,7 @@ function CoursesContent() {
       topicId: activeTopic.id,
       topicTitle: t(
         `${currentTrackMeta.name} · ด่านที่ ${currentFloorNumber}/${totalFloors} ${activeTopic.title} (จุดเซฟเกม · เฟส ${currentPhaseNumber}/${totalPhases})`,
-        `${currentTrackMeta.name} · Stage ${currentFloorNumber}/${totalFloors} ${activeTopic.title} (Game Save · Phase ${currentPhaseNumber}/${totalPhases})`
+        `${currentTrackMeta.name} · Stage ${currentFloorNumber}/${totalFloors} ${getLocalizedTopicMeta(activeTopic, "en").title} (Game Save · Phase ${currentPhaseNumber}/${totalPhases})`
       ),
       scorePercent: currentStudent.completedTopics.includes(activeTopic.id)
         ? 100
@@ -1769,11 +1771,11 @@ function CoursesContent() {
                                 : t("ล็อกอยู่", "Locked")}
                             </span>
                             <h3 className="text-sm sm:text-base font-extrabold text-[#f4efe6] mt-1 truncate">
-                              {topic.title}
+                              {getLocalizedTopicMeta(topic, uiLang).title}
                             </h3>
                             <div className="text-[11px] font-bold text-[#ffe27a] mt-0.5 flex items-center gap-1 truncate">
                               <Icon name="shield" size={12} />
-                              <span className="truncate">{topic.badgeReward.name}</span>
+                              <span className="truncate">{getLocalizedTopicMeta(topic, uiLang).badgeName}</span>
                             </div>
                           </div>
                         </div>
@@ -2119,7 +2121,7 @@ function CoursesContent() {
                       : `FLOOR ${activeTopicIndex + 1}/${currentLanguageTopics.length}`}
                   </span>
                   <span className="text-xs sm:text-sm font-extrabold text-[#f4efe6] max-w-[280px] sm:max-w-md truncate">
-                    {activeTopic.title}
+                    {getLocalizedTopicMeta(activeTopic, uiLang).title}
                   </span>
                 </div>
               </div>
@@ -2129,6 +2131,8 @@ function CoursesContent() {
                 const floorMonster = getMonsterDef(
                   getFloorMonsterType(activeTopicIndex, Boolean(activeTopic.isBoss))
                 );
+                const localizedFloorMonster = getLocalizedMonster(floorMonster, uiLang);
+                const localizedActiveTopic = getLocalizedTopicMeta(activeTopic, uiLang);
                 return (
                   <div className="rounded-2xl border border-[#2f2d45] bg-[#1c1b2b] p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5">
@@ -2152,17 +2156,17 @@ function CoursesContent() {
                           </span>
                         </div>
                         <h3 className="text-sm sm:text-base font-extrabold text-[#f4efe6] mt-1">
-                          {floorMonster.name}
+                          {localizedFloorMonster.name}
                         </h3>
                         <p className="text-xs text-[#9a93ad] mt-0.5">
-                          {activeTopic.subtitle}
+                          {localizedActiveTopic.subtitle}
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 text-xs text-[#ffe27a] font-bold bg-[#0d0b14] px-3 py-2 rounded-xl border border-[#2f2d45] shrink-0">
                       <Icon name="shield" size={15} />
-                      <span>{t("รางวัลเมื่อพิชิต:", "Badge Reward:")} {activeTopic.badgeReward.name}</span>
+                      <span>{t("รางวัลเมื่อพิชิต:", "Badge Reward:")} {localizedActiveTopic.badgeName}</span>
                     </div>
                   </div>
                 );
@@ -2358,7 +2362,7 @@ function CoursesContent() {
                   <span className="text-xs font-bold text-[#c4bdd6]">
                     {t(
                       `กำลังลุย: ${currentTrackMeta.name} · ด่านที่ ${activeTopicIndex + 1}/${currentLanguageTopics.length} (${activeTopic.title})`,
-                      `Playing: ${currentTrackMeta.name} · Floor ${activeTopicIndex + 1}/${currentLanguageTopics.length} (${activeTopic.title})`
+                      `Playing: ${currentTrackMeta.name} · Floor ${activeTopicIndex + 1}/${currentLanguageTopics.length} (${getLocalizedTopicMeta(activeTopic, "en").title})`
                     )}
                   </span>
                   {savedDungeonRecord &&
@@ -2756,6 +2760,7 @@ function CoursesContent() {
                           const unlocked = currentStudent.badges.includes(
                             tp.badgeReward.id
                           );
+                          const badgeName = getLocalizedTopicMeta(tp, uiLang).badgeName;
                           return (
                             <div
                               key={tp.badgeReward.id}
@@ -2768,11 +2773,11 @@ function CoursesContent() {
                               <StatusCircle
                                 variant={unlocked ? "badge" : "locked"}
                                 size="sm"
-                                label={tp.badgeReward.name}
+                                label={badgeName}
                               />
                               <div className="min-w-0">
                                 <div className="text-xs font-extrabold truncate">
-                                  {tp.badgeReward.name}
+                                  {badgeName}
                                 </div>
                               </div>
                             </div>
@@ -2788,6 +2793,7 @@ function CoursesContent() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {SECRET_BADGES.map((sb) => {
                             const unlocked = currentStudent.badges.includes(sb.id);
+                            const localizedSb = getLocalizedSecretBadge(sb, uiLang);
                             return (
                               <div
                                 key={sb.id}
@@ -2800,14 +2806,14 @@ function CoursesContent() {
                                 <StatusCircle
                                   variant={unlocked ? "badge" : "locked"}
                                   size="sm"
-                                  label={unlocked ? sb.name : "Secret Badge"}
+                                  label={unlocked ? localizedSb.name : "Secret Badge"}
                                 />
                                 <div className="min-w-0">
                                   <div className="text-xs font-extrabold truncate">
-                                    {unlocked ? sb.name : t("??? (ความลับ)", "??? (Secret)")}
+                                    {unlocked ? localizedSb.name : t("??? (ความลับ)", "??? (Secret)")}
                                   </div>
                                   <div className="text-[11px] truncate text-[#9a93ad]">
-                                    {sb.description}
+                                    {localizedSb.description}
                                   </div>
                                 </div>
                               </div>

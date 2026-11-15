@@ -87,7 +87,10 @@ function buildFallbackHint(q: DungeonQuestion, isEn: boolean): string {
 
 function deriveTraceSteps(q: DungeonQuestion, isEn: boolean): DungeonTraceStep[] {
   if (q.traceSteps && q.traceSteps.length > 0) {
-    return q.traceSteps;
+    return q.traceSteps.map((s) => ({
+      ...s,
+      explanation: isEn ? s.explanationEn || s.explanation : s.explanation,
+    }));
   }
   if (!q.codeSnippet) {
     return [
@@ -772,7 +775,7 @@ export function BattleOverlay({
             <div className="min-w-0 flex-1 space-y-1 sm:space-y-1.5">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="font-extrabold text-[#f6c945] text-sm truncate">
-                  {monster.name}
+                  {isEn ? monster.nameEn || monster.name : monster.name}
                 </h3>
                 {isMultiPhase && (
                   <span className="pixel-font text-[9px] bg-[#5a2d91] text-[#ffe27a] px-1.5 py-0.5 rounded font-black shrink-0">
@@ -780,7 +783,9 @@ export function BattleOverlay({
                   </span>
                 )}
               </div>
-              <div className="text-[11px] text-[#9a93ad] truncate">{monster.title}</div>
+              <div className="text-[11px] text-[#9a93ad] truncate">
+                {isEn ? monster.titleEn || monster.title : monster.title}
+              </div>
               <div className="flex items-center gap-2">
                 <span className="pixel-font text-[10px] font-black text-[#ff4d6d] shrink-0">
                   HP {displayCurrentMonsterHp}/{displayMaxMonsterHp}

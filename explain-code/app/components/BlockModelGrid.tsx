@@ -195,7 +195,7 @@ export function BlockModelGrid({
                         {cellId}
                       </span>
                       <span className="text-[12px] font-bold text-[#f4efe6] truncate">
-                        {meta.shortTitle}
+                        {t(meta.shortTitle, meta.shortTitleEn || meta.shortTitle)}
                       </span>
                     </div>
                     <span className="shrink-0 text-[13px] font-extrabold whitespace-nowrap">
@@ -274,7 +274,7 @@ export function BlockModelGrid({
                     </div>
 
                     <div className="text-[14px] font-extrabold mt-1.5 leading-snug text-[#f4efe6]">
-                      {meta.shortTitle}
+                      {t(meta.shortTitle, meta.shortTitleEn || meta.shortTitle)}
                     </div>
 
                     <div className="mt-2 pt-1.5 border-t border-white/10 flex items-center justify-between text-[12px] font-bold">
@@ -309,12 +309,18 @@ export function BlockModelGrid({
                 {t("ช่อง", "Cell")} {selectedCell.id}
               </span>
               <span className="text-[15px] font-extrabold text-[#ffe27a]">
-                {selectedCell.shortTitle} ({selectedCell.levelName} · {selectedCell.dimensionName})
+                {t(selectedCell.shortTitle, selectedCell.shortTitleEn || selectedCell.shortTitle)} (
+                {t(selectedCell.levelName, selectedCell.levelNameEn || selectedCell.levelName)} ·{" "}
+                {t(selectedCell.dimensionName, selectedCell.dimensionNameEn || selectedCell.dimensionName)})
               </span>
             </div>
-            <p className="text-[14px] text-[#f4efe6] mt-1">{selectedCell.description}</p>
+            <p className="text-[14px] text-[#f4efe6] mt-1">
+              {t(selectedCell.description, selectedCell.descriptionEn || selectedCell.description)}
+            </p>
             <p className="text-[13px] font-semibold text-[#9a93ad] mt-1">
-              {t("ตัวอย่างคำถาม:", "Sample question:")} &ldquo;{selectedCell.exampleQuestion}&rdquo;
+              {t("ตัวอย่างคำถาม:", "Sample question:")} &ldquo;
+              {t(selectedCell.exampleQuestion, selectedCell.exampleQuestionEn || selectedCell.exampleQuestion)}
+              &rdquo;
             </p>
           </div>
 
@@ -328,7 +334,10 @@ export function BlockModelGrid({
                 <Icon name="play" size={18} />
                 <span>
                   {t("ฝึกช่องนี้ใน", "Practice in")}{" "}
-                  {TOPICS.find((tp) => tp.id === selectedCell.relatedTopicId)?.shortName}
+                  {(() => {
+                    const tp = TOPICS.find((item) => item.id === selectedCell.relatedTopicId);
+                    return tp ? t(tp.shortName, tp.shortNameEn || tp.shortName) : "";
+                  })()}
                 </span>
               </button>
             )}

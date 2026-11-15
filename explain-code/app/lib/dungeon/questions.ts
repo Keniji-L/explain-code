@@ -12,6 +12,7 @@ export interface DungeonTraceStep {
   codeLine: string;
   variables: Record<string, string>;
   explanation: string;
+  explanationEn?: string;
 }
 
 export interface DungeonQuestion {
@@ -95,6 +96,7 @@ export function getQuestionsForTopic(
     codeLine: s.codeLine,
     variables: { ...s.variables },
     explanation: s.explanation,
+    explanationEn: s.explanationEn,
   }));
 
   const predictRun = runCodeByLanguage(topic.code, resolvedLang);
@@ -108,17 +110,20 @@ export function getQuestionsForTopic(
     id: `topic-${topic.id}-predict`,
     language: resolvedLang,
     question: topic.predictPrompt,
-    questionEn: `[Predict Output] ${topic.predictPrompt}`,
+    questionEn: `[Predict Output] ${topic.predictPromptEn || topic.predictPrompt}`,
     codeSnippet: topic.code,
     choices: topic.predictOptions,
+    choicesEn: topic.predictOptionsEn || topic.predictOptions,
     correctIndex: predictCorrectIndex,
     explanation: topic.predictExplanation,
+    explanationEn: topic.predictExplanationEn || topic.predictExplanation,
     difficulty: topic.isBoss ? "hard" : "easy",
     blockModelCell: "E4",
     hint:
       topic.steps[0]?.explanation ||
       "ลองไล่ค่าตัวแปรทีละบรรทัดตั้งแต่บรรทัดแรกจนถึงคำสั่งแสดงผล",
     hintEn:
+      topic.steps[0]?.explanationEn ||
       "Trace each variable line by line from top to bottom before the output statement.",
     traceSteps,
     expectedOutput: predictExpected || topic.predictOptions[predictCorrectIndex],
@@ -134,15 +139,17 @@ export function getQuestionsForTopic(
       id: `topic-${topic.id}-${q.id}`,
       language: resolvedLang,
       question: q.question,
-      questionEn: `[Block ${q.cellId}] ${q.question}`,
+      questionEn: `[Block ${q.cellId}] ${q.questionEn || q.question}`,
       codeSnippet: topic.code,
       choices: q.options.map((o) => o.text),
+      choicesEn: q.options.map((o) => o.textEn || o.text),
       correctIndex: correctIdx,
       explanation: q.explanation,
+      explanationEn: q.explanationEn || q.explanation,
       difficulty: topic.isBoss ? "hard" : "medium",
       blockModelCell: q.cellId,
       hint: q.hint,
-      hintEn: q.hint,
+      hintEn: q.hintEn || q.hint,
       traceSteps,
       expectedOutput: predictExpected || topic.predictOptions[predictCorrectIndex],
       phaseLabel: `Phase ${idx + 2} · Block Model (${q.cellId})`,
@@ -160,15 +167,17 @@ export function getQuestionsForTopic(
     id: `topic-${topic.id}-modify`,
     language: resolvedLang,
     question: topic.modifyChallenge.instruction,
-    questionEn: `[Modify Challenge] ${topic.modifyChallenge.instruction}`,
+    questionEn: `[Modify Challenge] ${topic.modifyChallenge.instructionEn || topic.modifyChallenge.instruction}`,
     codeSnippet: topic.modifyChallenge.suggestedCode,
     choices: topic.modifyChallenge.options,
+    choicesEn: topic.modifyChallenge.optionsEn || topic.modifyChallenge.options,
     correctIndex: modCorrectIndex,
     explanation: topic.modifyChallenge.explanation,
+    explanationEn: topic.modifyChallenge.explanationEn || topic.modifyChallenge.explanation,
     difficulty: "hard",
     blockModelCell: "F4",
     hint: topic.modifyChallenge.changeDescription,
-    hintEn: topic.modifyChallenge.changeDescription,
+    hintEn: topic.modifyChallenge.changeDescriptionEn || topic.modifyChallenge.changeDescription,
     traceSteps,
     expectedOutput: modExpected || topic.modifyChallenge.options[modCorrectIndex],
     phaseLabel: "Final Phase · Modify Challenge",
@@ -675,15 +684,17 @@ export function getChestQuestion(
       id: `chest-${resolvedLang}-${topic.id}`,
       language: resolvedLang,
       question: topic.predictPrompt,
-      questionEn: `[Predict Output] ${topic.predictPrompt}`,
+      questionEn: `[Predict Output] ${topic.predictPromptEn || topic.predictPrompt}`,
       codeSnippet: topic.code,
       choices: topic.predictOptions,
+      choicesEn: topic.predictOptionsEn || topic.predictOptions,
       correctIndex: correctIdx,
       explanation: topic.predictExplanation,
+      explanationEn: topic.predictExplanationEn || topic.predictExplanation,
       difficulty: "easy",
       blockModelCell: "E4",
       hint: topic.steps[0]?.explanation || "ไล่ค่าตัวแปรทีละบรรทัดจนถึงคำสั่งแสดงผล",
-      hintEn: "Trace each variable line by line to predict the output.",
+      hintEn: topic.steps[0]?.explanationEn || "Trace each variable line by line to predict the output.",
       expectedOutput: predictExpected || undefined,
       phaseLabel: "Code Chest · Predict",
     };

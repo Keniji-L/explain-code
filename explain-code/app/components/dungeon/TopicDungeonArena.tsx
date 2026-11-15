@@ -5,6 +5,7 @@ import {
   TopicQuest,
   BlockCellId,
   StudentRecord,
+  getLocalizedTopicMeta,
 } from "../../lib/curriculum";
 import {
   LANGUAGE_TRACKS,
@@ -23,7 +24,7 @@ import {
 } from "../../lib/dungeon/sprites";
 import { hashString } from "../../lib/dungeon/seed";
 import { generateDungeonRoom, DungeonRoom } from "../../lib/dungeon/mapgen";
-import { getMonsterDef } from "../../lib/dungeon/monsters";
+import { getMonsterDef, getLocalizedMonster } from "../../lib/dungeon/monsters";
 import { dungeonSound } from "../../lib/dungeon/sound";
 import { GameCanvas } from "./GameCanvas";
 import { MobileDpad } from "./MobileDpad";
@@ -100,7 +101,7 @@ export function TopicDungeonArena({
   onSnapshotChange,
   onSaveGame,
 }: TopicDungeonArenaProps) {
-  const { t } = useUiLanguage();
+  const { uiLang, t } = useUiLanguage();
   const hasSession = Boolean(getClientSession());
 
   const activeLanguage = language;
@@ -437,6 +438,16 @@ export function TopicDungeonArena({
     return getMonsterDef("slime");
   }, [activeTopic.isBoss, room.entity?.monsterType]);
 
+  const localizedTopic = useMemo(
+    () => getLocalizedTopicMeta(activeTopic, uiLang),
+    [activeTopic, uiLang]
+  );
+
+  const localizedMonster = useMemo(
+    () => getLocalizedMonster(currentMonster, uiLang),
+    [currentMonster, uiLang]
+  );
+
   const chestQuestion = useMemo(
     () => getChestQuestion(activeTopic.id, activeLanguage, phaseQuestions[0]?.id),
     [activeTopic.id, activeLanguage, phaseQuestions]
@@ -706,7 +717,7 @@ export function TopicDungeonArena({
                 )}
               </div>
               <h2 className="text-sm sm:text-lg font-extrabold text-[#f6c945] truncate mt-0.5">
-                {activeTopic.title}
+                {localizedTopic.title}
               </h2>
             </div>
           </div>
@@ -897,10 +908,10 @@ export function TopicDungeonArena({
                     </span>
                   </div>
                   <h3 className="font-extrabold text-sm text-[#f6c945] truncate">
-                    {currentMonster.name}
+                    {localizedMonster.name}
                   </h3>
                   <p className="text-[11px] text-[#9a93ad] line-clamp-2">
-                    {activeTopic.subtitle}
+                    {localizedTopic.subtitle}
                   </p>
                 </div>
               </div>
@@ -1013,7 +1024,7 @@ export function TopicDungeonArena({
                         </div>
 
                         <p className="text-[11px] text-[#c4bdd6] leading-relaxed">
-                          {step.explanation}
+                          {uiLang === "en" ? step.explanationEn || step.explanation : step.explanation}
                         </p>
                       </div>
                     );
@@ -1037,7 +1048,7 @@ export function TopicDungeonArena({
                     </span>
                   </div>
                   <p className="text-[11px] text-[#c4bdd6] leading-relaxed">
-                    {activeTopic.modifyChallenge.instruction}{" "}
+                    {localizedTopic.modifyInstruction}{" "}
                     {modifyTargetOutput && (
                       <span className="text-[#ffe27a] font-bold">
                         ({t("ผลลัพธ์เป้าหมาย:", "Target Output:")} {modifyTargetOutput})
@@ -1083,7 +1094,7 @@ export function TopicDungeonArena({
                       {t("รางวัลตราสัญลักษณ์", "Badge Reward")}
                     </div>
                     <div className="text-xs font-extrabold text-[#ffe27a] truncate">
-                      {activeTopic.badgeReward.name}
+                      {localizedTopic.badgeName}
                     </div>
                   </div>
                 </div>
