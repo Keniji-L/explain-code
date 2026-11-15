@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -53,6 +53,8 @@ export default function TeacherLMSDashboardPage() {
   const [progress, setProgress] = useState<LessonProgress[]>([]);
   const [dungeonSaves, setDungeonSaves] = useState<DungeonSaveRecord[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
+  const [showAllCoursesMobile, setShowAllCoursesMobile] = useState(false);
+  const courseDetailRef = useRef<HTMLDivElement | null>(null);
   const [workspaceMode, setWorkspaceMode] = useState<"courses" | "classrooms">(
     "courses"
   );
@@ -1215,96 +1217,157 @@ export default function TeacherLMSDashboardPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           {/* Left Column: Teacher's Courses */}
           <div className="lg:col-span-4 space-y-3">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-[#9a93ad]">
-              คอร์สของฉัน ({myCourses.length})
-            </h2>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-[#9a93ad]">
+                คอร์สของฉัน ({myCourses.length})
+              </h2>
+              {myCourses.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllCoursesMobile((prev) => !prev)}
+                  className="lg:hidden rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-2.5 py-1 text-[11px] font-bold text-[#f6c945] cursor-pointer"
+                >
+                  {showAllCoursesMobile
+                    ? "ย่อรายการ"
+                    : `ดูทั้งหมด (${myCourses.length})`}
+                </button>
+              )}
+            </div>
+
+            {/* Mobile Quick Course Selector */}
+            {myCourses.length > 0 && (
+              <div className="lg:hidden rounded-2xl border border-[#2f2d45] bg-[#141220] p-3 space-y-2">
+                <label className="block text-[11px] font-bold text-[#9a93ad]">
+                  สลับคอร์สที่กำลังจัดการ:
+                </label>
+                <select
+                  value={selectedCourse?.id || ""}
+                  onChange={(e) => {
+                    setSelectedCourseId(e.target.value);
+                    setTimeout(() => {
+                      courseDetailRef.current?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
+                    }, 50);
+                  }}
+                  className="w-full rounded-xl border border-[#3d395a] bg-[#1c1b2b] px-3 py-2 text-xs font-bold text-[#f4efe6] focus:border-[#f6c945] focus:outline-hidden"
+                >
+                  {myCourses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.title} ({c.join_code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {myCourses.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-[#3d395a] bg-[#141220] p-6 text-center text-xs text-[#9a93ad]">
                 คุณยังไม่มีคอร์สเรียน กดปุ่ม &ldquo;+ สร้างคอร์สเรียนใหม่&rdquo; ด้านบนเพื่อเริ่มต้น
               </div>
             ) : (
-              myCourses.map((course) => {
-                const isSelected = selectedCourse?.id === course.id;
-                const lessonCount = lessons.filter(
-                  (l) => l.course_id === course.id
-                ).length;
+              <div
+                className={`${
+                  showAllCoursesMobile ? "space-y-3" : "hidden lg:block space-y-3"
+                }`}
+              >
+                {myCourses.map((course) => {
+                  const isSelected = selectedCourse?.id === course.id;
+                  const lessonCount = lessons.filter(
+                    (l) => l.course_id === course.id
+                  ).length;
 
-                return (
-                  <div
-                    key={course.id}
-                    onClick={() => setSelectedCourseId(course.id)}
-                    className={`cursor-pointer rounded-2xl border p-4 transition-all ${
-                      isSelected
-                        ? "border-[#f6c945] bg-[#1c1b2b] shadow-lg"
-                        : "border-[#2f2d45] bg-[#141220] hover:border-[#3d395a] hover:bg-[#1c1b2b]"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span
-                        className={`rounded-md border px-2 py-0.5 text-[10px] font-bold ${
-                          isCoursePublic(course)
-                            ? "border-[#2fbf71]/40 bg-[#102a1e] text-[#86efac]"
-                            : "border-[#9b5de5]/50 bg-[#25193b] text-[#e9d5ff]"
-                        }`}
-                      >
-                        {isCoursePublic(course)
-                          ? "🌐 สาธารณะ (ขึ้นในดันเจี้ยน)"
-                          : "🔒 ส่วนตัว (ใช้รหัสเข้าเรียน)"}
-                      </span>
-                      <span className="font-mono text-[11px] font-bold text-[#f6c945]">
-                        รหัส: {course.join_code}
-                      </span>
-                    </div>
-
-                    <h3 className="text-sm font-bold text-[#f4efe6]">
-                      {course.title}
-                    </h3>
-                    <p className="mt-1 line-clamp-2 text-xs text-[#9a93ad]">
-                      {course.description}
-                    </p>
-
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[#2f2d45] pt-2.5 text-[11px]">
-                      <span className="font-semibold text-[#c4bdd6]">
-                        {lessonCount} บทเรียน
-                      </span>
-                      <div
-                        className="flex flex-wrap items-center gap-1.5"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => handleTogglePublishCourse(course)}
-                          className="rounded-lg border border-[#3d395a] bg-[#141220] px-2 py-1 font-semibold text-[#f4efe6] hover:border-[#f6c945] hover:bg-[#252238] transition-colors cursor-pointer whitespace-nowrap"
+                  return (
+                    <div
+                      key={course.id}
+                      onClick={() => {
+                        setSelectedCourseId(course.id);
+                        if (
+                          typeof window !== "undefined" &&
+                          window.innerWidth < 1024
+                        ) {
+                          setShowAllCoursesMobile(false);
+                          setTimeout(() => {
+                            courseDetailRef.current?.scrollIntoView({
+                              behavior: "smooth",
+                              block: "start",
+                            });
+                          }, 50);
+                        }
+                      }}
+                      className={`cursor-pointer rounded-2xl border p-4 transition-all ${
+                        isSelected
+                          ? "border-[#f6c945] bg-[#1c1b2b] shadow-lg"
+                          : "border-[#2f2d45] bg-[#141220] hover:border-[#3d395a] hover:bg-[#1c1b2b]"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <span
+                          className={`rounded-md border px-2 py-0.5 text-[10px] font-bold ${
+                            isCoursePublic(course)
+                              ? "border-[#2fbf71]/40 bg-[#102a1e] text-[#86efac]"
+                              : "border-[#9b5de5]/50 bg-[#25193b] text-[#e9d5ff]"
+                          }`}
                         >
                           {isCoursePublic(course)
-                            ? "สลับเป็นส่วนตัว 🔒"
-                            : "สลับเป็นสาธารณะ 🌐"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditingCourse(course)}
-                          className="rounded-lg border border-[#2fbf71]/40 bg-[#102a1e] px-2 py-1 font-semibold text-[#86efac] hover:bg-[#1a3d2d] transition-colors cursor-pointer whitespace-nowrap"
+                            ? "🌐 สาธารณะ (ขึ้นในดันเจี้ยน)"
+                            : "🔒 ส่วนตัว (ใช้รหัสเข้าเรียน)"}
+                        </span>
+                        <span className="font-mono text-[11px] font-bold text-[#f6c945]">
+                          รหัส: {course.join_code}
+                        </span>
+                      </div>
+
+                      <h3 className="text-sm font-bold text-[#f4efe6]">
+                        {course.title}
+                      </h3>
+                      <p className="mt-1 line-clamp-2 text-xs text-[#9a93ad]">
+                        {course.description}
+                      </p>
+
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[#2f2d45] pt-2.5 text-[11px]">
+                        <span className="font-semibold text-[#c4bdd6]">
+                          {lessonCount} บทเรียน
+                        </span>
+                        <div
+                          className="flex flex-wrap items-center gap-1.5"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          แก้ไข
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteCourse(course.id)}
-                          className="rounded-lg border border-[#c0283a]/50 bg-[#2d141c] px-2 py-1 font-semibold text-[#fca5a5] hover:bg-[#3d1a24] transition-colors cursor-pointer whitespace-nowrap"
-                        >
-                          ลบ
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePublishCourse(course)}
+                            className="rounded-lg border border-[#3d395a] bg-[#141220] px-2 py-1 font-semibold text-[#f4efe6] hover:border-[#f6c945] hover:bg-[#252238] transition-colors cursor-pointer whitespace-nowrap"
+                          >
+                            {isCoursePublic(course)
+                              ? "สลับเป็นส่วนตัว 🔒"
+                              : "สลับเป็นสาธารณะ 🌐"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingCourse(course)}
+                            className="rounded-lg border border-[#2fbf71]/40 bg-[#102a1e] px-2 py-1 font-semibold text-[#86efac] hover:bg-[#1a3d2d] transition-colors cursor-pointer whitespace-nowrap"
+                          >
+                            แก้ไข
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCourse(course.id)}
+                            className="rounded-lg border border-[#c0283a]/50 bg-[#2d141c] px-2 py-1 font-semibold text-[#fca5a5] hover:bg-[#3d1a24] transition-colors cursor-pointer whitespace-nowrap"
+                          >
+                            ลบ
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })
+                  );
+                })}
+              </div>
             )}
           </div>
 
           {/* Right Column: Selected Course Lessons & Enrolled Students */}
-          <div className="lg:col-span-8">
+          <div ref={courseDetailRef} className="lg:col-span-8 min-w-0 scroll-mt-24">
             {selectedCourse ? (
               <div className="rounded-2xl border border-[#2f2d45] bg-[#141220] p-6 shadow-lg">
                 <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#2f2d45] pb-4">
@@ -1617,13 +1680,13 @@ export default function TeacherLMSDashboardPage() {
                               }`}
                             >
                               <div className="flex flex-wrap items-start justify-between gap-4">
-                                <div className="flex items-start gap-3.5">
+                                <div className="flex items-start gap-3.5 min-w-0 flex-1">
                                   {/* Monster Sprite Box */}
                                   <div className="p-2 rounded-xl bg-[#120f1c] border-2 border-[#4a4766] flex items-center justify-center shrink-0">
                                     <PixelSpriteView sprite={monsterDef.sprite} size={40} />
                                   </div>
 
-                                  <div className="space-y-1">
+                                  <div className="space-y-1 min-w-0 flex-1">
                                     <div className="flex flex-wrap items-center gap-2">
                                       <span
                                         className={`rounded-md px-2 py-0.5 text-[10px] font-black uppercase ${
@@ -1639,10 +1702,10 @@ export default function TeacherLMSDashboardPage() {
                                       </span>
                                     </div>
 
-                                    <div className="flex items-center gap-2 text-xs text-[#9a93ad]">
+                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#9a93ad]">
                                       <span>มอนสเตอร์: <strong className="text-[#f6c945]">{monsterDef.name}</strong></span>
                                       <span>·</span>
-                                      <span className="text-[#ff6b81] font-bold">HP {monsterDef.maxHp}</span>
+                                      <span className="text-[#ff6b81] font-bold whitespace-nowrap shrink-0">HP {monsterDef.maxHp}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -1675,7 +1738,7 @@ export default function TeacherLMSDashboardPage() {
                                   </div>
 
                                   {attachedQ.code_snippet && (
-                                    <pre className="p-2.5 rounded-lg border border-[#2f2d45] bg-[#120f1c] text-[#ffe27a] font-mono text-[11px] overflow-x-auto">
+                                    <pre className="w-full max-w-full p-2.5 rounded-lg border border-[#2f2d45] bg-[#120f1c] text-[#ffe27a] font-mono text-[11px] overflow-x-auto">
                                       <code>{attachedQ.code_snippet}</code>
                                     </pre>
                                   )}

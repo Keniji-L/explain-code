@@ -90,6 +90,16 @@ export function TeacherDashboard({
   const [isSavingReview, setIsSavingReview] = useState<boolean>(false);
   const [showFlowGuide, setShowFlowGuide] = useState<boolean>(!embedded);
 
+  // ปิดหน้าต่างโปรไฟล์รายคนเมื่อกดปุ่ม Escape
+  useEffect(() => {
+    if (!inspectingStudent) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setInspectingStudent(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [inspectingStudent]);
+
   // ซิงค์เรื่องทบทวนและโน้ตเมื่อสลับห้องเรียน
   useEffect(() => {
     if (currentRoom) {
@@ -493,17 +503,27 @@ export function TeacherDashboard({
           </div>
 
           <div className="bg-white border-2 border-[#cfe0dc] rounded-2xl p-4 flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-[#f8d9d4] text-[#7d1d10] flex items-center justify-center">
+            <div className="w-12 h-12 shrink-0 rounded-2xl bg-[#f8d9d4] text-[#7d1d10] flex items-center justify-center">
               <Icon name="bulb" size={24} />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="text-[13px] font-bold text-[#475b60]">
                 ช่อง Block Model ที่ห้องควรทบทวน
               </div>
-              <div className="text-[16px] font-extrabold text-[#7d1d10]">
-                {weakCells.length > 0
-                  ? weakCells.map((c) => `ช่อง ${c.id}`).join(", ")
-                  : "ผ่านเกณฑ์ทุกช่อง"}
+              <div className="text-[15px] font-extrabold text-[#7d1d10] leading-snug mt-0.5">
+                {weakCells.length > 0 ? (
+                  <>
+                    {weakCells
+                      .slice(0, 3)
+                      .map((c) => `ช่อง ${c.id} (${avgCellScores[c.id]}%)`)
+                      .join(", ")}
+                    {weakCells.length > 3
+                      ? ` และอีก ${weakCells.length - 3} ช่อง`
+                      : ""}
+                  </>
+                ) : (
+                  <span className="text-[#14532d]">ผ่านเกณฑ์ทุกช่อง</span>
+                )}
               </div>
             </div>
           </div>
@@ -789,37 +809,80 @@ export function TeacherDashboard({
             </table>
           </div>
 
-          {/* แผงดูโปรไฟล์รายคนเมื่อคลิกเลือกนักเรียน */}
-          {inspectingStudent && (
-            <div className="mt-3 p-5 rounded-2xl bg-[#eef3f1] border-2 border-[#0f766e] flex flex-col gap-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#0b4f49] text-white text-[12px] font-extrabold">
-                    โปรไฟล์รายคน
-                  </span>
-                  <h4 className="text-[18px] font-extrabold text-[#1b2a2f] mt-1">
-                    นักเรียน: {inspectingStudent.nickname} · สะสม {inspectingStudent.xp} XP · ตรา{" "}
-                    {inspectingStudent.badges.length} ดวง
-                  </h4>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setInspectingStudent(null)}
-                  className="press-secondary px-3 py-1.5 rounded-xl text-[13px] font-extrabold flex items-center gap-1 cursor-pointer"
-                >
-                  <Icon name="close" size={16} />
-                  <span>ปิดข้อมูลรายคน</span>
-                </button>
-              </div>
+          {/* Modal โปรไฟล์รายคนเมื่อคลิกดูรายคน */}
+          {inspectingStudent && (() => {
+            const stuSorted = [...BLOCK_MODEL_CELLS].sort(
+              (a, b) =>
+                (inspectingStudent.cellScores[b.id] ?? 0) -
+                (inspectingStudent.cellScores[a.id] ?? 0)
+            );
+            const stuTop = stuSorted[0];
+            const stuWeak = stuSorted[stuSorted.length - 1];
+            const stuAvg = Math.round(
+              Object.values(inspectingStudent.cellScores).reduce(
+                (a, b) => a + b,
+                0
+              ) / 12
+            );
 
-              <BlockModelGrid
-                cellScores={inspectingStudent.cellScores}
-                title={`แผนที่ Block Model รายบุคคลของ "${inspectingStudent.nickname}"`}
-                subtitle="คะแนนความเข้าใจรายช่องจากประวัติการตอบคำถาม"
-                showLegend={false}
-              />
-            </div>
-          )}
+            return (
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-6 no-print"
+                onClick={() => setInspectingStudent(null)}
+                role="dialog"
+                aria-modal="true"
+                aria-label={`โปรไฟล์รายบุคคลของ ${inspectingStudent.nickname}`}
+              >
+                <div
+                  className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[#eef3f1] border-2 border-[#0f766e] p-4 sm:p-6 flex flex-col gap-4 shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#cfe0dc] pb-3">
+                    <div>
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#0b4f49] text-white text-[11px] font-extrabold">
+                        โปรไฟล์รายคน
+                      </span>
+                      <h4 className="text-[18px] sm:text-[20px] font-extrabold text-[#1b2a2f] mt-1.5">
+                        นักเรียน: {inspectingStudent.nickname}
+                      </h4>
+                      <p className="text-[12px] sm:text-[13px] font-semibold text-[#475b60] mt-0.5">
+                        สะสม {inspectingStudent.xp} XP · ผ่านแล้ว{" "}
+                        {inspectingStudent.completedTopics.length}/7 เรื่อง ·
+                        เฉลี่ย {stuAvg}%
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setInspectingStudent(null)}
+                      className="press-secondary px-3 py-1.5 rounded-xl text-[13px] font-extrabold flex items-center gap-1.5 cursor-pointer shrink-0"
+                    >
+                      <Icon name="close" size={16} />
+                      <span>ปิด</span>
+                    </button>
+                  </div>
+
+                  {/* สรุปจุดแข็งและจุดที่ควรทบทวน */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[13px]">
+                    <div className="rounded-xl bg-[#d8efdc] border border-[#0f766e]/30 px-3.5 py-2.5 font-bold text-[#14532d]">
+                      🌟 ด้านที่เก่ง: ช่อง {stuTop.id} ({stuTop.shortTitle}{" "}
+                      {inspectingStudent.cellScores[stuTop.id]}%)
+                    </div>
+                    <div className="rounded-xl bg-[#f8d9d4] border border-[#7d1d10]/30 px-3.5 py-2.5 font-bold text-[#7d1d10]">
+                      💡 ควรทบทวน: ช่อง {stuWeak.id} ({stuWeak.shortTitle}{" "}
+                      {inspectingStudent.cellScores[stuWeak.id]}%)
+                    </div>
+                  </div>
+
+                  <BlockModelGrid
+                    cellScores={inspectingStudent.cellScores}
+                    title={`แผนที่ Block Model 12 ช่องของ "${inspectingStudent.nickname}"`}
+                    subtitle="คะแนนความเข้าใจรายช่องจากประวัติการตอบคำถาม"
+                    showLegend={false}
+                  />
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* ขั้นตอนที่ 7: ปรับการสอน (เลือกเรื่องให้ทบทวน) */}
