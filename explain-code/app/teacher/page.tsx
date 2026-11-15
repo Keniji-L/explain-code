@@ -539,8 +539,12 @@ export default function TeacherLMSDashboardPage() {
         ? Boolean(editingCourse.is_published)
         : true;
 
+    const generatedCourseId =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `course-${Date.now()}`;
     const courseObj: Course = {
-      id: editingCourse.id || `course-${Date.now()}`,
+      id: editingCourse.id || generatedCourseId,
       teacher_id: session.userId,
       teacher_name: session.displayName || session.username,
       title: editingCourse.title.trim(),
@@ -563,16 +567,30 @@ export default function TeacherLMSDashboardPage() {
     setEditingCourse(null);
 
     try {
-      await fetch("/api/lms", {
+      const res = await fetch("/api/lms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "upsert-course",
           course: courseObj,
-          role: session.role,
-          teacherStatus: session.teacherStatus,
         }),
       });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.course?.id) {
+          const syncedCourse: Course = {
+            ...courseObj,
+            ...data.course,
+            visibility: data.course.is_published ? "public" : "private",
+          };
+          const synced = updated.map((c) =>
+            c.id === courseObj.id ? syncedCourse : c
+          );
+          setCourses(synced);
+          saveLocalCourses(synced);
+          setSelectedCourseId(syncedCourse.id);
+        }
+      }
     } catch {
       // ignore
     }
@@ -817,8 +835,12 @@ export default function TeacherLMSDashboardPage() {
 
     const nowIso = new Date().toISOString();
     const isNew = !editingLesson.id;
+    const generatedLessonId =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `lesson-${Date.now()}`;
     const lessonObj: Lesson = {
-      id: editingLesson.id || `lesson-${Date.now()}`,
+      id: editingLesson.id || generatedLessonId,
       course_id: selectedCourse.id,
       title: editingLesson.title.trim(),
       content_md: editingLesson.content_md || "",
@@ -847,7 +869,7 @@ export default function TeacherLMSDashboardPage() {
     setEditingLesson(null);
 
     try {
-      await fetch("/api/lms", {
+      const res = await fetch("/api/lms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -855,6 +877,16 @@ export default function TeacherLMSDashboardPage() {
           lesson: lessonObj,
         }),
       });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.lesson?.id) {
+          const synced = updated.map((l) =>
+            l.id === lessonObj.id ? { ...lessonObj, ...data.lesson } : l
+          );
+          setLessons(synced);
+          saveLocalLessons(synced);
+        }
+      }
     } catch {
       // ignore
     }

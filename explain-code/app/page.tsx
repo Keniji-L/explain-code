@@ -601,7 +601,7 @@ export default function ExplainCodeApp() {
       return;
     }
 
-    if (data.source === "supabase" && data.teacher) {
+    if (data.authenticated && data.teacher) {
       saveSessionToStorage({
         role: "teacher",
         userId: data.teacher.id,
@@ -618,13 +618,6 @@ export default function ExplainCodeApp() {
     if (!foundTeacher) {
       setTeacherAuthError(
         `ไม่พบบัญชีครู "${uname}" กรุณากดแท็บ "สมัครบัญชีครูใหม่" หรือใช้บัญชี "ครูตัวอย่าง"`
-      );
-      return;
-    }
-
-    if (foundTeacher.passwordHash !== data.passwordHash) {
-      setTeacherAuthError(
-        "รหัสผ่านไม่ถูกต้อง (บัญชีครูตัวอย่างใช้รหัสผ่าน: 12345678)"
       );
       return;
     }
@@ -683,11 +676,16 @@ export default function ExplainCodeApp() {
     });
     const data = await res.json();
 
+    if (!res.ok) {
+      setTeacherAuthError(data.error || "สมัครบัญชีครูไม่สำเร็จ");
+      return;
+    }
+
     const newTeacher: TeacherRecord = {
-      id: "tch-" + Date.now(),
-      username: uname,
-      passwordHash: data.passwordHash,
-      displayName: teacherDisplayName.trim() || uname,
+      id: data.teacher?.id || "tch-" + Date.now(),
+      username: data.teacher?.username || uname,
+      passwordHash: "",
+      displayName: data.teacher?.displayName || teacherDisplayName.trim() || uname,
       role: "teacher",
     };
 

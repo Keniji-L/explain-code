@@ -2,7 +2,9 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import {
   Database,
+  getSupabaseAdmin,
   normalizeSupabaseUrl,
+  TeacherApprovalStatus,
   UserRole,
 } from "../supabase";
 
@@ -64,10 +66,26 @@ export async function getServerUserSession(): Promise<AppUserSession | null> {
       } = await supabase.auth.getUser();
       if (user) {
         const meta = user.user_metadata || {};
-        const role: UserRole =
-          meta.role === "teacher" || meta.role === "admin"
-            ? meta.role
-            : "student";
+        let role: UserRole = "student";
+        let teacherStatus: TeacherApprovalStatus = "approved";
+
+        const admin = getSupabaseAdmin();
+        if (admin) {
+          const { data: prof } = await admin
+            .from("profiles")
+            .select("role, teacher_status")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          if (prof?.role === "teacher" || prof?.role === "admin") {
+            role = prof.role;
+            if (role === "teacher") {
+              teacherStatus =
+                prof.teacher_status === "pending" ? "pending" : "approved";
+            }
+          }
+        }
+
         const displayName =
           meta.display_name ||
           meta.nickname ||
@@ -79,10 +97,7 @@ export async function getServerUserSession(): Promise<AppUserSession | null> {
           username: meta.username || meta.nickname || displayName,
           displayName,
           role,
-          teacherStatus:
-            meta.teacher_approved === "true" || role !== "teacher"
-              ? "approved"
-              : "pending",
+          teacherStatus,
         };
       }
     }

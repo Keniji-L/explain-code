@@ -98,7 +98,47 @@ export async function POST(req: NextRequest) {
 
     const isCorrect = selectedIndex === correctIndex;
 
-    // 2. Anti-Farming check: Has this question already been answered correctly in this run?
+    // 2. Verify DB run ownership BEFORE checking room_attempts or writing attempts
+    let ownedRunData: {
+      user_id: string;
+      hearts_left: number;
+      xp_earned: number;
+      coins_earned: number;
+      status: string;
+    } | null = null;
+
+    if (db && isValidUuid(runId)) {
+      if (!session?.userId) {
+        return NextResponse.json(
+          { error: "กรุณาเข้าสู่ระบบก่อนส่งคำตอบดันเจี้ยน" },
+          { status: 401 }
+        );
+      }
+
+      const { data: runRow } = await db
+        .from("dungeon_runs")
+        .select("user_id, hearts_left, xp_earned, coins_earned, status")
+        .eq("id", runId)
+        .maybeSingle();
+
+      if (!runRow) {
+        return NextResponse.json(
+          { error: "ไม่พบข้อมูลการเล่นดันเจี้ยนนี้" },
+          { status: 404 }
+        );
+      }
+
+      if (runRow.user_id !== session.userId && session.role !== "admin") {
+        return NextResponse.json(
+          { error: "ไม่มีสิทธิ์ส่งคำตอบในรอบการเล่นของผู้ใช้อื่น" },
+          { status: 403 }
+        );
+      }
+
+      ownedRunData = runRow;
+    }
+
+    // 3. Anti-Farming check: Has this question already been answered correctly in this run?
     let xpAwarded = 0;
     let coinsAwarded = 0;
 
@@ -118,8 +158,8 @@ export async function POST(req: NextRequest) {
         coinsAwarded = 10;
       }
 
-      // Check if already answered in this run
-      if (db && isValidUuid(runId) && isValidUuid(questionId)) {
+      // Check if already answered in this owned run
+      if (db && ownedRunData && isValidUuid(runId) && isValidUuid(questionId)) {
         const { data: existingAttempts } = await db
           .from("room_attempts")
           .select("id")
@@ -135,12 +175,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. Update Run State and Record Attempt in DB (if authenticated and run exists)
+    // 4. Update Run State and Record Attempt in DB (only after ownership verification)
     let heartsLeft = 3;
     let isGameOver = false;
 
     if (
       db &&
+      ownedRunData &&
       isValidUuid(runId) &&
       isValidUuid(questionId) &&
       session &&
@@ -149,7 +190,7 @@ export async function POST(req: NextRequest) {
       // Record room attempt
       await db.from("room_attempts").insert({
         run_id: runId,
-        user_id: session.userId,
+        user_id: ownedRunData.user_id,
         question_id: questionId,
         selected_index: selectedIndex,
         is_correct: isCorrect,
@@ -157,13 +198,7 @@ export async function POST(req: NextRequest) {
         coins_awarded: coinsAwarded,
       });
 
-      // Fetch current run scoped to the authenticated user
-      const { data: runData } = await db
-        .from("dungeon_runs")
-        .select("hearts_left, xp_earned, coins_earned, status")
-        .eq("id", runId)
-        .eq("user_id", session.userId)
-        .maybeSingle();
+      const runData = ownedRunData;
 
       if (runData) {
         heartsLeft = runData.hearts_left;

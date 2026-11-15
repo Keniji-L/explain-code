@@ -6,7 +6,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { SiteHeader, setClientSession } from "../components/SiteHeader";
 import { Icon } from "../components/Icons";
-import { INITIAL_STUDENTS, INITIAL_TEACHERS } from "../lib/curriculum";
 
 const REDIRECT_PAGE_LABELS: Record<string, string> = {
   "/": "หน้าแรก",
@@ -113,17 +112,6 @@ function LoginFormContent() {
 
     setIsSubmitting(true);
     try {
-      let localStudents = INITIAL_STUDENTS;
-      let localTeachers = INITIAL_TEACHERS;
-      try {
-        const rawS = localStorage.getItem("explain_code_students_v2");
-        if (rawS) localStudents = JSON.parse(rawS);
-        const rawT = localStorage.getItem("explain_code_teachers_v2");
-        if (rawT) localTeachers = JSON.parse(rawT);
-      } catch {
-        // ignore storage parse error
-      }
-
       const res = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -131,8 +119,6 @@ function LoginFormContent() {
           action: "unified-login",
           identifier: cleanId,
           secret: cleanSecret,
-          localStudents,
-          localTeachers,
         }),
       });
       const data = await res.json();

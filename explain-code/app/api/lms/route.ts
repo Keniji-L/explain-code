@@ -355,8 +355,16 @@ export async function POST(req: NextRequest) {
         session.role === "admin" && course.teacher_id
           ? String(course.teacher_id)
           : session.userId;
+      const rawCourseId = typeof course.id === "string" ? course.id.trim() : "";
+      const resolvedCourseId =
+        rawCourseId &&
+        (UUID_REGEX.test(rawCourseId) ||
+          !supabase ||
+          !UUID_REGEX.test(effectiveTeacherId))
+          ? rawCourseId
+          : crypto.randomUUID();
       const newCourse = {
-        id: course.id || crypto.randomUUID(),
+        id: resolvedCourseId,
         teacher_id: effectiveTeacherId,
         teacher_name:
           session.role === "admin" && course.teacher_name
@@ -403,6 +411,16 @@ export async function POST(req: NextRequest) {
       if (session.role !== "teacher" && session.role !== "admin") {
         return NextResponse.json(
           { error: "เฉพาะบัญชีครูผู้สอนเท่านั้นที่สามารถลบคอร์สได้" },
+          { status: 403 }
+        );
+      }
+
+      if (
+        session.role === "teacher" &&
+        session.teacherStatus !== "approved"
+      ) {
+        return NextResponse.json(
+          { error: "บัญชีครูของคุณยังอยู่ในสถานะรออนุมัติ (pending)" },
           { status: 403 }
         );
       }
@@ -484,7 +502,13 @@ export async function POST(req: NextRequest) {
             .select("id, teacher_id")
             .eq("id", String(lesson.course_id))
             .maybeSingle();
-          if (targetCourse && targetCourse.teacher_id !== session.userId) {
+          if (!targetCourse) {
+            return NextResponse.json(
+              { error: "ไม่พบคอร์สเรียนเป้าหมาย" },
+              { status: 404 }
+            );
+          }
+          if (targetCourse.teacher_id !== session.userId) {
             return NextResponse.json(
               { error: "ไม่มีสิทธิ์เพิ่มหรือแก้ไขบทเรียนในคอร์สของผู้สอนคนอื่น" },
               { status: 403 }
@@ -514,8 +538,16 @@ export async function POST(req: NextRequest) {
       }
 
       const nowIso = new Date().toISOString();
+      const rawLessonId = typeof lesson.id === "string" ? lesson.id.trim() : "";
+      const resolvedLessonId =
+        rawLessonId &&
+        (UUID_REGEX.test(rawLessonId) ||
+          !supabase ||
+          !UUID_REGEX.test(String(lesson.course_id)))
+          ? rawLessonId
+          : crypto.randomUUID();
       const newLesson = {
-        id: lesson.id || crypto.randomUUID(),
+        id: resolvedLessonId,
         course_id: lesson.course_id,
         title: String(lesson.title || "").trim(),
         content_md: String(lesson.content_md || ""),
@@ -562,6 +594,16 @@ export async function POST(req: NextRequest) {
       if (session.role !== "teacher" && session.role !== "admin") {
         return NextResponse.json(
           { error: "เฉพาะบัญชีครูผู้สอนเท่านั้นที่สามารถลบบทเรียนได้" },
+          { status: 403 }
+        );
+      }
+
+      if (
+        session.role === "teacher" &&
+        session.teacherStatus !== "approved"
+      ) {
+        return NextResponse.json(
+          { error: "บัญชีครูของคุณยังอยู่ในสถานะรออนุมัติ (pending)" },
           { status: 403 }
         );
       }
@@ -615,6 +657,12 @@ export async function POST(req: NextRequest) {
       }
 
       const { courseId, studentId, lastAccessedLessonId } = body;
+      if (typeof courseId !== "string" || !courseId.trim()) {
+        return NextResponse.json(
+          { error: "ต้องระบุรหัสคอร์สเรียน (courseId)" },
+          { status: 400 }
+        );
+      }
       const requestedStudentId =
         typeof studentId === "string" ? studentId.trim() : "";
       if (
@@ -689,6 +737,17 @@ export async function POST(req: NextRequest) {
         isCompleted,
         quizScore,
       } = body;
+      if (
+        typeof courseId !== "string" ||
+        !courseId.trim() ||
+        typeof lessonId !== "string" ||
+        !lessonId.trim()
+      ) {
+        return NextResponse.json(
+          { error: "ต้องระบุ courseId และ lessonId ให้ครบถ้วน" },
+          { status: 400 }
+        );
+      }
       const requestedStudentId =
         typeof studentId === "string" ? studentId.trim() : "";
       if (

@@ -178,9 +178,45 @@ async function runTests() {
     const res = await POST(req);
     const data = await res.json();
     const expectedSource = isSupabaseConfigured() ? data.source === "supabase" : true;
+    const noLeakedPasswordHash = !data.passwordHash;
     const passed =
-      res.status === 200 && data.authenticated === true && expectedSource;
+      res.status === 200 &&
+      data.authenticated === true &&
+      expectedSource &&
+      noLeakedPasswordHash;
     record("Test 8 (Teacher login)", passed, `(source=${data.source})`);
+  }
+
+  // Test 9: unified-login rejects client-supplied localTeachers/localStudents forgery
+  {
+    const req = new NextRequest("http://localhost:3000/api/auth", {
+      method: "POST",
+      body: JSON.stringify({
+        action: "unified-login",
+        identifier: "forged_teacher_account",
+        secret: "anything",
+        localTeachers: [
+          {
+            id: "00000000-0000-4000-8000-000000000001",
+            username: "forged_teacher_account",
+            displayName: "Attacker",
+            passwordHash: "",
+          },
+        ],
+      }),
+    });
+    const res = await POST(req);
+    const data = await res.json();
+    const setCookieHeader = res.headers.get("set-cookie");
+    const passed =
+      (res.status === 401 || res.status === 404) &&
+      !data.authenticated &&
+      !setCookieHeader;
+    record(
+      "Test 9 (Reject unified-login localTeachers forgery)",
+      passed,
+      `(status=${res.status})`
+    );
   }
 
   if (failures > 0) {

@@ -383,7 +383,7 @@ export async function POST(req: NextRequest) {
 
             if (teacherRows && teacherRows.length > 0) {
               const tRow = teacherRows[0];
-              if (tRow.password_hash && tRow.password_hash !== secretHash) {
+              if (!tRow.password_hash || tRow.password_hash !== secretHash) {
                 return NextResponse.json(
                   { error: "รหัสผ่านไม่ถูกต้อง" },
                   { status: 401 }
@@ -469,19 +469,14 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // 3) Fallback ตรวจสอบกับข้อมูลบัญชีในเครื่อง (Local Registered Accounts) และบัญชีเริ่มต้น (Demo Accounts)
-      const clientTeachers = Array.isArray(body.localTeachers) ? body.localTeachers : [];
-      const allTeachers = [...clientTeachers, ...INITIAL_TEACHERS];
-      const matchedTeacher = allTeachers.find(
-        (t: any) =>
-          typeof t?.username === "string" &&
-          t.username.toLowerCase() === identifier.toLowerCase()
+      // 3) Fallback ตรวจสอบเฉพาะบัญชีตัวอย่างที่กำหนดไว้บนเซิร์ฟเวอร์ (ห้ามเชื่อถือข้อมูลจาก body ของไคลเอนต์)
+      const matchedTeacher = INITIAL_TEACHERS.find(
+        (t) => t.username.toLowerCase() === identifier.toLowerCase()
       );
       if (matchedTeacher) {
         if (
-          matchedTeacher.passwordHash &&
-          matchedTeacher.passwordHash !== secretHash &&
-          secret !== "12345678"
+          !matchedTeacher.passwordHash ||
+          matchedTeacher.passwordHash !== secretHash
         ) {
           return NextResponse.json(
             { error: "รหัสผ่านไม่ถูกต้อง (บัญชีครูตัวอย่างใช้รหัสผ่าน: 12345678)" },
@@ -510,19 +505,14 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      const clientStudents = Array.isArray(body.localStudents) ? body.localStudents : [];
-      const allStudents = [...clientStudents, ...INITIAL_STUDENTS];
-      const matchedStudent = allStudents.find(
-        (s: any) =>
-          typeof s?.nickname === "string" &&
-          s.nickname.toLowerCase() === identifier.toLowerCase()
+      const matchedStudent = INITIAL_STUDENTS.find(
+        (s) => s.nickname.toLowerCase() === identifier.toLowerCase()
       );
       if (matchedStudent) {
         if (
-          matchedStudent.pinHash &&
-          matchedStudent.pinHash !== secretHash &&
-          matchedStudent.pinHash !== pepperedSecretHash &&
-          secret !== "1234"
+          !matchedStudent.pinHash ||
+          (matchedStudent.pinHash !== secretHash &&
+            matchedStudent.pinHash !== pepperedSecretHash)
         ) {
           return NextResponse.json(
             { error: "รหัส PIN ไม่ถูกต้อง (บัญชีนักเรียนตัวอย่างใช้ PIN: 1234)" },
@@ -1188,7 +1178,6 @@ export async function POST(req: NextRequest) {
                 authenticated: true,
                 source: "supabase",
                 role: "teacher",
-                passwordHash,
                 teacherStatus,
                 teacher: {
                   id: tRow.id,
@@ -1218,9 +1207,8 @@ export async function POST(req: NextRequest) {
       );
       if (demoTeacher) {
         if (
-          demoTeacher.passwordHash &&
-          demoTeacher.passwordHash !== passwordHash &&
-          pwd !== "12345678"
+          !demoTeacher.passwordHash ||
+          demoTeacher.passwordHash !== passwordHash
         ) {
           return NextResponse.json(
             { error: "รหัสผ่านไม่ถูกต้อง (บัญชีครูตัวอย่างใช้รหัสผ่าน: 12345678)" },
@@ -1231,7 +1219,6 @@ export async function POST(req: NextRequest) {
           authenticated: true,
           source: "local",
           role: "teacher",
-          passwordHash,
           teacherStatus: "approved",
           teacher: {
             id: demoTeacher.id || `tch-${demoTeacher.username}`,
@@ -1403,7 +1390,6 @@ export async function POST(req: NextRequest) {
               authenticated: true,
               source: "supabase",
               role: "teacher",
-              passwordHash,
               teacherStatus,
               teacher: {
                 id: teacherId,
@@ -1435,15 +1421,22 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      const localTeacherId = `tch-${uname}`;
       const fallbackTeacherRegRes = NextResponse.json({
         authenticated: true,
         source: "local",
         role: "teacher",
-        passwordHash,
         teacherStatus,
+        teacher: {
+          id: localTeacherId,
+          username: uname,
+          displayName: dName,
+          role: "teacher",
+          teacherStatus,
+        },
       });
       return withSessionCookie(fallbackTeacherRegRes, {
-        userId: `tch-${uname}`,
+        userId: localTeacherId,
         username: uname,
         displayName: dName,
         role: "teacher",

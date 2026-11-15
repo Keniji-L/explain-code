@@ -294,7 +294,7 @@ function RegisterFormContent() {
               {
                 id: teacherObj.id,
                 username: cleanUser,
-                passwordHash: data.passwordHash || "",
+                passwordHash: "",
                 displayName: teacherObj.displayName || cleanDisplay,
                 role: "teacher",
               },
