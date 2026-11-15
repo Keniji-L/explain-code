@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
@@ -48,7 +49,9 @@ export default function RootLayout({
         <ThemeProvider>
           <LanguageProvider>
             <div className="flex-1 flex flex-col">{children}</div>
-            <SiteFooter />
+            <Suspense fallback={null}>
+              <SiteFooter />
+            </Suspense>
           </LanguageProvider>
         </ThemeProvider>
       </body>
