@@ -1,4 +1,5 @@
 import { LineExplanationItem } from "./supabase";
+import { callGeminiGenerateJson } from "./gemini-client";
 
 export interface ExplainCodeInput {
   code: string;
@@ -176,43 +177,24 @@ ${numberedLines}`
 ${numberedLines}`;
 
   try {
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.2,
-          },
-        }),
-        signal: AbortSignal.timeout(15000),
-      }
-    );
+    const geminiResult = await callGeminiGenerateJson<{
+      summary?: unknown;
+      lineByLine?: unknown;
+      keyConcepts?: unknown;
+      stepByStepFlow?: unknown;
+      potentialPitfalls?: unknown;
+    }>({
+      apiKey,
+      prompt,
+      temperature: 0.2,
+      timeoutMs: 15000,
+    });
 
-    if (!response.ok) {
-      console.warn("Gemini API explain non-OK status:", response.status);
+    if (!geminiResult.ok || !geminiResult.data) {
       return null;
     }
 
-    const data = await response.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText || typeof rawText !== "string") {
-      return null;
-    }
-
-    const cleanedText = rawText
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
-
-    const parsed = JSON.parse(cleanedText);
+    const parsed = geminiResult.data;
     if (
       !parsed ||
       typeof parsed.summary !== "string" ||

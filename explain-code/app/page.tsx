@@ -1184,7 +1184,7 @@ export default function ExplainCodeApp() {
                   {t("เข้าสู่ระบบ", "Login")}
                 </Link>
                 <Link
-                  href="/login?mode=register"
+                  href="/register"
                   className="whitespace-nowrap rounded-xl bg-[#2fbf71] px-4 py-2 text-xs font-extrabold text-[#120f1c] hover:bg-[#34d37d] transition-colors"
                 >
                   {t("สมัครสมาชิก", "Sign Up")}

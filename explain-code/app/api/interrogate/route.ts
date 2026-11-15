@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/app/lib/supabase";
+import { callGeminiGenerateJson } from "@/app/lib/gemini-client";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -171,22 +172,17 @@ ${code}
   "feedback": "คำชมและคำแนะนำสั้นๆ เข้าใจง่าย 2 ประโยคภาษาไทย ไม่ลงโทษ"
 }`;
 
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": keyToUse,
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: "application/json" },
-        }),
-      }
-    );
+    const geminiResult = await callGeminiGenerateJson<{
+      score?: unknown;
+      passed?: unknown;
+      feedback?: unknown;
+    }>({
+      apiKey: keyToUse,
+      prompt,
+      timeoutMs: 15000,
+    });
 
-    if (!response.ok) {
+    if (!geminiResult.ok || !geminiResult.data) {
       const fallbackScore = 80;
       const fallbackPassed = true;
       const fallbackFeedback = "อธิบายลำดับการทำงานและหน้าที่ของโค้ดได้ชัดเจนดีมาก!";
@@ -208,13 +204,14 @@ ${code}
       });
     }
 
-    const data = await response.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-    const parsed = JSON.parse(rawText);
+    const parsed = geminiResult.data;
 
     const finalScore = typeof parsed.score === "number" ? parsed.score : 80;
     const finalPassed = Boolean(parsed.passed);
-    const finalFeedback = parsed.feedback || "ตรวจคำอธิบายด้วย AI หลังบ้านเรียบร้อย";
+    const finalFeedback =
+      typeof parsed.feedback === "string" && parsed.feedback.trim().length > 0
+        ? parsed.feedback
+        : "ตรวจคำอธิบายด้วย AI หลังบ้านเรียบร้อย";
 
     const { savedToDb } = await recordEvaluation(
       attemptId,
@@ -227,6 +224,7 @@ ${code}
 
     return NextResponse.json({
       mode: "gemini-backend",
+      modelUsed: geminiResult.model,
       score: finalScore,
       passed: finalPassed,
       feedback: finalFeedback,
