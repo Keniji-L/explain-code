@@ -1030,10 +1030,6 @@ export default function ExplainCodeApp() {
         <main className="mx-auto flex-1 max-w-5xl w-full px-4 py-10 sm:px-6 sm:py-16">
           {/* Hero Section */}
           <section className="text-center max-w-2xl mx-auto mb-12">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#3d395a] bg-[#1c1b2b] px-3.5 py-1 text-xs font-bold text-[#ffe27a] whitespace-nowrap">
-              <Icon name="sparkles" className="h-3.5 w-3.5 shrink-0 text-[#f6c945]" />
-              <span>{t("แพลตฟอร์มอ่านโค้ด 6 ภาษา", "6-Language Code Platform")}</span>
-            </span>
             <h1 className="mt-4 text-3xl sm:text-5xl font-extrabold tracking-tight text-[#f4efe6] leading-tight">
               {t("เขียนโค้ดได้แล้ว ", "You Can Write Code — ")}
               <span className="text-[#f6c945] underline decoration-[#9b5de5] underline-offset-8">
