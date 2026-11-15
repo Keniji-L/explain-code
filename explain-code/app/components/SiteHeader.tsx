@@ -284,7 +284,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                       navItemRefs.current[item.href] = el;
                     }}
                     aria-current={isActive ? "page" : undefined}
-                    className={`liquid-press relative z-10 whitespace-nowrap shrink-0 rounded-full px-3.5 lg:px-4 py-1.5 text-xs lg:text-sm font-extrabold tracking-wide focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f6c945] ${
+                    className={`liquid-press relative z-10 whitespace-nowrap shrink-0 rounded-full px-2.5 lg:px-4 py-1.5 text-xs lg:text-sm font-extrabold tracking-wide focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f6c945] ${
                       isActive
                         ? "liquid-active-nav-item text-[#ffe27a]"
                         : "text-[#c4bdd6] hover:text-[#f4efe6] hover:bg-[#252238]"
@@ -304,11 +304,11 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
 
               {mounted && session ? (
                 <div className="flex items-center gap-2 shrink-0">
-                  {/* Role Quick Link on Desktop */}
+                  {/* Role Quick Link on Desktop & Tablet */}
                   {session.role === "student" && (
                     <Link
                       href="/my-learning"
-                      className={`hidden lg:inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-full px-3.5 py-1.5 text-xs font-extrabold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f6c945] ${
+                      className={`hidden md:inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-full px-2.5 lg:px-3.5 py-1.5 text-xs font-extrabold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f6c945] ${
                         pathname.startsWith("/my-learning")
                           ? "liquid-glass-primary-btn"
                           : "liquid-glass-btn text-[#f4efe6]"
@@ -322,7 +322,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                   {(session.role === "teacher" || session.role === "admin") && (
                     <Link
                       href="/teacher"
-                      className={`hidden lg:inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-full px-3.5 py-1.5 text-xs font-extrabold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f6c945] ${
+                      className={`hidden md:inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-full px-2.5 lg:px-3.5 py-1.5 text-xs font-extrabold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f6c945] ${
                         pathname.startsWith("/teacher")
                           ? "liquid-glass-primary-btn"
                           : "liquid-glass-btn text-[#f4efe6]"
@@ -348,7 +348,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                           .charAt(0)
                           .toUpperCase()}
                       </div>
-                      <div className="hidden sm:block leading-tight">
+                      <div className="hidden sm:block md:hidden lg:block leading-tight">
                         <p className="max-w-[110px] truncate text-xs font-extrabold text-[#f4efe6]">
                           {session.displayName || session.username}
                         </p>
