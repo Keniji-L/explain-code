@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -36,6 +36,13 @@ import {
   loadUserDungeonSaves,
 } from "../lib/dungeon-save";
 import { LANGUAGE_TRACKS } from "../lib/language-tracks";
+import { TeacherDashboard } from "../components/TeacherDashboard";
+import {
+  ClassroomRecord,
+  INITIAL_CLASSROOMS,
+  INITIAL_STUDENTS,
+  StudentRecord,
+} from "../lib/curriculum";
 
 export default function TeacherLMSDashboardPage() {
   const router = useRouter();
@@ -46,9 +53,40 @@ export default function TeacherLMSDashboardPage() {
   const [progress, setProgress] = useState<LessonProgress[]>([]);
   const [dungeonSaves, setDungeonSaves] = useState<DungeonSaveRecord[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
+  const [workspaceMode, setWorkspaceMode] = useState<"courses" | "classrooms">(
+    "courses"
+  );
   const [activeTab, setActiveTab] = useState<
     "lessons" | "students" | "dungeon"
   >("lessons");
+
+  // Classroom & Block Model 12-Cell Analytics State
+  const [classrooms, setClassrooms] =
+    useState<ClassroomRecord[]>(INITIAL_CLASSROOMS);
+  const [classroomStudents, setClassroomStudents] =
+    useState<StudentRecord[]>(INITIAL_STUDENTS);
+  const [classroomCellAverages, setClassroomCellAverages] = useState<
+    {
+      classroom_id?: string;
+      classroomId?: string;
+      roomCode?: string;
+      cell_id: string;
+      avg_score: number;
+      students_count: number;
+    }[]
+  >([]);
+  const [classroomQuestionStats, setClassroomQuestionStats] = useState<
+    {
+      classroom_id?: string;
+      classroomId?: string;
+      roomCode?: string;
+      question_id: string;
+      cell_id: string;
+      answers: number;
+      wrong_percent: number;
+    }[]
+  >([]);
+  const [classroomLoading, setClassroomLoading] = useState(false);
 
   // Dungeon Questions & Analytics State
   const [dungeonQuestions, setDungeonQuestions] = useState<any[]>([]);
@@ -277,14 +315,137 @@ export default function TeacherLMSDashboardPage() {
     setDungeonQuestions((prev) => prev.filter((q) => q.id !== questionId));
   };
 
+  const fetchClassroomAnalytics = useCallback(async () => {
+    if (!session) return;
+    try {
+      setClassroomLoading(true);
+      const res = await fetch(
+        `/api/teacher/classrooms?teacherUsername=${encodeURIComponent(
+          session.username || session.displayName || "ครูตัวอย่าง"
+        )}&teacherId=${encodeURIComponent(session.userId || "")}`
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data.classrooms) && data.classrooms.length > 0) {
+        setClassrooms(data.classrooms);
+      }
+      if (Array.isArray(data.students) && data.students.length > 0) {
+        setClassroomStudents(data.students);
+      }
+      if (Array.isArray(data.cellAverages)) {
+        setClassroomCellAverages(data.cellAverages);
+      }
+      if (Array.isArray(data.questionStats)) {
+        setClassroomQuestionStats(data.questionStats);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch teacher classrooms:", err);
+    } finally {
+      setClassroomLoading(false);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (session && workspaceMode === "classrooms") {
+      void fetchClassroomAnalytics();
+    }
+  }, [session, workspaceMode, fetchClassroomAnalytics]);
+
+  const handleCreateClassroom = async (
+    roomName: string
+  ): Promise<ClassroomRecord> => {
+    const fallbackCode = Math.random()
+      .toString(36)
+      .substring(2, 8)
+      .toUpperCase();
+    const teacherName = session?.displayName || session?.username || "ครูตัวอย่าง";
+    const localRoom: ClassroomRecord = {
+      roomCode: fallbackCode,
+      roomName,
+      teacherUsername: teacherName,
+      pinnedReviewTopicId: 1,
+      pinnedReviewNote: "เริ่มต้นฝึกอ่านโค้ดเรื่องที่ 1 ตัวแปรและการคำนวณ",
+      createdAt: "วันนี้",
+    };
+
+    try {
+      const res = await fetch("/api/teacher/classrooms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomName,
+          teacherUsername: teacherName,
+          teacherId: session?.userId,
+          pinnedTopicId: 1,
+          pinnedNote: "เริ่มต้นฝึกอ่านโค้ดเรื่องที่ 1 ตัวแปรและการคำนวณ",
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.classroom) {
+          const created: ClassroomRecord = {
+            roomCode: data.classroom.roomCode,
+            roomName: data.classroom.roomName,
+            teacherUsername: data.classroom.teacherUsername || teacherName,
+            pinnedReviewTopicId: data.classroom.pinnedReviewTopicId ?? 1,
+            pinnedReviewNote:
+              data.classroom.pinnedReviewNote ??
+              "เริ่มต้นฝึกอ่านโค้ดเรื่องที่ 1 ตัวแปรและการคำนวณ",
+            createdAt: data.classroom.createdAt || "วันนี้",
+          };
+          setClassrooms((prev) => [
+            created,
+            ...prev.filter((c) => c.roomCode !== created.roomCode),
+          ]);
+          return created;
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to create classroom via API:", err);
+    }
+
+    setClassrooms((prev) => [localRoom, ...prev]);
+    return localRoom;
+  };
+
+  const handleUpdatePinnedReview = async (
+    roomCode: string,
+    topicId: number | null,
+    note: string
+  ) => {
+    setClassrooms((prev) =>
+      prev.map((r) =>
+        r.roomCode === roomCode
+          ? { ...r, pinnedReviewTopicId: topicId, pinnedReviewNote: note }
+          : r
+      )
+    );
+    try {
+      await fetch("/api/teacher/classrooms", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomCode,
+          pinnedTopicId: topicId,
+          pinnedNote: note,
+        }),
+      });
+    } catch (err) {
+      console.warn("Failed to update pinned review via API:", err);
+    }
+  };
+
   function isOwnerOfCourse(course: Course, user: ClientAuthSession | null) {
     if (!user) return false;
     if (user.role === "admin") return true;
     if (course.teacher_id === user.userId) return true;
-    // รองรับบัญชีครูสมชายตัวอย่างกับคอร์สเริ่มต้น
+    // รองรับบัญชีครูตัวอย่าง / ครูสมชายตัวอย่าง กับคอร์สเริ่มต้น
     if (
       course.teacher_id === "tch-1" &&
-      (user.username.includes("สมชาย") || user.userId === "tch-1")
+      (user.username.includes("สมชาย") ||
+        user.username.includes("ครูตัวอย่าง") ||
+        Boolean(user.displayName && user.displayName.includes("ครูตัวอย่าง")) ||
+        user.userId === "tch-1")
     ) {
       return true;
     }
@@ -623,7 +784,7 @@ export default function TeacherLMSDashboardPage() {
     <div className="min-h-screen bg-[#0d0b14] text-[#f4efe6]">
       <SiteHeader />
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <main className="mx-auto max-w-6xl px-4 pt-6 pb-24 sm:px-6 sm:py-8">
         {/* Top Header */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -634,8 +795,8 @@ export default function TeacherLMSDashboardPage() {
             <h1 className="mt-2 text-2xl sm:text-3xl font-bold text-[#f4efe6]">
               แดชบอร์ดครูผู้สอน ({session.displayName || session.username})
             </h1>
-            <p className="mt-1 text-sm text-[#9a93ad]">
-              สร้างคอร์ส เพิ่มบทเรียนแบบ Markdown พร้อมโค้ดตัวอย่างและแบบทดสอบ รวมถึงติดตามความคืบหน้าของนักเรียนรายคน
+            <p className="mt-1 text-xs sm:text-sm text-[#9a93ad]">
+              จัดการคอร์ส บทเรียน ดันเจี้ยน และวิเคราะห์ผลนักเรียนรายห้อง
             </p>
           </div>
 
@@ -654,7 +815,7 @@ export default function TeacherLMSDashboardPage() {
               <Icon name="clock" className="h-4 w-4 text-[#f6c945]" />
               <span>ประวัติของฉัน</span>
             </Link>
-            {isApproved && (
+            {isApproved && workspaceMode === "courses" && (
               <button
                 type="button"
                 onClick={() =>
@@ -665,7 +826,7 @@ export default function TeacherLMSDashboardPage() {
                     is_published: true,
                   })
                 }
-                className="inline-flex items-center gap-2 rounded-xl bg-[#2fbf71] px-4 py-2.5 text-xs font-extrabold text-[#0b0b14] shadow-md hover:bg-[#34d37d] transition-colors cursor-pointer whitespace-nowrap"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#2fbf71] px-4 py-2.5 text-xs font-extrabold text-[#0b0b14] shadow-md hover:bg-[#34d37d] transition-colors cursor-pointer whitespace-nowrap"
               >
                 <span>+ สร้างคอร์สเรียนใหม่</span>
               </button>
@@ -984,7 +1145,73 @@ export default function TeacherLMSDashboardPage() {
           </div>
         )}
 
-        {/* Main Teacher Workspace */}
+        {/* Mode Switcher: คอร์ส/บทเรียน vs ห้องเรียน & Block Model 12 ช่อง */}
+        <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setWorkspaceMode("courses")}
+            className={`min-h-[52px] rounded-2xl border px-4 py-3 text-left transition-all cursor-pointer flex items-center justify-between gap-3 ${
+              workspaceMode === "courses"
+                ? "border-[#f6c945] bg-[#1c1b2b] text-[#f4efe6] shadow-lg"
+                : "border-[#2f2d45] bg-[#141220] text-[#9a93ad] hover:border-[#3d395a] hover:text-[#f4efe6]"
+            }`}
+          >
+            <div>
+              <div className="text-xs sm:text-sm font-extrabold">
+                📚 จัดการคอร์ส &amp; ดันเจี้ยน
+              </div>
+              <div className="hidden sm:block text-[11px] opacity-80 mt-0.5">
+                สร้างคอร์ส เพิ่มบทเรียน และโจทย์ดันเจี้ยน
+              </div>
+            </div>
+            <span className="shrink-0 rounded-full bg-[#252238] px-2.5 py-0.5 text-[11px] font-bold text-[#f6c945]">
+              {myCourses.length} คอร์ส
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setWorkspaceMode("classrooms")}
+            className={`min-h-[52px] rounded-2xl border px-4 py-3 text-left transition-all cursor-pointer flex items-center justify-between gap-3 ${
+              workspaceMode === "classrooms"
+                ? "border-[#2fbf71] bg-[#102a1e] text-[#f4efe6] shadow-lg"
+                : "border-[#2f2d45] bg-[#141220] text-[#9a93ad] hover:border-[#3d395a] hover:text-[#f4efe6]"
+            }`}
+          >
+            <div>
+              <div className="text-xs sm:text-sm font-extrabold">
+                🏫 ห้องเรียน &amp; Block Model 12 ช่อง
+              </div>
+              <div className="hidden sm:block text-[11px] opacity-80 mt-0.5">
+                สร้างห้อง แจกรหัสห้อง และดู Heatmap จุดอ่อนของห้อง
+              </div>
+            </div>
+            <span className="shrink-0 rounded-full bg-[#193b2c] px-2.5 py-0.5 text-[11px] font-bold text-[#86efac]">
+              {classrooms.length} ห้อง
+            </span>
+          </button>
+        </div>
+
+        {workspaceMode === "classrooms" ? (
+          <TeacherDashboard
+            embedded
+            teacherUsername={session.displayName || session.username}
+            classrooms={classrooms}
+            students={classroomStudents}
+            onCreateClassroom={handleCreateClassroom}
+            onUpdatePinnedReview={handleUpdatePinnedReview}
+            onLogout={() => {
+              setClientSession(null);
+              router.replace("/login");
+            }}
+            onSwitchToStudentView={() => router.push("/courses")}
+            cellAverages={classroomCellAverages}
+            questionStats={classroomQuestionStats}
+            isLoading={classroomLoading}
+            onRefresh={fetchClassroomAnalytics}
+          />
+        ) : (
+        /* Main Teacher Workspace */
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           {/* Left Column: Teacher's Courses */}
           <div className="lg:col-span-4 space-y-3">
@@ -1516,6 +1743,7 @@ export default function TeacherLMSDashboardPage() {
             )}
           </div>
         </div>
+        )}
 
         {/* Modal สร้าง/แก้ไขคอร์ส */}
         {editingCourse && (

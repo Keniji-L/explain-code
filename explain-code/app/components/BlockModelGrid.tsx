@@ -91,8 +91,56 @@ export function BlockModelGrid({
         )}
       </div>
 
-      {/* ตาราง 4 ระดับ x 3 มิติ = 12 ช่อง */}
-      <div className="overflow-x-auto">
+      {/* มือถือ: การ์ดเรียงตามระดับ 4 ระดับ (ไม่ตัดขอบขวา) */}
+      <div className="md:hidden flex flex-col gap-3">
+        {LEVELS.map((lv) => (
+          <div
+            key={lv.level}
+            className="bg-[#1c1b2b] border border-[#2f2d45] rounded-xl p-3 flex flex-col gap-2"
+          >
+            <div>
+              <div className="text-[13px] font-extrabold text-[#f4efe6]">{lv.label}</div>
+              <div className="text-[11px] text-[#9a93ad]">{lv.desc}</div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {DIMENSIONS.map((d) => {
+                const cellId = `${d.dim}${lv.level}` as BlockCellId;
+                const meta = BLOCK_MODEL_CELLS.find((c) => c.id === cellId)!;
+                const score = cellScores[cellId] ?? 50;
+                const status = getMasteryStatus(score);
+                const dungeonStyle = MASTERY_DUNGEON_STYLES[status.level];
+                const isSelected = selectedCell?.id === cellId;
+
+                return (
+                  <button
+                    key={cellId}
+                    type="button"
+                    onClick={() => setSelectedCell(meta)}
+                    className={`w-full rounded-xl px-3 py-2.5 text-left border transition cursor-pointer flex items-center justify-between gap-2 ${
+                      dungeonStyle.cardClass
+                    } ${isSelected ? dungeonStyle.selectedClass : ""}`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="shrink-0 px-2 py-0.5 rounded-md bg-[#0d0b14]/80 border border-white/15 text-[#f4efe6] text-[11px] font-extrabold">
+                        {cellId}
+                      </span>
+                      <span className="text-[12px] font-bold text-[#f4efe6] truncate">
+                        {meta.shortTitle}
+                      </span>
+                    </div>
+                    <span className="shrink-0 text-[13px] font-extrabold whitespace-nowrap">
+                      {score}% · {status.shortLabel}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* คอม/แท็บเล็ต: ตาราง 4 ระดับ x 3 มิติ = 12 ช่อง */}
+      <div className="hidden md:block overflow-x-auto">
         <div className="min-w-[680px] flex flex-col gap-2.5">
           {/* Header มิติทั้ง 3 */}
           <div className="grid grid-cols-12 gap-2.5">

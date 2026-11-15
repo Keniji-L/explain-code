@@ -44,6 +44,7 @@ export interface TeacherDashboardProps {
   }[];
   isLoading?: boolean;
   onRefresh?: () => Promise<void> | void;
+  embedded?: boolean;
 }
 
 export function TeacherDashboard({
@@ -58,6 +59,7 @@ export function TeacherDashboard({
   questionStats,
   isLoading,
   onRefresh,
+  embedded = false,
 }: TeacherDashboardProps) {
   const [selectedRoomCode, setSelectedRoomCode] = useState<string>(
     classrooms[0]?.roomCode || "ABC123"
@@ -86,6 +88,7 @@ export function TeacherDashboard({
   const [savedReviewBanner, setSavedReviewBanner] = useState<boolean>(false);
   const [isCreatingRoom, setIsCreatingRoom] = useState<boolean>(false);
   const [isSavingReview, setIsSavingReview] = useState<boolean>(false);
+  const [showFlowGuide, setShowFlowGuide] = useState<boolean>(!embedded);
 
   // ซิงค์เรื่องทบทวนและโน้ตเมื่อสลับห้องเรียน
   useEffect(() => {
@@ -242,66 +245,108 @@ export function TeacherDashboard({
   };
 
   return (
-    <div className="min-h-screen bg-[#eef3f1] text-[#1b2a2f] flex flex-col">
+    <div
+      className={
+        embedded
+          ? "rounded-2xl border border-[#2f2d45] bg-[#141220]/90 text-[#f4efe6] flex flex-col overflow-hidden shadow-xl"
+          : "min-h-screen bg-[#eef3f1] text-[#1b2a2f] flex flex-col"
+      }
+    >
       {/* แถบบนฝั่งครู */}
-      <header className="bg-white border-b-2 border-[#cfe0dc] sticky top-0 z-30 no-print">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/logo.png"
-              alt="CODE COOL"
-              width={32}
-              height={32}
-              className="h-8 w-8 rounded-lg object-contain border border-[#0f766e]/40 bg-[#0d0b14] shrink-0"
-            />
-            <span className="text-[20px] font-extrabold text-[#0b4f49]">
-              CODE COOL · ครู
+      {embedded ? (
+        <div className="bg-[#1c1b2b] border-b border-[#2f2d45] px-4 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-2 no-print">
+          <div className="flex items-center gap-2">
+            <span className="text-xs sm:text-sm font-extrabold text-[#f6c945]">
+              ห้องเรียน &amp; Block Model 12 ช่อง
             </span>
-            <span className="px-2.5 py-0.5 rounded-full bg-[#e3f1ee] text-[#0b4f49] text-[13px] font-bold">
-              ผู้สอน: {teacherUsername}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2.5">
             {isLoading && (
-              <span className="px-2.5 py-1 rounded-full bg-[#fbeacb] text-[#5c3704] text-[12px] font-bold animate-pulse">
-                กำลังโหลดข้อมูล...
+              <span className="px-2 py-0.5 rounded-full bg-[#281d08] border border-[#f6c945]/40 text-[#ffe27a] text-[11px] font-bold animate-pulse">
+                กำลังโหลด...
               </span>
             )}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowFlowGuide((prev) => !prev)}
+              className="rounded-xl border border-[#3d395a] bg-[#252238] hover:border-[#f6c945]/60 px-2.5 py-1.5 text-[11px] font-bold text-[#c4bdd6] cursor-pointer transition-colors"
+            >
+              {showFlowGuide ? "ซ่อนคู่มือ" : "? คู่มือ 7 ขั้นตอน"}
+            </button>
             {onRefresh && (
               <button
                 type="button"
                 onClick={() => void onRefresh()}
                 disabled={isLoading}
-                className="press-secondary px-3 py-1.5 rounded-xl text-[13px] font-extrabold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                title="รีเฟรชข้อมูลจากฐานข้อมูล"
+                className="rounded-xl border border-[#3d395a] bg-[#252238] hover:border-[#f6c945]/60 px-3 py-1.5 text-[11px] font-extrabold text-[#f4efe6] flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
               >
-                <Icon name="chart" size={16} />
+                <Icon name="chart" size={14} />
                 <span>รีเฟรช</span>
               </button>
             )}
-            <button
-              type="button"
-              onClick={onSwitchToStudentView}
-              className="press-secondary px-3.5 py-2 rounded-xl text-[13px] font-extrabold flex items-center gap-1.5 cursor-pointer"
-            >
-              <Icon name="user" size={18} />
-              <span>สลับไปดูหน้าฝั่งนักเรียน</span>
-            </button>
-            <button
-              type="button"
-              onClick={onLogout}
-              className="press-secondary px-3.5 py-2 rounded-xl text-[13px] font-extrabold flex items-center gap-1.5 cursor-pointer"
-            >
-              <Icon name="logout" size={18} />
-              <span>ออกจากระบบ</span>
-            </button>
           </div>
         </div>
-      </header>
+      ) : (
+        <header className="bg-white border-b-2 border-[#cfe0dc] sticky top-0 z-30 no-print">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Image
+                src="/logo.png"
+                alt="CODE COOL"
+                width={32}
+                height={32}
+                className="h-8 w-8 rounded-lg object-contain border border-[#0f766e]/40 bg-[#0d0b14] shrink-0"
+              />
+              <span className="text-[20px] font-extrabold text-[#0b4f49]">
+                CODE COOL · ครู
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-[#e3f1ee] text-[#0b4f49] text-[13px] font-bold">
+                ผู้สอน: {teacherUsername}
+              </span>
+            </div>
 
-      <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 flex flex-col gap-6">
+            <div className="flex items-center gap-2.5">
+              {isLoading && (
+                <span className="px-2.5 py-1 rounded-full bg-[#fbeacb] text-[#5c3704] text-[12px] font-bold animate-pulse">
+                  กำลังโหลดข้อมูล...
+                </span>
+              )}
+              {onRefresh && (
+                <button
+                  type="button"
+                  onClick={() => void onRefresh()}
+                  disabled={isLoading}
+                  className="press-secondary px-3 py-1.5 rounded-xl text-[13px] font-extrabold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  title="รีเฟรชข้อมูลจากฐานข้อมูล"
+                >
+                  <Icon name="chart" size={16} />
+                  <span>รีเฟรช</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onSwitchToStudentView}
+                className="press-secondary px-3.5 py-2 rounded-xl text-[13px] font-extrabold flex items-center gap-1.5 cursor-pointer"
+              >
+                <Icon name="user" size={18} />
+                <span>สลับไปดูหน้าฝั่งนักเรียน</span>
+              </button>
+              <button
+                type="button"
+                onClick={onLogout}
+                className="press-secondary px-3.5 py-2 rounded-xl text-[13px] font-extrabold flex items-center gap-1.5 cursor-pointer"
+              >
+                <Icon name="logout" size={18} />
+                <span>ออกจากระบบ</span>
+              </button>
+            </div>
+          </div>
+        </header>
+      )}
+
+      <main className={embedded ? "w-full px-3 sm:px-5 py-4 sm:py-5 flex flex-col gap-5" : "max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 flex flex-col gap-6"}>
         {/* แถบแสดงโฟลฝั่งครู 7 ขั้นตอน */}
+        {showFlowGuide && (
         <div className="bg-white border-2 border-[#cfe0dc] rounded-2xl p-4 no-print">
           <div className="text-[13px] font-extrabold text-[#0b4f49] mb-2">
             โฟลฝั่งครู · จากสร้างห้องจนนำข้อมูลไปปรับการสอน (แสดงเฉพาะชื่อเล่นสมมติและคะแนนตาม PDPA 2562)
@@ -330,29 +375,30 @@ export function TeacherDashboard({
             ))}
           </div>
         </div>
+        )}
 
         {/* ขั้นตอนที่ 2 & 3: เลือกห้อง / สร้างห้องใหม่ และแจกรหัสห้อง */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           <div className="lg:col-span-7 bg-white border-2 border-[#cfe0dc] rounded-2xl p-5 flex flex-col justify-between gap-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <span className="text-[13px] font-extrabold text-[#0f766e]">
-                  ขั้นตอนที่ 2 & 3 · ห้องเรียนและรหัสห้องสำหรับแจกนักเรียน
+                <span className="text-[12px] font-extrabold text-[#0f766e]">
+                  ห้องเรียนปัจจุบัน
                 </span>
-                <h2 className="text-[20px] font-extrabold text-[#1b2a2f] mt-0.5">
+                <h2 className="text-[18px] sm:text-[20px] font-extrabold text-[#1b2a2f] mt-0.5">
                   {currentRoom?.roomName}
                 </h2>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                 <label className="text-[13px] font-bold text-[#475b60]">เปลี่ยนห้อง:</label>
                 <select
-                  value={selectedRoomCode}
+                  value={currentRoom?.roomCode || selectedRoomCode}
                   onChange={(e) => {
                     setSelectedRoomCode(e.target.value);
                     setInspectingStudent(null);
                   }}
-                  className="px-3 py-2 rounded-xl bg-[#eef3f1] border-2 border-[#b6c9c5] text-[14px] font-extrabold text-[#0b4f49]"
+                  className="w-full sm:w-auto px-3 py-2 rounded-xl bg-[#eef3f1] border-2 border-[#b6c9c5] text-[14px] font-extrabold text-[#0b4f49]"
                 >
                   {classrooms.map((c) => (
                     <option key={c.roomCode} value={c.roomCode}>
@@ -365,20 +411,20 @@ export function TeacherDashboard({
 
             <div className="p-4 rounded-xl bg-[#e3f1ee] border-2 border-[#0f766e] flex flex-wrap items-center justify-between gap-3">
               <div>
-                <div className="text-[13px] font-bold text-[#0b4f49]">
-                  รหัสห้อง (ให้นักเรียนกรอกช่องสมัครสมาชิก):
+                <div className="text-[12px] font-bold text-[#0b4f49]">
+                  รหัสเข้าห้องเรียน
                 </div>
-                <div className="font-code text-[26px] font-extrabold text-[#0b4f49] tracking-wider">
+                <div className="font-code text-[24px] sm:text-[26px] font-extrabold text-[#0b4f49] tracking-wider">
                   {currentRoom?.roomCode}
                 </div>
               </div>
               <button
                 type="button"
                 onClick={handleCopyRoomCode}
-                className="press-teal px-4 py-2.5 rounded-xl text-[14px] font-extrabold flex items-center gap-2 cursor-pointer no-print"
+                className="press-teal px-4 py-2.5 rounded-xl text-[13px] font-extrabold flex items-center gap-2 cursor-pointer no-print"
               >
-                <Icon name="clipboard" size={18} />
-                <span>{copiedCode ? "คัดลอกรหัสห้องแล้ว!" : "คัดลอกรหัสห้องแจกนักเรียน"}</span>
+                <Icon name="clipboard" size={16} />
+                <span>{copiedCode ? "คัดลอกแล้ว!" : "คัดลอกรหัส"}</span>
               </button>
             </div>
           </div>
@@ -388,11 +434,11 @@ export function TeacherDashboard({
             className="lg:col-span-5 bg-white border-2 border-[#cfe0dc] rounded-2xl p-5 flex flex-col justify-between gap-3 no-print"
           >
             <div>
-              <span className="text-[13px] font-extrabold text-[#0f766e]">
+              <span className="text-[12px] font-extrabold text-[#0f766e]">
                 สร้างห้องเรียนใหม่
               </span>
-              <h3 className="text-[16px] font-extrabold text-[#1b2a2f] mt-0.5">
-                ตั้งชื่อห้องเพื่อรับรหัสห้อง 6 หลักอัตโนมัติ
+              <h3 className="text-[15px] font-extrabold text-[#1b2a2f] mt-0.5">
+                รับรหัสห้อง 6 หลักอัตโนมัติ
               </h3>
             </div>
 
@@ -467,7 +513,7 @@ export function TeacherDashboard({
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-[20px] font-extrabold text-[#1b2a2f]">
-              ขั้นตอนที่ 5 · แผนที่ความเข้าใจ 12 ช่อง เฉลี่ยทั้งห้อง ({currentRoom?.roomName})
+              แผนที่ความเข้าใจ 12 ช่อง เฉลี่ยทั้งห้อง ({currentRoom?.roomName})
             </h2>
             <div className="flex items-center gap-2 no-print">
               <button
@@ -565,7 +611,7 @@ export function TeacherDashboard({
             <div>
               <h3 className="text-[18px] font-extrabold text-[#1b2a2f] flex items-center gap-2">
                 <Icon name="users" size={20} className="text-[#0f766e]" />
-                <span>ขั้นตอนที่ 4 & 6 · ภาพรวมว่าใครทำถึงไหน และดูโปรไฟล์รายคน</span>
+                <span>รายชื่อนักเรียนในห้อง &amp; โปรไฟล์รายบุคคล</span>
               </h3>
               <p className="text-[13px] font-semibold text-[#475b60]">
                 คลิกปุ่ม &ldquo;ดูรายคน&rdquo; เพื่อดูแผนที่ 12 ช่อง ประวัติการเล่น และด้านที่เก่งของนักเรียนแต่ละคน
@@ -573,16 +619,96 @@ export function TeacherDashboard({
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          {/* มือถือ: การ์ดรายคนอ่านง่าย ไม่บีบคอลัมน์ */}
+          <div className="md:hidden flex flex-col gap-3">
+            {roomStudents.map((stu) => {
+              const stuAvg = Math.round(
+                Object.values(stu.cellScores).reduce((a, b) => a + b, 0) / 12
+              );
+              const status = getMasteryStatus(stuAvg);
+              const sortedCells = [...BLOCK_MODEL_CELLS].sort(
+                (a, b) => stu.cellScores[b.id] - stu.cellScores[a.id]
+              );
+              const topCell = sortedCells[0];
+              const bottomCell = sortedCells[sortedCells.length - 1];
+
+              return (
+                <div
+                  key={stu.id}
+                  className="rounded-xl border border-[#2f2d45] bg-[#1c1b2b] p-3.5 flex flex-col gap-2.5"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-extrabold text-[#f4efe6] truncate">
+                        {stu.nickname}
+                      </span>
+                      <span className="shrink-0 px-2 py-0.5 rounded-full bg-[#fff4d6] text-[#3d2603] text-[11px] font-bold whitespace-nowrap">
+                        {stu.xp} XP
+                      </span>
+                    </div>
+                    <span
+                      className={`shrink-0 px-2.5 py-0.5 rounded-lg text-[12px] font-extrabold border whitespace-nowrap ${status.className}`}
+                    >
+                      {stuAvg}% · {status.shortLabel}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {TOPICS.map((t) => {
+                      const done = stu.completedTopics.includes(t.id);
+                      return (
+                        <span
+                          key={t.id}
+                          className={`w-6 h-6 rounded-full text-[11px] font-extrabold flex items-center justify-center ${
+                            done
+                              ? t.isBoss
+                                ? "bg-[#6d3fc0] text-white"
+                                : "bg-[#0f766e] text-white"
+                              : "bg-[#252238] text-[#9a93ad]"
+                          }`}
+                        >
+                          {t.id}
+                        </span>
+                      );
+                    })}
+                    <span className="text-[11px] font-bold text-[#9a93ad] ml-1">
+                      ({stu.completedTopics.length}/7 เรื่อง)
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-1 text-[12px] font-bold">
+                    <div className="text-[#86efac]">
+                      เก่ง: ช่อง {topCell.id} ({topCell.shortTitle} {stu.cellScores[topCell.id]}%)
+                    </div>
+                    <div className="text-[#fca5a5]">
+                      ทบทวน: ช่อง {bottomCell.id} ({bottomCell.shortTitle} {stu.cellScores[bottomCell.id]}%)
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setInspectingStudent(stu)}
+                    className="w-full press-secondary px-3 py-2 rounded-xl text-[13px] font-extrabold inline-flex items-center justify-center gap-1.5 cursor-pointer no-print"
+                  >
+                    <Icon name="eye" size={16} />
+                    <span>ดูรายคน</span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* คอม/แท็บเล็ต: ตารางเต็มไม่บีบตัวอักษร */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full min-w-[780px] text-left border-collapse">
               <thead>
                 <tr className="border-b-2 border-[#cfe0dc] text-[13px] font-extrabold text-[#0b4f49] bg-[#eef3f1]">
-                  <th className="p-3 rounded-tl-xl">ชื่อเล่นสมมติ</th>
-                  <th className="p-3">ความคืบหน้า (7 เรื่อง)</th>
-                  <th className="p-3">คะแนนเฉลี่ย</th>
+                  <th className="p-3 rounded-tl-xl whitespace-nowrap">ชื่อเล่นสมมติ</th>
+                  <th className="p-3 whitespace-nowrap">ความคืบหน้า (7 เรื่อง)</th>
+                  <th className="p-3 whitespace-nowrap">คะแนนเฉลี่ย</th>
                   <th className="p-3">ด้านที่เก่ง</th>
                   <th className="p-3">ด้านที่ควรทบทวน</th>
-                  <th className="p-3 rounded-tr-xl text-right no-print">ดูรายคน</th>
+                  <th className="p-3 rounded-tr-xl text-right no-print whitespace-nowrap">ดูรายคน</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#cfe0dc] text-[14px]">
@@ -599,23 +725,23 @@ export function TeacherDashboard({
 
                   return (
                     <tr key={stu.id} className="hover:bg-[#eef3f1]/50">
-                      <td className="p-3 font-extrabold text-[#1b2a2f]">
+                      <td className="p-3 font-extrabold text-[#1b2a2f] whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <span>{stu.nickname}</span>
-                          <span className="px-2 py-0.5 rounded-full bg-[#fff4d6] text-[#3d2603] text-[12px] font-bold">
+                          <span className="px-2 py-0.5 rounded-full bg-[#fff4d6] text-[#3d2603] text-[12px] font-bold whitespace-nowrap">
                             {stu.xp} XP
                           </span>
                         </div>
                       </td>
-                      <td className="p-3">
-                        <div className="flex items-center gap-1.5 flex-wrap">
+                      <td className="p-3 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
                           {TOPICS.map((t) => {
                             const done = stu.completedTopics.includes(t.id);
                             return (
                               <span
                                 key={t.id}
                                 title={t.title}
-                                className={`w-6 h-6 rounded-full text-[12px] font-extrabold flex items-center justify-center ${
+                                className={`w-6 h-6 rounded-full text-[12px] font-extrabold flex items-center justify-center shrink-0 ${
                                   done
                                     ? t.isBoss
                                       ? "bg-[#6d3fc0] text-white"
@@ -632,9 +758,9 @@ export function TeacherDashboard({
                           </span>
                         </div>
                       </td>
-                      <td className="p-3">
+                      <td className="p-3 whitespace-nowrap">
                         <span
-                          className={`px-2.5 py-1 rounded-lg text-[13px] font-extrabold border ${status.className}`}
+                          className={`inline-block px-2.5 py-1 rounded-lg text-[13px] font-extrabold border whitespace-nowrap ${status.className}`}
                         >
                           {stuAvg}% · {status.shortLabel}
                         </span>
@@ -646,11 +772,11 @@ export function TeacherDashboard({
                         ช่อง {bottomCell.id} ({bottomCell.shortTitle}{" "}
                         {stu.cellScores[bottomCell.id]}%)
                       </td>
-                      <td className="p-3 text-right no-print">
+                      <td className="p-3 text-right no-print whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => setInspectingStudent(stu)}
-                          className="press-secondary px-3 py-1.5 rounded-xl text-[13px] font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                          className="press-secondary px-3 py-1.5 rounded-xl text-[13px] font-extrabold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                         >
                           <Icon name="eye" size={16} />
                           <span>ดูรายคน</span>
@@ -700,7 +826,7 @@ export function TeacherDashboard({
         <div className="bg-white border-2 border-[#cfe0dc] rounded-2xl p-5 flex flex-col gap-4 no-print">
           <div>
             <span className="text-[13px] font-extrabold text-[#0f766e]">
-              ขั้นตอนที่ 7 · ปรับการสอนจากข้อมูลห้องเรียน
+              ปักหมุดบทเรียนให้ทบทวนประจำห้อง
             </span>
             <h3 className="text-[18px] font-extrabold text-[#1b2a2f] mt-0.5">
               เลือกเรื่องให้ทบทวนประจำห้อง (จะไปแสดงที่หน้าเส้นทางเควสต์ของนักเรียนในห้องทันที)
