@@ -232,7 +232,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
           rounded="2xl"
           className="px-3 sm:px-4 py-2.5"
         >
-          <div className="flex min-h-11 items-center justify-between gap-2 sm:gap-3">
+          <div className="flex md:grid md:grid-cols-[1fr_auto_1fr] min-h-11 items-center justify-between gap-2 sm:gap-3">
             {/* Left: Brand Logo */}
             <div className="flex items-center justify-start shrink-0 min-w-0">
               <Link
@@ -268,7 +268,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
             <nav
               ref={navContainerRef}
               aria-label={t("เมนูหลัก", "Main menu")}
-              className="relative hidden md:flex items-center justify-center gap-1 rounded-full bg-[#0d0b14]/85 p-1.5 border border-[#2f2d45] shadow-inner shrink-0"
+              className="relative hidden md:flex items-center justify-center justify-self-center gap-1 rounded-full bg-[#0d0b14]/85 p-1.5 border border-[#2f2d45] shadow-inner shrink-0"
             >
               {navItems.map((item) => {
                 const isActive =
