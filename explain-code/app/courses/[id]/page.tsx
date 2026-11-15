@@ -11,6 +11,8 @@ import {
 import { Icon } from "../../components/Icons";
 import { Course, Enrollment, Lesson, LessonProgress } from "../../lib/supabase";
 import {
+  getLocalizedCourse,
+  getLocalizedLesson,
   isCoursePublic,
   loadLocalCourses,
   loadLocalEnrollments,
@@ -21,7 +23,7 @@ import {
   unlockPrivateCourseId,
 } from "../../lib/lms-data";
 import { PixelSpriteView } from "../../components/dungeon/PixelSpriteView";
-import { getMonsterDef } from "../../lib/dungeon/monsters";
+import { getLocalizedMonster, getMonsterDef } from "../../lib/dungeon/monsters";
 import { generateDungeonRoom } from "../../lib/dungeon/mapgen";
 import { hashString, dungeonNameForCourse } from "../../lib/dungeon/seed";
 import { useUiLanguage } from "../../components/LanguageProvider";
@@ -29,7 +31,7 @@ import { useUiLanguage } from "../../components/LanguageProvider";
 function CourseDetailContent() {
   const params = useParams();
   const router = useRouter();
-  const { t } = useUiLanguage();
+  const { uiLang, t } = useUiLanguage();
   const courseId = String(params?.id || "");
 
   const [session, setSession] = useState<ClientAuthSession | null>(null);
@@ -76,6 +78,8 @@ function CourseDetailContent() {
       </div>
     );
   }
+
+  const localizedCourse = getLocalizedCourse(course, uiLang);
 
   const userEnrollment = session
     ? enrollments.find(
@@ -156,11 +160,11 @@ function CourseDetailContent() {
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#9b5de5]/60 bg-[#25193b] px-3 py-1 text-xs font-extrabold text-[#e9d5ff]">
               {t("🔒 คอร์สเรียนแบบส่วนตัว (Private Course)", "🔒 Private Course")}
             </span>
-            <h1 className="text-xl font-bold text-[#f4efe6]">{course.title}</h1>
+            <h1 className="text-xl font-bold text-[#f4efe6]">{localizedCourse.title}</h1>
             <p className="text-xs text-[#c4bdd6] leading-relaxed">
               {t(
-                `ครูผู้สอน (${course.teacher_name}) ตั้งค่าคอร์สนี้เป็นแบบส่วนตัว กรุณากรอกรหัสเข้าร่วมคอร์ส (Join Code) เพื่อเข้าถึงบทเรียนและดันเจี้ยน`,
-                `Instructor (${course.teacher_name}) set this course to private. Enter the Join Code to access lessons and dungeons.`
+                `ครูผู้สอน (${localizedCourse.teacher_name}) ตั้งค่าคอร์สนี้เป็นแบบส่วนตัว กรุณากรอกรหัสเข้าร่วมคอร์ส (Join Code) เพื่อเข้าถึงบทเรียนและดันเจี้ยน`,
+                `Instructor (${localizedCourse.teacher_name}) set this course to private. Enter the Join Code to access lessons and dungeons.`
               )}
             </p>
             <form onSubmit={handleUnlockPrivateCourse} className="space-y-3 pt-2">
@@ -284,15 +288,15 @@ function CourseDetailContent() {
               </span>
             </div>
             <span className="text-xs font-medium text-[#9a93ad]">
-              {t("ผู้สอน:", "Instructor:")} <strong className="text-[#f4efe6]">{course.teacher_name}</strong>
+              {t("ผู้สอน:", "Instructor:")} <strong className="text-[#f4efe6]">{localizedCourse.teacher_name}</strong>
             </span>
           </div>
 
           <h1 className="mt-3 text-2xl sm:text-3xl font-bold text-[#f4efe6]">
-            {course.title}
+            {localizedCourse.title}
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-[#c4bdd6]">
-            {course.description}
+            {localizedCourse.description}
           </p>
 
           {session && (
@@ -393,6 +397,8 @@ function CourseDetailContent() {
                   const roomSeed = hashString(course.id);
                   const room = generateDungeonRoom(roomSeed, idx, Math.max(1, lessons.length));
                   const monster = getMonsterDef(room.entity?.monsterType || (idx >= lessons.length - 1 ? "boss" : "slime"));
+                  const localizedLesson = getLocalizedLesson(lesson, uiLang);
+                  const localizedMonster = getLocalizedMonster(monster, uiLang);
 
                   return (
                     <div
@@ -411,18 +417,18 @@ function CourseDetailContent() {
                         </div>
 
                         {/* Monster Mini Sprite Preview */}
-                        <div className="p-1 rounded-lg bg-[#120f1c] border border-[#3d395a] shrink-0 hidden sm:flex items-center justify-center" title={`${t("มอนสเตอร์ประจำบท:", "Lesson monster:")} ${monster.name}`}>
+                        <div className="p-1 rounded-lg bg-[#120f1c] border border-[#3d395a] shrink-0 hidden sm:flex items-center justify-center" title={`${t("มอนสเตอร์ประจำบท:", "Lesson monster:")} ${localizedMonster.name}`}>
                           <PixelSpriteView sprite={monster.sprite} size={24} />
                         </div>
 
                         <div className="min-w-0">
                           <h3 className="text-sm font-bold text-[#f4efe6] truncate">
-                            {lesson.title}
+                            {localizedLesson.title}
                           </h3>
                           <p className="text-[11px] text-[#9a93ad] flex flex-wrap items-center gap-1.5 mt-0.5">
                             <span>{t("ภาษา", "Language")} {lesson.programming_language.toUpperCase()}</span>
                             <span>•</span>
-                            <span>{t("มอนสเตอร์:", "Monster:")} <span className="text-[#f6c945]">{monster.name}</span></span>
+                            <span>{t("มอนสเตอร์:", "Monster:")} <span className="text-[#f6c945]">{localizedMonster.name}</span></span>
                           </p>
                         </div>
                       </div>
@@ -467,7 +473,7 @@ function CourseDetailContent() {
                   </span>
                 </div>
                 <h2 className="text-xl font-black text-[#f6c945]">
-                  {dungeonNameForCourse(course.id)}
+                  {dungeonNameForCourse(course.id, uiLang)}
                 </h2>
                 <p className="text-xs text-[#9a93ad]">
                   {t(
@@ -493,6 +499,8 @@ function CourseDetailContent() {
                 const roomSeed = hashString(course.id);
                 const room = generateDungeonRoom(roomSeed, idx, Math.max(1, lessons.length));
                 const monster = getMonsterDef(room.entity?.monsterType || (isBoss ? "boss" : "slime"));
+                const localizedLesson = getLocalizedLesson(lesson, uiLang);
+                const localizedMonster = getLocalizedMonster(monster, uiLang);
 
                 return (
                   <div
@@ -530,11 +538,11 @@ function CourseDetailContent() {
                         </div>
 
                         <h3 className="text-sm font-bold text-[#f4efe6]">
-                          {lesson.title}
+                          {localizedLesson.title}
                         </h3>
 
                         <p className="text-[11px] text-[#9a93ad]">
-                          {t("มอนสเตอร์:", "Monster:")} <strong className="text-[#f6c945]">{monster.name}</strong> (HP {monster.maxHp}) · {t("รางวัล:", "Reward:")} +{monster.xpReward} XP, +{monster.coinReward} G
+                          {t("มอนสเตอร์:", "Monster:")} <strong className="text-[#f6c945]">{localizedMonster.name}</strong> (HP {monster.maxHp}) · {t("รางวัล:", "Reward:")} +{monster.xpReward} XP, +{monster.coinReward} G
                         </p>
                       </div>
                     </div>

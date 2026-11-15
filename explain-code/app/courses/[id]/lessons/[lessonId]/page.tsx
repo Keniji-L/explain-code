@@ -16,6 +16,8 @@ import {
   LessonProgress,
 } from "../../../../lib/supabase";
 import {
+  getLocalizedCourse,
+  getLocalizedLesson,
   loadLocalCourses,
   loadLocalEnrollments,
   loadLocalLessonProgress,
@@ -38,7 +40,7 @@ function LessonViewContent() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { t } = useUiLanguage();
+  const { uiLang, t } = useUiLanguage();
   const courseId = String(params?.id || "");
   const lessonId = String(params?.lessonId || "");
 
@@ -307,6 +309,9 @@ function LessonViewContent() {
     }
   };
 
+  const localizedCourse = getLocalizedCourse(course, uiLang);
+  const localizedLesson = getLocalizedLesson(lesson, uiLang);
+
   return (
     <div className="min-h-screen bg-[#0d0b14] text-[#f4efe6]">
       <SiteHeader />
@@ -323,7 +328,7 @@ function LessonViewContent() {
               href={`/courses/${course.id}`}
               className="font-semibold text-[#f6c945] hover:underline"
             >
-              {course.title}
+              {localizedCourse.title}
             </Link>
           </div>
           <span>
@@ -390,7 +395,7 @@ function LessonViewContent() {
               <div className="rounded-2xl border border-[#2f2d45] bg-[#141220] p-5 shadow-lg space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#2f2d45] pb-3">
                   <h2 className="text-sm sm:text-base font-bold text-[#f4efe6]">
-                    {lesson.title}
+                    {localizedLesson.title}
                   </h2>
                   <button
                     type="button"
@@ -401,7 +406,7 @@ function LessonViewContent() {
                   </button>
                 </div>
                 <div className="text-xs sm:text-sm leading-relaxed text-[#e8e1cf] whitespace-pre-line">
-                  {lesson.content_md}
+                  {localizedLesson.content_md}
                 </div>
                 {lesson.code_example && (
                   <div className="rounded-xl border border-[#3d395a] bg-[#120f1c] p-4 text-[#f4efe6]">
@@ -451,7 +456,7 @@ function LessonViewContent() {
                 {t(`บทที่ ${lesson.order_index}`, `Lesson ${lesson.order_index}`)}
               </span>
               <h1 className="mt-2 text-xl sm:text-2xl font-bold text-[#f4efe6]">
-                {lesson.title}
+                {localizedLesson.title}
               </h1>
             </div>
 
@@ -464,7 +469,7 @@ function LessonViewContent() {
 
           {/* Markdown-like Formatted Content */}
           <div className="space-y-3 text-sm leading-relaxed text-[#e8e1cf] whitespace-pre-line">
-            {lesson.content_md}
+            {localizedLesson.content_md}
           </div>
 
           {/* Code Example Box */}
@@ -559,7 +564,10 @@ function LessonViewContent() {
                       {q.options.map((opt, optIdx) => {
                         const isPicked = selectedAnswers[q.id] === optIdx;
                         const isCorrect = q.correctIndex === optIdx;
-                        return (
+                        const localizedCourse = getLocalizedCourse(course, uiLang);
+  const localizedLesson = getLocalizedLesson(lesson, uiLang);
+
+  return (
                           <button
                             key={optIdx}
                             type="button"
@@ -693,6 +701,7 @@ function LessonViewContent() {
 
 export default function LessonViewPage() {
   const { t } = useUiLanguage();
+
   return (
     <Suspense
       fallback={

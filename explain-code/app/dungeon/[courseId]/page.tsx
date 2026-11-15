@@ -17,6 +17,7 @@ import { PauseModal, GameOverModal, VictoryModal } from "../../components/dungeo
 import { dungeonSound } from "../../lib/dungeon/sound";
 import { Course, Lesson, LessonProgress } from "../../lib/supabase";
 import {
+  getLocalizedLesson,
   loadLocalCourses,
   loadLocalLessons,
   loadLocalLessonProgress,
@@ -194,7 +195,7 @@ function DungeonPlayContent() {
 
   const totalFloors = Math.max(1, courseLessons.length);
   const courseSeed = useMemo(() => hashString(courseId || "default"), [courseId]);
-  const dungeonTitle = useMemo(() => dungeonNameForCourse(courseId || "default"), [courseId]);
+  const dungeonTitle = useMemo(() => dungeonNameForCourse(courseId || "default", uiLang), [courseId, uiLang]);
 
   const courseLang = useMemo(
     () => detectCourseLanguage(course, courseLessons),
@@ -348,9 +349,9 @@ function DungeonPlayContent() {
     [floorIndex, courseSeed, courseLang, currentQuestion.id]
   );
 
-  const currentLessonTitle =
-    courseLessons[floorIndex]?.title ||
-    t(`ชั้นที่ ${floorIndex + 1}`, `Floor ${floorIndex + 1}`);
+  const currentLessonTitle = courseLessons[floorIndex]
+    ? getLocalizedLesson(courseLessons[floorIndex], uiLang).title
+    : t(`ชั้นที่ ${floorIndex + 1}`, `Floor ${floorIndex + 1}`);
 
   const handleToggleSound = useCallback(() => {
     const next = !soundEnabled;

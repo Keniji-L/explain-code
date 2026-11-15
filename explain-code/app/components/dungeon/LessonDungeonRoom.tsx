@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AVATARS, getAvatar, DEFAULT_AVATAR, AvatarKey, COIN_SPRITE, HEART_SPRITE } from "../../lib/dungeon/sprites";
 import { hashString } from "../../lib/dungeon/seed";
 import { generateDungeonRoom, DungeonRoom } from "../../lib/dungeon/mapgen";
-import { getMonsterDef, MonsterDef } from "../../lib/dungeon/monsters";
+import { getLocalizedMonster, getMonsterDef, MonsterDef } from "../../lib/dungeon/monsters";
 import {
   getQuestionForFloor,
   SAMPLE_DUNGEON_QUESTIONS,
@@ -25,6 +25,7 @@ import { Icon } from "../Icons";
 import { dungeonSound } from "../../lib/dungeon/sound";
 import { Course, Lesson, LessonProgress } from "../../lib/supabase";
 import {
+  getLocalizedLesson,
   loadLocalLessonProgress,
   saveLocalLessonProgress,
   loadLocalEnrollments,
@@ -63,7 +64,7 @@ export function LessonDungeonRoom({
   onSwitchToContent,
   nextLessonUrl,
 }: LessonDungeonRoomProps) {
-  const { t } = useUiLanguage();
+  const { uiLang, t } = useUiLanguage();
 
   // Avatar and sound
   const [avatarKey, setAvatarKey] = useState<AvatarKey>(DEFAULT_AVATAR);
@@ -340,7 +341,7 @@ export function LessonDungeonRoom({
               )}
             </div>
             <h3 className="text-xs sm:text-sm font-bold text-[#f4efe6] line-clamp-1">
-              {t("ห้องดันเจี้ยน:", "Dungeon Room:")} {lesson.title}
+              {t("ห้องดันเจี้ยน:", "Dungeon Room:")} {getLocalizedLesson(lesson, uiLang).title}
             </h3>
           </div>
         </div>
@@ -420,8 +421,8 @@ export function LessonDungeonRoom({
             {room.isDoorUnlocked
               ? t("🚪 พิชิตห้องนี้สำเร็จแล้ว!", "🚪 Room cleared!")
               : t(
-                  `⚔️ ${currentMonster.name} (${lessonQuestions.length} ข้อ)`,
-                  `⚔️ ${currentMonster.name} (${lessonQuestions.length} phase${lessonQuestions.length > 1 ? "s" : ""})`
+                  `⚔️ ${getLocalizedMonster(currentMonster, uiLang).name} (${lessonQuestions.length} ข้อ)`,
+                  `⚔️ ${getLocalizedMonster(currentMonster, uiLang).name} (${lessonQuestions.length} phase${lessonQuestions.length > 1 ? "s" : ""})`
                 )}
           </span>
           {!room.entity?.isCompleted && (
