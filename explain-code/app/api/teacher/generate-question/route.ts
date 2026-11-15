@@ -247,7 +247,9 @@ ${existingQuestions.length > 0 ? `- ห้ามตั้งคำถามซ�
 
   const raw = result.data;
   const rawChoices = Array.isArray(raw.choices)
-    ? raw.choices.map((c) => String(c || "").trim()).filter(Boolean)
+    ? Array.from(
+        new Set(raw.choices.map((c) => String(c || "").trim()).filter(Boolean))
+      )
     : [];
 
   if (!raw.question?.trim() || rawChoices.length < 2) {

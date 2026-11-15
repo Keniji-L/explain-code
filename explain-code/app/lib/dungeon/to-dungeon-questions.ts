@@ -78,17 +78,17 @@ function uniqueChoices(
   // Ensure deterministic prose fallback does not make the correct option noticeably longest
   if (condenseProse) {
     const metrics = measureChoiceLengthBalance(pool, 0);
-    if (!metrics.balanced && metrics.maxDistractorLength >= 16) {
+    if (!metrics.balanced) {
       const targetCap = Math.max(
-        24,
+        14,
         Math.min(
           maxChoiceChars,
           metrics.maxDistractorLength,
-          Math.floor(metrics.avgDistractorLength * 1.2)
+          Math.floor(metrics.avgDistractorLength * 1.25)
         )
       );
       const shortened = condenseProseForChoice(cleanPrimary, targetCap);
-      if (shortened.length >= 16 && !pool.slice(1).includes(shortened)) {
+      if (shortened.length >= 10 && !pool.slice(1).includes(shortened)) {
         cleanPrimary = shortened;
         pool[0] = shortened;
       }
@@ -526,12 +526,29 @@ ${numberedLines}`;
               .map((c) => String(c).trim())
               .filter((c) => c.length > 0)
           : [];
+        const dedupedChoices: string[] = [];
+        for (const c of rawChoices) {
+          if (!dedupedChoices.includes(c)) dedupedChoices.push(c);
+          if (dedupedChoices.length >= 4) break;
+        }
+        const defaultPad = isEn
+          ? [
+              "Executes without any output",
+              "Throws a runtime error",
+              "Skips the main code block",
+              "Returns an empty value",
+            ]
+          : [
+              "ไม่แสดงผลลัพธ์ใดๆ ออกมา",
+              "เกิดข้อผิดพลาดขณะทำงาน",
+              "ข้ามการทำงานของบล็อกหลัก",
+              "คืนค่าว่างกลับออกไปทันที",
+            ];
         const baseChoices =
-          rawChoices.length >= 2
-            ? rawChoices.slice(0, 4)
-            : ["Option A", "Option B", "Option C", "Option D"];
-        while (baseChoices.length < 4) {
-          baseChoices.push(`Option ${String.fromCharCode(65 + baseChoices.length)}`);
+          dedupedChoices.length >= 2 ? [...dedupedChoices] : [...defaultPad];
+        for (const pad of defaultPad) {
+          if (baseChoices.length >= 4) break;
+          if (!baseChoices.includes(pad)) baseChoices.push(pad);
         }
 
         const rawIdx =
@@ -552,6 +569,7 @@ ${numberedLines}`;
           choices: baseChoices,
           correctIndex: initialCorrectIndex,
           uiLang,
+          preserveCorrectText: idx === 0 && Boolean(verifiedOutput),
           timeoutMs: 4500,
         });
 

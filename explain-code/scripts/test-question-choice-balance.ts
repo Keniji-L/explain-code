@@ -20,7 +20,15 @@ async function runTests() {
     3
   );
   assert.equal(shortKeywords.balanced, true, "Short keyword choices should be balanced");
-  console.log("Passed: short token choices");
+
+  // Short token with trailing parenthetical must NOT be exempted
+  const shortWithParen = measureChoiceLengthBalance(
+    ["10", "20", "30", "10 (ค่าเริ่มต้น)"],
+    3
+  );
+  assert.equal(shortWithParen.balanced, false, "Short token with parenthetical should be flagged imbalanced");
+  assert.equal(trimTrailingElaboration("10 (ค่าเริ่มต้น)"), "10");
+  console.log("Passed: short token choices & short parenthetical detection");
 
   // 2. Imbalanced prose choices (correct option is noticeably longest)
   const imbalancedTh = measureChoiceLengthBalance(
@@ -86,13 +94,26 @@ async function runTests() {
   );
   console.log("Passed: trimTrailingElaboration");
 
-  // 5. condenseProseForChoice
+  // 5. condenseProseForChoice (must respect Thai word boundaries, never chop mid-word)
   const longProse =
     "ฟังก์ชันนี้ทำหน้าที่วนลูปตรวจสอบสมาชิกทุกตัวในอาเรย์เพื่อหาผลรวมของตัวเลขที่เป็นจำนวนบวกเท่านั้น และคืนค่าผลรวมกลับไปยังผู้เรียกใช้งาน";
   const condensed = condenseProseForChoice(longProse, 60);
   assert.ok(condensed.length <= 60, `Expected <= 60 chars, got ${condensed.length}`);
   assert.ok(condensed.length >= 24, `Expected >= 24 chars, got ${condensed.length}`);
-  console.log("Passed: condenseProseForChoice");
+  assert.ok(
+    !condensed.endsWith("ผ") && !condensed.endsWith("พาร"),
+    `Thai prose should not be chopped mid-word: ${condensed}`
+  );
+  // Verify condensed is an exact prefix at a word boundary
+  const segmenter = new Intl.Segmenter("th", { granularity: "word" });
+  const words = Array.from(segmenter.segment(longProse), (s) => s.segment);
+  let rebuilt = "";
+  for (const w of words) {
+    if (rebuilt.length >= condensed.length) break;
+    rebuilt += w;
+  }
+  assert.equal(condensed, rebuilt.trim(), "Condensed Thai text must align with word boundaries");
+  console.log("Passed: condenseProseForChoice (Thai word boundary safe)");
 
   // 6. shuffleChoicesPreservingCorrect
   const original = ["Alpha", "Beta", "Gamma", "Delta"];
@@ -124,7 +145,18 @@ async function runTests() {
     measureChoiceLengthBalance(localTrimmed.choices, localTrimmed.correctIndex).balanced,
     true
   );
-  console.log("Passed: rebalanceChoicesIfNeeded local trim path");
+
+  // preserveCorrectText should keep exact runtime output untouched even when imbalanced without API key
+  const preserved = await rebalanceChoicesIfNeeded({
+    apiKey: "",
+    question: "ผลลัพธ์คืออะไร?",
+    choices: ["10, 20, 30, 40, 50 (ค่าเริ่มต้น)", "0", "1", "null"],
+    correctIndex: 0,
+    uiLang: "th",
+    preserveCorrectText: true,
+  });
+  assert.equal(preserved.choices[0], "10, 20, 30, 40, 50 (ค่าเริ่มต้น)");
+  console.log("Passed: rebalanceChoicesIfNeeded local trim & preserveCorrectText");
 
   // 8. End-to-end deterministic fallback in generateCustomDungeonFromCode
   const prevKey = process.env.GEMINI_API_KEY;
@@ -190,6 +222,35 @@ async function runTests() {
         );
       }
     }
+
+    // Short otherLineExplanations (< 16 chars) should still keep Phase 2 balanced
+    const shortDistractorDungeon = await generateCustomDungeonFromCode({
+      code: "function f(x) {\n  const y = x + 1;\n  return y;\n}",
+      language: "javascript",
+      uiLang: "th",
+      explanation: {
+        summary: "คำนวณค่า",
+        lineByLine: [
+          {
+            lineNumber: 1,
+            code: "function f(x) {",
+            explanation: "ประกาศฟังก์ชัน f ที่รับพารามิเตอร์ x เพื่อนำไปคำนวณค่าเพิ่มขึ้นหนึ่ง",
+          },
+          { lineNumber: 2, code: "const y = x + 1;", explanation: "บวกหนึ่ง" },
+          { lineNumber: 3, code: "return y;", explanation: "คืนค่า y" },
+          { lineNumber: 4, code: "}", explanation: "จบฟังก์ชัน" },
+        ],
+        keyConcepts: ["Function"],
+      },
+    });
+    const phase2 = shortDistractorDungeon.questions.find((q) => q.id === "custom-phase-2");
+    assert.ok(phase2, "custom-phase-2 must exist");
+    const phase2Metrics = measureChoiceLengthBalance(phase2.choices, phase2.correctIndex);
+    assert.equal(
+      phase2Metrics.balanced,
+      true,
+      `Phase 2 with short distractors should be balanced: correct=${phase2Metrics.correctLength}, maxD=${phase2Metrics.maxDistractorLength}`
+    );
     console.log("Passed: generateCustomDungeonFromCode deterministic fallback balance (TH & EN)");
   } finally {
     if (prevKey !== undefined) {
