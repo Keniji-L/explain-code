@@ -116,6 +116,22 @@ export function saveCustomDungeon(
       getUserActiveCustomDungeonKey(uid),
       JSON.stringify(ownedDungeon)
     );
+
+    // ซิงก์ขึ้น Supabase แบบ background (รองรับสลับเครื่องตอน Demo)
+    try {
+      void fetch("/api/lms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "save-custom-dungeon",
+          dungeon: ownedDungeon,
+        }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {
+      // ignore network errors
+    }
+
     return true;
   } catch {
     // ignore storage quota errors
@@ -200,8 +216,57 @@ export function deleteCustomDungeon(
     if (active && active.id === id) {
       window.localStorage.removeItem(getUserActiveCustomDungeonKey(uid));
     }
+    try {
+      void fetch("/api/lms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete-custom-dungeon",
+          dungeonId: id,
+        }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {
+      // ignore network errors
+    }
     return next;
   } catch {
     return [];
   }
+}
+
+export function mergeRemoteCustomDungeons(
+  remoteDungeons: CustomDungeonPayload[],
+  userId?: string | null
+): CustomDungeonPayload[] {
+  const uid = resolveAccountUserId(userId);
+  if (!uid || typeof window === "undefined") return [];
+  const local = loadCustomDungeons(uid);
+  if (!Array.isArray(remoteDungeons) || remoteDungeons.length === 0) {
+    return local;
+  }
+
+  const byId = new Map<string, CustomDungeonPayload>();
+  for (const item of local) {
+    if (item?.id) byId.set(item.id, item);
+  }
+  for (const remote of remoteDungeons) {
+    if (remote?.id && !byId.has(remote.id)) {
+      byId.set(remote.id, { ...remote, ownerUserId: uid });
+    }
+  }
+
+  const merged = Array.from(byId.values())
+    .sort(
+      (a, b) =>
+        (Date.parse(b.createdAt || "") || 0) - (Date.parse(a.createdAt || "") || 0)
+    )
+    .slice(0, MAX_SAVED_CUSTOM_DUNGEONS);
+
+  try {
+    window.localStorage.setItem(getUserCustomDungeonsKey(uid), JSON.stringify(merged));
+  } catch {
+    // ignore storage errors
+  }
+  return merged;
 }

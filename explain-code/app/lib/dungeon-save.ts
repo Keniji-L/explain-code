@@ -140,5 +140,64 @@ export function saveUserDungeonProgress(
   } catch {
     // ignore storage errors
   }
+
+  // ซิงก์ขึ้น Supabase แบบ background (รองรับสลับเครื่องตอน Demo)
+  try {
+    void fetch("/api/lms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "save-dungeon-progress",
+        record,
+      }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    // ignore network errors
+  }
+
   return nextList;
+}
+
+export function mergeRemoteDungeonSaves(
+  userId: string,
+  remoteSaves: DungeonSaveRecord[]
+): DungeonSaveRecord[] {
+  if (!userId || typeof window === "undefined") return [];
+  const localSaves = loadUserDungeonSaves(userId);
+  if (!Array.isArray(remoteSaves) || remoteSaves.length === 0) {
+    return localSaves;
+  }
+
+  const byLang = new Map<LearningLanguage, DungeonSaveRecord>();
+  for (const item of localSaves) {
+    if (item?.language) {
+      byLang.set(item.language, item);
+    }
+  }
+  for (const remote of remoteSaves) {
+    if (!remote?.language) continue;
+    const existing = byLang.get(remote.language);
+    if (!existing) {
+      byLang.set(remote.language, { ...remote, userId });
+      continue;
+    }
+    const existingTime = Date.parse(existing.savedAt || "") || 0;
+    const remoteTime = Date.parse(remote.savedAt || "") || 0;
+    if (remoteTime >= existingTime) {
+      byLang.set(remote.language, { ...remote, userId });
+    }
+  }
+
+  const merged = Array.from(byLang.values()).sort(
+    (a, b) => (Date.parse(b.savedAt || "") || 0) - (Date.parse(a.savedAt || "") || 0)
+  );
+  const all = readAllDungeonSaves();
+  all[userId] = merged;
+  try {
+    localStorage.setItem(STORAGE_DUNGEON_SAVES_KEY, JSON.stringify(all));
+  } catch {
+    // ignore storage errors
+  }
+  return merged;
 }

@@ -56,6 +56,7 @@ import {
   getActiveCustomDungeon,
   setActiveCustomDungeon,
   deleteCustomDungeon,
+  mergeRemoteCustomDungeons,
 } from "../lib/custom-dungeon";
 import {
   DungeonArenaSnapshot,
@@ -63,6 +64,7 @@ import {
   calculateDungeonSaveProgressPercent,
   loadUserDungeonSaveForLanguage,
   saveUserDungeonProgress,
+  mergeRemoteDungeonSaves,
 } from "../lib/dungeon-save";
 import { getQuestionsForTopic } from "../lib/dungeon/questions";
 
@@ -687,6 +689,19 @@ function CoursesContent() {
             ];
             setEnrollments(mergedEnrolls);
             saveLocalEnrollments(mergedEnrolls);
+          }
+
+          if (current?.userId) {
+            if (Array.isArray(data.dungeonSaves)) {
+              mergeRemoteDungeonSaves(current.userId, data.dungeonSaves);
+            }
+            if (Array.isArray(data.customDungeons)) {
+              const mergedCustom = mergeRemoteCustomDungeons(
+                data.customDungeons,
+                current.userId
+              );
+              setCustomDungeons(mergedCustom);
+            }
           }
         }
       } catch {

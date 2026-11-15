@@ -402,6 +402,54 @@ export interface Database {
         Update: Partial<CodeExplanation>;
         Relationships: [];
       };
+      user_dungeon_saves: {
+        Row: {
+          user_id: string;
+          language: string;
+          save_data: unknown;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          language: string;
+          save_data: unknown;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          language?: string;
+          save_data?: unknown;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      user_custom_dungeons: {
+        Row: {
+          id: string;
+          user_id: string;
+          language: string;
+          dungeon_data: unknown;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          user_id: string;
+          language: string;
+          dungeon_data: unknown;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          language?: string;
+          dungeon_data?: unknown;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       student_cell_latest: {

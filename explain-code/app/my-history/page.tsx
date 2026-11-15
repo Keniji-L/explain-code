@@ -18,6 +18,7 @@ import {
   DungeonSaveRecord,
   calculateDungeonSaveProgressPercent,
   loadUserDungeonSaves,
+  mergeRemoteDungeonSaves,
 } from "../lib/dungeon-save";
 import { LANGUAGE_TRACKS } from "../lib/language-tracks";
 
@@ -54,6 +55,16 @@ export default function MyHistoryPage() {
     const fetchHistory = async () => {
       setIsLoading(true);
       const localItems = loadLocalExplanationsHistory(current.userId);
+      fetch(`/api/lms?studentId=${encodeURIComponent(current.userId)}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((lmsData) => {
+          if (lmsData && Array.isArray(lmsData.dungeonSaves)) {
+            setDungeonSaves(
+              mergeRemoteDungeonSaves(current.userId, lmsData.dungeonSaves)
+            );
+          }
+        })
+        .catch(() => {});
       try {
         const res = await fetch(
           `/api/history?userId=${encodeURIComponent(current.userId)}`

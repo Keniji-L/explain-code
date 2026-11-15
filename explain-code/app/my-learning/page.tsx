@@ -20,6 +20,7 @@ import {
   DungeonSaveRecord,
   calculateDungeonSaveProgressPercent,
   loadUserDungeonSaves,
+  mergeRemoteDungeonSaves,
 } from "../lib/dungeon-save";
 import { LANGUAGE_TRACKS } from "../lib/language-tracks";
 
@@ -48,6 +49,62 @@ export default function MyLearningPage() {
     };
 
     syncState();
+
+    const current = getClientSession();
+    if (current) {
+      fetch(`/api/lms?studentId=${encodeURIComponent(current.userId)}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!data) return;
+          if (Array.isArray(data.courses) && data.courses.length > 0) {
+            setCourses(data.courses);
+          }
+          if (Array.isArray(data.lessons) && data.lessons.length > 0) {
+            setLessons(data.lessons);
+          }
+          if (Array.isArray(data.enrollments) && data.enrollments.length > 0) {
+            setEnrollments((prev) => {
+              const merged = [...data.enrollments];
+              for (const le of prev) {
+                if (
+                  !merged.some(
+                    (de) =>
+                      de.course_id === le.course_id &&
+                      de.student_id === le.student_id
+                  )
+                ) {
+                  merged.push(le);
+                }
+              }
+              return merged;
+            });
+          }
+          if (Array.isArray(data.progress) && data.progress.length > 0) {
+            setProgress((prev) => {
+              const merged = [...data.progress];
+              for (const lp of prev) {
+                if (
+                  !merged.some(
+                    (dp) =>
+                      dp.lesson_id === lp.lesson_id &&
+                      dp.student_id === lp.student_id
+                  )
+                ) {
+                  merged.push(lp);
+                }
+              }
+              return merged;
+            });
+          }
+          if (Array.isArray(data.dungeonSaves)) {
+            setDungeonSaves(
+              mergeRemoteDungeonSaves(current.userId, data.dungeonSaves)
+            );
+          }
+        })
+        .catch(() => {});
+    }
+
     window.addEventListener("explain-code-auth-change", syncState);
     window.addEventListener("storage", syncState);
     return () => {

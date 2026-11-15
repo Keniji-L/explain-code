@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const studentId = searchParams.get("studentId") || "";
     const teacherId = searchParams.get("teacherId") || "";
+    const session = await getServerUserSession();
 
     if (!isSupabaseConfigured()) {
       return NextResponse.json({
@@ -33,6 +34,8 @@ export async function GET(req: NextRequest) {
         lessons: INITIAL_LESSONS,
         enrollments: [],
         progress: [],
+        dungeonSaves: [],
+        customDungeons: [],
       });
     }
 
@@ -45,6 +48,8 @@ export async function GET(req: NextRequest) {
         lessons: INITIAL_LESSONS,
         enrollments: [],
         progress: [],
+        dungeonSaves: [],
+        customDungeons: [],
       });
     }
 
@@ -52,6 +57,8 @@ export async function GET(req: NextRequest) {
     let lessonsData: any[] | null = null;
     let enrollmentsData: any[] = [];
     let progressData: any[] = [];
+    let dungeonSavesData: any[] = [];
+    let customDungeonsData: any[] = [];
 
     try {
       const { data: cRows, error: cErr } = await supabase
@@ -91,6 +98,28 @@ export async function GET(req: NextRequest) {
           .select("*");
         if (pRows) progressData = pRows;
       }
+
+      if (session?.userId) {
+        const [{ data: saveRows }, { data: customRows }] = await Promise.all([
+          supabase
+            .from("user_dungeon_saves")
+            .select("save_data")
+            .eq("user_id", session.userId)
+            .order("updated_at", { ascending: false }),
+          supabase
+            .from("user_custom_dungeons")
+            .select("dungeon_data")
+            .eq("user_id", session.userId)
+            .order("updated_at", { ascending: false })
+            .limit(20),
+        ]);
+        if (Array.isArray(saveRows)) {
+          dungeonSavesData = saveRows.map((r) => r.save_data).filter(Boolean);
+        }
+        if (Array.isArray(customRows)) {
+          customDungeonsData = customRows.map((r) => r.dungeon_data).filter(Boolean);
+        }
+      }
     } catch (e) {
       console.warn("GET /api/lms query notice:", e);
     }
@@ -123,6 +152,8 @@ export async function GET(req: NextRequest) {
       lessons: mergedLessons,
       enrollments: enrollmentsData,
       progress: progressData,
+      dungeonSaves: dungeonSavesData,
+      customDungeons: customDungeonsData,
     });
   } catch (err) {
     console.error("GET /api/lms error:", err);
@@ -133,6 +164,8 @@ export async function GET(req: NextRequest) {
       lessons: INITIAL_LESSONS,
       enrollments: [],
       progress: [],
+      dungeonSaves: [],
+      customDungeons: [],
     });
   }
 }
@@ -402,6 +435,147 @@ export async function POST(req: NextRequest) {
         progress: progressRecord,
         source: "local",
       });
+    }
+
+    // 7. บันทึกจุดเซฟดันเจี้ยนของผู้ใช้ (ซิงก์ข้ามเครื่อง)
+    if (action === "save-dungeon-progress") {
+      if (!session?.userId) {
+        return NextResponse.json(
+          { error: "กรุณาเข้าสู่ระบบก่อนบันทึกจุดเซฟดันเจี้ยน" },
+          { status: 401 }
+        );
+      }
+      const record = body.record;
+      if (!record || typeof record !== "object" || !record.language) {
+        return NextResponse.json(
+          { error: "ข้อมูลจุดเซฟดันเจี้ยนไม่ถูกต้อง" },
+          { status: 400 }
+        );
+      }
+
+      const nowIso = new Date().toISOString();
+      const normalizedRecord = {
+        ...record,
+        userId: session.userId,
+        savedAt: record.savedAt || nowIso,
+      };
+
+      if (supabase) {
+        try {
+          const { error } = await supabase.from("user_dungeon_saves").upsert(
+            {
+              user_id: session.userId,
+              language: String(record.language),
+              save_data: normalizedRecord,
+              updated_at: nowIso,
+            },
+            { onConflict: "user_id,language" }
+          );
+          if (!error) {
+            return NextResponse.json({
+              success: true,
+              record: normalizedRecord,
+              source: "supabase",
+            });
+          }
+        } catch (e) {
+          console.warn("Supabase save-dungeon-progress notice:", e);
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        record: normalizedRecord,
+        source: "local",
+      });
+    }
+
+    // 8. บันทึก Custom Dungeon ที่สร้างจากโค้ดของผู้ใช้
+    if (action === "save-custom-dungeon") {
+      if (!session?.userId) {
+        return NextResponse.json(
+          { error: "กรุณาเข้าสู่ระบบก่อนบันทึกดันเจี้ยนส่วนตัว" },
+          { status: 401 }
+        );
+      }
+      const dungeon = body.dungeon;
+      if (!dungeon || typeof dungeon !== "object" || !dungeon.id) {
+        return NextResponse.json(
+          { error: "ข้อมูลดันเจี้ยนส่วนตัวไม่ถูกต้อง" },
+          { status: 400 }
+        );
+      }
+
+      const nowIso = new Date().toISOString();
+      const ownedDungeon = {
+        ...dungeon,
+        ownerUserId: session.userId,
+      };
+
+      if (supabase) {
+        try {
+          const { error } = await supabase.from("user_custom_dungeons").upsert(
+            {
+              id: String(dungeon.id),
+              user_id: session.userId,
+              language: String(dungeon.language || "javascript"),
+              dungeon_data: ownedDungeon,
+              created_at: dungeon.createdAt || nowIso,
+              updated_at: nowIso,
+            },
+            { onConflict: "user_id,id" }
+          );
+          if (!error) {
+            return NextResponse.json({
+              success: true,
+              dungeon: ownedDungeon,
+              source: "supabase",
+            });
+          }
+        } catch (e) {
+          console.warn("Supabase save-custom-dungeon notice:", e);
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        dungeon: ownedDungeon,
+        source: "local",
+      });
+    }
+
+    // 9. ลบ Custom Dungeon ของผู้ใช้
+    if (action === "delete-custom-dungeon") {
+      if (!session?.userId) {
+        return NextResponse.json(
+          { error: "กรุณาเข้าสู่ระบบก่อนลบดันเจี้ยนส่วนตัว" },
+          { status: 401 }
+        );
+      }
+      const dungeonId = String(body.dungeonId || "").trim();
+      if (!dungeonId) {
+        return NextResponse.json(
+          { error: "ไม่พบรหัสดันเจี้ยนที่ต้องการลบ" },
+          { status: 400 }
+        );
+      }
+
+      if (supabase) {
+        try {
+          const { error } = await supabase
+            .from("user_custom_dungeons")
+            .delete()
+            .eq("user_id", session.userId)
+            .eq("id", dungeonId);
+          if (!error) {
+            return NextResponse.json({ success: true, source: "supabase" });
+          }
+        } catch (e) {
+          console.warn("Supabase delete-custom-dungeon notice:", e);
+        }
+      }
+
+      return NextResponse.json({ success: true, source: "local" });
     }
 
     return NextResponse.json({ error: "ไม่รู้จักคำสั่ง" }, { status: 400 });
