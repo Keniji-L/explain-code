@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { AVATARS, getAvatar, DEFAULT_AVATAR, AvatarKey, COIN_SPRITE, HEART_SPRITE } from "../../lib/dungeon/sprites";
-import { hashString } from "../../lib/dungeon/seed";
+import { useRouter } from "next/navigation";
+import { AVATARS, getAvatar, DEFAULT_AVATAR, AvatarKey } from "../../lib/dungeon/sprites";
+import { hashString, dungeonNameForCourse } from "../../lib/dungeon/seed";
 import { generateDungeonRoom, DungeonRoom } from "../../lib/dungeon/mapgen";
 import { getLocalizedMonster, getMonsterDef, MonsterDef } from "../../lib/dungeon/monsters";
 import {
   getQuestionForFloor,
+  getChestQuestion,
   SAMPLE_DUNGEON_QUESTIONS,
   DungeonQuestion,
 } from "../../lib/dungeon/questions";
@@ -18,7 +20,10 @@ import {
 } from "../../lib/language-tracks";
 import { useUiLanguage } from "../LanguageProvider";
 import { GameCanvas } from "./GameCanvas";
+import { DungeonHud } from "./DungeonHud";
 import { BattleOverlay } from "./BattleOverlay";
+import { CodeChestModal, InRunRewardType } from "./CodeChestModal";
+import { PauseModal } from "./GameModals";
 import { MobileDpad } from "./MobileDpad";
 import { PixelSpriteView } from "./PixelSpriteView";
 import { Icon } from "../Icons";
@@ -64,7 +69,9 @@ export function LessonDungeonRoom({
   onSwitchToContent,
   nextLessonUrl,
 }: LessonDungeonRoomProps) {
+  const router = useRouter();
   const { uiLang, t } = useUiLanguage();
+  const isEn = uiLang === "en";
 
   // Avatar and sound
   const [avatarKey, setAvatarKey] = useState<AvatarKey>(DEFAULT_AVATAR);
@@ -74,13 +81,17 @@ export function LessonDungeonRoom({
   const [hearts, setHearts] = useState<number>(3);
   const [coinsEarned, setCoinsEarned] = useState<number>(0);
   const [xpEarned, setXpEarned] = useState<number>(0);
+  const [floorShieldBonus, setFloorShieldBonus] = useState<number>(0);
+  const [floorRewardMultiplier, setFloorRewardMultiplier] = useState<number>(1);
   const [screenShake, setScreenShake] = useState<number>(0);
   const [isRoomConquered, setIsRoomConquered] = useState<boolean>(
     () => Boolean(getClientSession()) && isCompleted
   );
 
   // Overlays
+  const [isPaused, setIsPaused] = useState<boolean>(false);
   const [isInBattle, setIsInBattle] = useState<boolean>(false);
+  const [chestModalMode, setChestModalMode] = useState<"side-chest" | null>(null);
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
 
   const courseSeed = useMemo(() => hashString(course.id || "default"), [course.id]);
@@ -161,26 +172,37 @@ export function LessonDungeonRoom({
         }
       }
 
-      return quizList.map((q, idx) => ({
-        id: q.id || `lesson-${lesson.id}-q-${idx}`,
-        language: lessonLang,
-        question: q.question,
-        codeSnippet: lesson.code_example || undefined,
-        choices: q.options,
-        correctIndex: q.correctIndex,
-        explanation:
-          q.explanation ||
-          t("คำตอบถูกต้องตามเนื้อหาบทเรียน", "Correct according to the lesson!"),
-        difficulty: isBossFloor ? "hard" : lessonIndex > 0 ? "medium" : "easy",
-        blockModelCell: "E2",
-        hint: t(
-          "ลองอ่านโค้ดตัวอย่างในบทเรียนและไล่ค่าทีละบรรทัด",
-          "Inspect the lesson code example line by line."
-        ),
-        hintEn: "Inspect the lesson code example line by line.",
-        expectedOutput: simulatedOut || undefined,
-        phaseLabel: `${lesson.title} (${idx + 1}/${quizList.length})`,
-      }));
+      return quizList.map((q, idx) => {
+        const qRecord = q as unknown as {
+          questionEn?: string;
+          optionsEn?: string[];
+          explanationEn?: string;
+        };
+        const localizedTitle = getLocalizedLesson(lesson, uiLang).title;
+        return {
+          id: q.id || `lesson-${lesson.id}-q-${idx}`,
+          language: lessonLang,
+          question: q.question,
+          questionEn: qRecord.questionEn,
+          codeSnippet: lesson.code_example || undefined,
+          choices: q.options,
+          choicesEn: qRecord.optionsEn,
+          correctIndex: q.correctIndex,
+          explanation:
+            q.explanation ||
+            t("คำตอบถูกต้องตามเนื้อหาบทเรียน", "Correct according to the lesson!"),
+          explanationEn: qRecord.explanationEn,
+          difficulty: isBossFloor ? "hard" : lessonIndex > 0 ? "medium" : "easy",
+          blockModelCell: "E2",
+          hint: t(
+            "ลองอ่านโค้ดตัวอย่างในบทเรียนและไล่ค่าทีละบรรทัด",
+            "Inspect the lesson code example line by line."
+          ),
+          hintEn: "Inspect the lesson code example line by line.",
+          expectedOutput: simulatedOut || undefined,
+          phaseLabel: `${localizedTitle} (${idx + 1}/${quizList.length})`,
+        };
+      });
     }
 
     return [getQuestionForFloor(lessonIndex, isBossFloor, lessonLang, course.id)];
@@ -203,6 +225,16 @@ export function LessonDungeonRoom({
     return !SAMPLE_DUNGEON_QUESTIONS.some((sq) => sq.id === first.id);
   }, [lessonQuestions]);
 
+  const chestQuestion: DungeonQuestion = useMemo(
+    () => getChestQuestion(lessonIndex + courseSeed, lessonLang, lessonQuestions[0]?.id),
+    [lessonIndex, courseSeed, lessonLang, lessonQuestions]
+  );
+
+  const dungeonTitle = useMemo(
+    () => dungeonNameForCourse(course.id || "default", uiLang),
+    [course.id, uiLang]
+  );
+
   const handleToggleSound = useCallback(() => {
     const next = !soundEnabled;
     setSoundEnabled(next);
@@ -214,6 +246,34 @@ export function LessonDungeonRoom({
       setIsInBattle(true);
     }
   }, [room.entity]);
+
+  const handleEncounterChest = useCallback(() => {
+    if (room.chest && !room.chest.isOpened) {
+      setChestModalMode("side-chest");
+    }
+  }, [room.chest]);
+
+  const handleChestSolved = useCallback(
+    (reward: { xpAwarded: number; coinsAwarded: number }) => {
+      setXpEarned((prev) => prev + reward.xpAwarded);
+      setCoinsEarned((prev) => prev + reward.coinsAwarded);
+      setRoom((prev) => ({
+        ...prev,
+        chest: prev.chest ? { ...prev.chest, isOpened: true } : null,
+      }));
+    },
+    []
+  );
+
+  const handleSelectInRunReward = useCallback((rewardType: InRunRewardType) => {
+    if (rewardType === "heal_hp") {
+      setHearts((prev) => Math.min(3, prev + 1));
+    } else if (rewardType === "add_shield") {
+      setFloorShieldBonus((prev) => prev + 1);
+    } else if (rewardType === "double_rewards") {
+      setFloorRewardMultiplier(2);
+    }
+  }, []);
 
   const handleCorrectAnswer = useCallback(
     (xpAwarded?: number, coinsAwarded?: number) => {
@@ -304,7 +364,11 @@ export function LessonDungeonRoom({
     setHearts(3);
     setCoinsEarned(0);
     setXpEarned(0);
+    setFloorShieldBonus(0);
+    setFloorRewardMultiplier(1);
     setIsRoomConquered(false);
+    setIsPaused(false);
+    setChestModalMode(null);
     setIsGameOver(false);
     setIsInBattle(false);
     setRoom(generateDungeonRoom(courseSeed, lessonIndex, totalLessons));
@@ -315,91 +379,60 @@ export function LessonDungeonRoom({
   }, []);
 
   return (
-    <div className="rounded-2xl border-2 border-[#4a4766] bg-[#120f1c] text-[#f4efe6] overflow-hidden shadow-lg select-none">
-      {/* Lesson Dungeon Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-[#1c1b2b] border-b border-[#2f2d45]">
-        <div className="flex items-center gap-3">
-          <PixelSpriteView sprite={avatar.sprite} size={28} />
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="pixel-font text-[10px] text-[#ffe27a] uppercase">
-                {t(`ชั้นที่ ${lessonIndex + 1}/${totalLessons}`, `FLOOR ${lessonIndex + 1}/${totalLessons}`)}
-              </span>
-              <span
-                className="px-1.5 py-0.5 rounded text-[10px] font-extrabold"
-                style={{
-                  backgroundColor: trackMeta.bgTint,
-                  color: trackMeta.accentColor,
-                }}
-              >
-                {trackMeta.name}
-              </span>
-              {isBossFloor && (
-                <span className="pixel-font text-[9px] bg-[#5a2d91] text-[#ffe27a] px-1.5 py-0.5 rounded font-black">
-                  BOSS ROOM
-                </span>
-              )}
-            </div>
-            <h3 className="text-xs sm:text-sm font-bold text-[#f4efe6] line-clamp-1">
-              {t("ห้องดันเจี้ยน:", "Dungeon Room:")} {getLocalizedLesson(lesson, uiLang).title}
-            </h3>
-          </div>
-        </div>
+    <div className="flex flex-col items-center gap-4 select-none">
+      {/* Main Dungeon HUD Bar (matches main dungeon) */}
+      <DungeonHud
+        avatar={avatar}
+        floorIndex={lessonIndex}
+        totalFloors={totalLessons}
+        dungeonTitle={isEn ? trackMeta.dungeonRealmNameEn : `${trackMeta.dungeonRealmName} · ${dungeonTitle}`}
+        roomTitle={getLocalizedLesson(lesson, uiLang).title}
+        hearts={hearts}
+        maxHearts={3}
+        coins={coinsEarned}
+        xp={xpEarned}
+        soundEnabled={soundEnabled}
+        languageName={trackMeta.name}
+        languageBadge={trackMeta.name}
+        onToggleSound={handleToggleSound}
+        onTogglePause={() => setIsPaused(true)}
+        onExit={() => router.push(`/courses/${course.id}`)}
+      />
 
-        {/* Stats & Actions */}
-        <div className="flex items-center gap-3">
-          {/* Hearts */}
-          <div className="flex items-center gap-1">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <span
-                key={i}
-                className={`transition-opacity ${i < hearts ? "opacity-100 scale-100" : "opacity-30 scale-90"}`}
-              >
-                <PixelSpriteView sprite={HEART_SPRITE} size={14} />
-              </span>
-            ))}
-          </div>
-
-          {/* Sound Toggle */}
-          <button
-            type="button"
-            onClick={handleToggleSound}
-            className="p-1.5 rounded-lg bg-[#252238] hover:bg-[#322c4a] text-[#f4efe6] text-xs cursor-pointer transition-colors"
-            title={soundEnabled ? t("ปิดเสียง", "Mute") : t("เปิดเสียง", "Unmute")}
-          >
-            <Icon name={soundEnabled ? "volume-2" : "volume-x"} size={14} />
-          </button>
-
-          {/* Switch back button */}
-          {onSwitchToContent && (
-            <button
-              type="button"
-              onClick={onSwitchToContent}
-              className="px-2.5 py-1 rounded-lg border border-[#4a4766] bg-[#252238] text-[11px] font-bold text-[#ffe27a] hover:bg-[#322c4a] cursor-pointer"
-            >
-              {t("อ่านบทเรียน & โค้ด", "Read Lesson & Code")}
-            </button>
+      {/* Active Floor In-Run Buffs */}
+      {(floorShieldBonus > 0 || floorRewardMultiplier > 1) && (
+        <div className="w-full max-w-[640px] flex flex-wrap items-center justify-center gap-2 text-[11px]">
+          {floorShieldBonus > 0 && (
+            <span className="px-2.5 py-1 rounded-lg border border-[#38bdf8]/60 bg-[#38bdf8]/15 text-[#7dd3fc] font-bold">
+              🛡️ +{floorShieldBonus} Shield ({t("เฉพาะชั้นนี้", "This Floor")})
+            </span>
+          )}
+          {floorRewardMultiplier > 1 && (
+            <span className="px-2.5 py-1 rounded-lg border border-[#f6c945]/60 bg-[#f6c945]/15 text-[#ffe27a] font-bold">
+              ⚡ XP &amp; Coins ×{floorRewardMultiplier} ({t("เฉพาะชั้นนี้", "This Floor")})
+            </span>
           )}
         </div>
-      </div>
+      )}
 
       {/* Main Canvas Area */}
-      <div className="p-3 sm:p-5 flex flex-col items-center gap-3">
-        <div className="relative w-full max-w-[560px] aspect-[4/3] rounded-xl overflow-hidden border-2 border-[#2f2d45] shadow-inner bg-[#0b0a12]">
+      <div className="w-full flex flex-col items-center gap-3">
+        <div className="relative w-full max-w-[640px] flex justify-center">
           <GameCanvas
             room={room}
             avatar={avatar}
-            isPaused={isGameOver}
-            isInBattle={isInBattle}
+            isPaused={isPaused || isGameOver}
+            isInBattle={isInBattle || chestModalMode !== null}
             onEncounterEntity={handleEncounterEntity}
+            onEncounterChest={handleEncounterChest}
             onEnterNextFloor={handleEnterDoor}
-            onAutoPause={() => {}}
+            onAutoPause={() => setIsPaused(true)}
             screenShake={screenShake}
           />
 
           {/* Game Over Screen inside room */}
           {isGameOver && (
-            <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center p-4 text-center gap-3">
+            <div className="absolute inset-0 rounded-2xl bg-black/85 flex flex-col items-center justify-center p-4 text-center gap-3 z-20">
               <span className="pixel-font text-xs text-[#ff4d6d] font-bold">GAME OVER</span>
               <h4 className="text-sm sm:text-base font-bold text-[#f4efe6]">
                 {t("หัวใจหมดในการต่อสู้บทเรียนนี้", "Out of hearts in this lesson room")}
@@ -416,7 +449,7 @@ export function LessonDungeonRoom({
         </div>
 
         {/* Compact status & quick battle action */}
-        <div className="w-full max-w-[560px] flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#9a93ad]">
+        <div className="w-full max-w-[640px] flex flex-wrap items-center justify-between gap-2 text-xs text-[#9a93ad]">
           <span className="text-[#ffe27a] font-bold">
             {room.isDoorUnlocked
               ? t("🚪 พิชิตห้องนี้สำเร็จแล้ว!", "🚪 Room cleared!")
@@ -425,20 +458,31 @@ export function LessonDungeonRoom({
                   `⚔️ ${getLocalizedMonster(currentMonster, uiLang).name} (${lessonQuestions.length} phase${lessonQuestions.length > 1 ? "s" : ""})`
                 )}
           </span>
-          {!room.entity?.isCompleted && (
-            <button
-              type="button"
-              onClick={handleEncounterEntity}
-              className="px-3 py-1 rounded-lg bg-[#9b5de5] hover:bg-[#b07af0] text-white font-bold text-[11px] cursor-pointer transition-colors"
-            >
-              {t("⚔️ สู้เลย", "⚔️ Battle")}
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {onSwitchToContent && (
+              <button
+                type="button"
+                onClick={onSwitchToContent}
+                className="px-3 py-1 rounded-lg border border-[#4a4766] bg-[#252238] text-xs font-bold text-[#ffe27a] hover:bg-[#322c4a] cursor-pointer"
+              >
+                {t("อ่านบทเรียน & โค้ด", "Read Lesson & Code")}
+              </button>
+            )}
+            {!room.entity?.isCompleted && (
+              <button
+                type="button"
+                onClick={handleEncounterEntity}
+                className="px-3 py-1 rounded-lg bg-[#9b5de5] hover:bg-[#b07af0] text-white font-bold text-xs cursor-pointer transition-colors"
+              >
+                {t("⚔️ สู้เลย", "⚔️ Battle")}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Room Cleared Celebration Card */}
         {isRoomConquered && (
-          <div className="w-full max-w-[560px] p-3.5 rounded-xl border border-[#2fbf71]/50 bg-[#1a7a4a]/20 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="w-full max-w-[640px] p-3.5 rounded-xl border border-[#2fbf71]/50 bg-[#1a7a4a]/20 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2 text-[#2fbf71] font-bold">
               <Icon name="check" size={16} />
               <span>
@@ -484,7 +528,7 @@ export function LessonDungeonRoom({
         {/* Mobile On-Screen D-Pad */}
         <div className="w-full sm:hidden pt-2">
           <MobileDpad
-            disabled={isInBattle || isGameOver}
+            disabled={isPaused || isInBattle || chestModalMode !== null || isGameOver}
             onMove={(dx, dy) => {
               const dirKey =
                 dx < 0
@@ -511,6 +555,18 @@ export function LessonDungeonRoom({
         </div>
       </div>
 
+      {/* Code Chest Event Modal */}
+      {chestModalMode !== null && (
+        <CodeChestModal
+          question={chestQuestion}
+          xpReward={25}
+          coinReward={20}
+          onSolved={handleChestSolved}
+          onSelectInRunReward={handleSelectInRunReward}
+          onClose={() => setChestModalMode(null)}
+        />
+      )}
+
       {/* Battle Overlay for this room */}
       {isInBattle && (
         <BattleOverlay
@@ -523,6 +579,8 @@ export function LessonDungeonRoom({
           playerHearts={hearts}
           initialFocus={3}
           maxFocus={6}
+          extraShield={floorShieldBonus}
+          rewardMultiplier={floorRewardMultiplier}
           courseId={course.id}
           lessonId={lesson.id}
           localValidation={shouldUseLocalValidation}
@@ -531,6 +589,13 @@ export function LessonDungeonRoom({
           onClose={() => setIsInBattle(false)}
         />
       )}
+
+      {/* Pause Modal */}
+      <PauseModal
+        isOpen={isPaused}
+        onResume={() => setIsPaused(false)}
+        onExit={() => router.push(`/courses/${course.id}`)}
+      />
     </div>
   );
 }
