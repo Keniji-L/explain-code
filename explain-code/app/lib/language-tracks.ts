@@ -648,6 +648,7 @@ print(total)`,
         stepNumber: 2,
         line: 2,
         codeLine: "for i in range(1, 5): # รอบ i = 1",
+        codeLineEn: "for i in range(1, 5): # iteration i = 1",
         variables: { total: "0", i: "1" },
         outputSoFar: [],
         explanation: "รอบที่ 1: i มีค่าเป็น 1",
@@ -666,6 +667,7 @@ print(total)`,
         stepNumber: 4,
         line: 3,
         codeLine: "    total = total + (i * 10) # รอบ i = 2, 3, 4",
+        codeLineEn: "    total = total + (i * 10) # iterations i = 2, 3, 4",
         variables: { total: "100", i: "4" },
         outputSoFar: [],
         explanation: "วนต่อสำหรับ i = 2 (+20), i = 3 (+30), และ i = 4 (+40) รวมเป็น 100 แล้วหยุดก่อนถึง 5",
@@ -1036,6 +1038,12 @@ SELECT name, price
 FROM products
 WHERE price >= 500
 ORDER BY price ASC;`,
+    codeEn: `-- products table:
+-- (1, 'Keyboard', 900), (2, 'Mouse', 450), (3, 'Monitor', 3500)
+SELECT name, price
+FROM products
+WHERE price >= 500
+ORDER BY price ASC;`,
     predictPrompt:
       "เมื่อรันคำสั่ง SQL นี้กับตาราง products จะได้ผลลัพธ์ชื่อสินค้าเรียงตามลำดับใด?",
     predictPromptEn:
@@ -1149,6 +1157,12 @@ SELECT name, price
 FROM products
 WHERE price >= 500
 ORDER BY price DESC;`,
+      suggestedCodeEn: `-- products table:
+-- (1, 'Keyboard', 900), (2, 'Mouse', 450), (3, 'Monitor', 3500)
+SELECT name, price
+FROM products
+WHERE price >= 500
+ORDER BY price DESC;`,
       changeDescription: "เปลี่ยน ASC เป็น DESC",
       changeDescriptionEn: "Change ASC to DESC",
       options: [
@@ -1183,6 +1197,12 @@ ORDER BY price DESC;`,
     subtitle: "แกะรอยการยุบรวมแถวตามหมวดหมู่ (GROUP BY) และการกรองกลุ่มด้วย HAVING",
     subtitleEn: "Trace row grouping by category (GROUP BY) and group filtering with HAVING",
     code: `-- ตาราง sales:
+-- ('Book', 200), ('Book', 300), ('Pen', 50)
+SELECT category, SUM(amount) AS total
+FROM sales
+GROUP BY category
+HAVING SUM(amount) >= 100;`,
+    codeEn: `-- sales table:
 -- ('Book', 200), ('Book', 300), ('Pen', 50)
 SELECT category, SUM(amount) AS total
 FROM sales
@@ -1283,6 +1303,12 @@ SELECT category, SUM(amount) AS total
 FROM sales
 GROUP BY category
 HAVING SUM(amount) >= 50;`,
+      suggestedCodeEn: `-- sales table:
+-- ('Book', 200), ('Book', 300), ('Pen', 50)
+SELECT category, SUM(amount) AS total
+FROM sales
+GROUP BY category
+HAVING SUM(amount) >= 50;`,
       changeDescription: "เปลี่ยนเกณฑ์ HAVING จาก 100 เป็น 50",
       changeDescriptionEn: "Change HAVING threshold from 100 to 50",
       options: [
@@ -1317,6 +1343,12 @@ HAVING SUM(amount) >= 50;`,
     subtitle: "อ่านลำดับการจัดเรียงจากมากไปน้อย (DESC) และตัดเอาเฉพาะอันดับต้นๆ ด้วย LIMIT",
     subtitleEn: "Read descending sorts (DESC) and top-N row slicing with LIMIT",
     code: `-- ตาราง products:
+-- (Keyboard, 900), (Mouse, 450), (Monitor, 3500)
+SELECT name, price
+FROM products
+ORDER BY price DESC
+LIMIT 2;`,
+    codeEn: `-- products table:
 -- (Keyboard, 900), (Mouse, 450), (Monitor, 3500)
 SELECT name, price
 FROM products
@@ -1419,6 +1451,12 @@ LIMIT 2;`,
       instructionEn:
         "Change ORDER BY price DESC to ORDER BY price ASC to get the 2 cheapest items!",
       suggestedCode: `-- ตาราง products:
+-- (Keyboard, 900), (Mouse, 450), (Monitor, 3500)
+SELECT name, price
+FROM products
+ORDER BY price ASC
+LIMIT 2;`,
+      suggestedCodeEn: `-- products table:
 -- (Keyboard, 900), (Mouse, 450), (Monitor, 3500)
 SELECT name, price
 FROM products

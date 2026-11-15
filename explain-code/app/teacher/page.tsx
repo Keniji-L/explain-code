@@ -18,6 +18,8 @@ import {
   QuizQuestionItem,
 } from "../lib/supabase";
 import {
+  getLocalizedCourse,
+  getLocalizedLesson,
   isCoursePublic,
   loadLocalCourses,
   loadLocalEnrollments,
@@ -1355,13 +1357,13 @@ export default function TeacherLMSDashboardPage() {
                           </span>
                         </div>
                         <h3 className="text-base font-extrabold text-[#f4efe6]">
-                          {course.title}
+                          {getLocalizedCourse(course, uiLang).title}
                         </h3>
                         {resumeLesson && (
                           <p className="mt-1 text-xs text-[#c4bdd6]">
                             {t("ด่าน/บทเรียนที่ค้างไว้:", "Paused Stage/Lesson:")}{" "}
                             <span className="font-bold text-[#ffe27a]">
-                              {resumeLesson.title}
+                              {getLocalizedLesson(resumeLesson, uiLang).title}
                             </span>
                           </p>
                         )}
@@ -1631,10 +1633,10 @@ export default function TeacherLMSDashboardPage() {
                       </div>
 
                       <h3 className="text-sm font-bold text-[#f4efe6]">
-                        {course.title}
+                        {getLocalizedCourse(course, uiLang).title}
                       </h3>
                       <p className="mt-1 line-clamp-2 text-xs text-[#9a93ad]">
-                        {course.description}
+                        {getLocalizedCourse(course, uiLang).description}
                       </p>
 
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[#2f2d45] pt-2.5 text-[11px]">
@@ -1706,7 +1708,7 @@ export default function TeacherLMSDashboardPage() {
                       </Link>
                     </div>
                     <h2 className="text-xl font-bold text-[#f4efe6]">
-                      {selectedCourse.title}
+                      {getLocalizedCourse(selectedCourse, uiLang).title}
                     </h2>
                     {isApproved && (
                       <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -1814,7 +1816,7 @@ export default function TeacherLMSDashboardPage() {
                               {lesson.programming_language.toUpperCase()}
                             </span>
                             <h3 className="text-sm font-bold text-[#f4efe6]">
-                              {lesson.title}
+                              {getLocalizedLesson(lesson, uiLang).title}
                             </h3>
                             <p className="text-[11px] text-[#9a93ad]">
                               {t("แบบทดสอบท้ายบท:", "End-of-lesson Quiz:")}{" "}
@@ -2089,12 +2091,12 @@ export default function TeacherLMSDashboardPage() {
                                         {isBossFloor ? t("บอสใหญ่ชั้นสุดท้าย", "Final Floor Boss") : t(`ชั้นที่ ${idx + 1}`, `Floor ${idx + 1}`)}
                                       </span>
                                       <span className="text-xs font-bold text-[#f4efe6]">
-                                        {lesson.title}
+                                        {getLocalizedLesson(lesson, uiLang).title}
                                       </span>
                                     </div>
 
                                     <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#9a93ad]">
-                                      <span>{t("มอนสเตอร์:", "Monster:")} <strong className="text-[#f6c945]">{monsterDef.name}</strong></span>
+                                      <span>{t("มอนสเตอร์:", "Monster:")} <strong className="text-[#f6c945]">{uiLang === "en" && monsterDef.nameEn ? monsterDef.nameEn : monsterDef.name}</strong></span>
                                       <span>·</span>
                                       <span className="text-[#ff6b81] font-bold whitespace-nowrap shrink-0">HP {monsterDef.maxHp}</span>
                                     </div>

@@ -10,7 +10,9 @@ import { INITIAL_LESSONS } from "../lms-data";
 export interface DungeonTraceStep {
   line: number;
   codeLine: string;
+  codeLineEn?: string;
   variables: Record<string, string>;
+  variablesEn?: Record<string, string>;
   explanation: string;
   explanationEn?: string;
 }
@@ -21,6 +23,7 @@ export interface DungeonQuestion {
   question: string;
   questionEn?: string;
   codeSnippet?: string;
+  codeSnippetEn?: string;
   choices: string[];
   choicesEn?: string[];
   correctIndex: number;
@@ -94,7 +97,9 @@ export function getQuestionsForTopic(
   const traceSteps: DungeonTraceStep[] = topic.steps.map((s) => ({
     line: s.line,
     codeLine: s.codeLine,
+    codeLineEn: s.codeLineEn,
     variables: { ...s.variables },
+    variablesEn: s.variablesEn ? { ...s.variablesEn } : undefined,
     explanation: s.explanation,
     explanationEn: s.explanationEn,
   }));
@@ -112,6 +117,7 @@ export function getQuestionsForTopic(
     question: topic.predictPrompt,
     questionEn: `[Predict Output] ${topic.predictPromptEn || topic.predictPrompt}`,
     codeSnippet: topic.code,
+    codeSnippetEn: topic.codeEn,
     choices: topic.predictOptions,
     choicesEn: topic.predictOptionsEn || topic.predictOptions,
     correctIndex: predictCorrectIndex,
@@ -141,6 +147,7 @@ export function getQuestionsForTopic(
       question: q.question,
       questionEn: `[Block ${q.cellId}] ${q.questionEn || q.question}`,
       codeSnippet: topic.code,
+    codeSnippetEn: topic.codeEn,
       choices: q.options.map((o) => o.text),
       choicesEn: q.options.map((o) => o.textEn || o.text),
       correctIndex: correctIdx,
@@ -305,6 +312,7 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     question: "จอมมารลูปโจมตี! โค้ดใดต่อไปนี้จะทำให้เกิด 'Infinite Loop' (ลูปไม่สิ้นสุด)?",
     questionEn: "Boss Attack! Which snippet below creates an Infinite Loop?",
     codeSnippet: "// ตัวเลือก ก: for (let i = 0; i < 5; i++)\n// ตัวเลือก ข: while (true)\n// ตัวเลือก ค: while (x > 10) โดย x = 5",
+    codeSnippetEn: "// Option A: for (let i = 0; i < 5; i++)\n// Option B: while (true)\n// Option C: while (x > 10) where x = 5",
     choices: [
       "ตัวเลือก ก เท่านั้น",
       "ตัวเลือก ข: while (true) ที่ไม่มีเงื่อนไข break",
@@ -686,6 +694,7 @@ export function getChestQuestion(
       question: topic.predictPrompt,
       questionEn: `[Predict Output] ${topic.predictPromptEn || topic.predictPrompt}`,
       codeSnippet: topic.code,
+    codeSnippetEn: topic.codeEn,
       choices: topic.predictOptions,
       choicesEn: topic.predictOptionsEn || topic.predictOptions,
       correctIndex: correctIdx,

@@ -107,10 +107,13 @@ export function TopicDungeonArena({
   const activeLanguage = language;
   const activeTopic = topic;
 
+  const displayTopicCode =
+    uiLang === "en" ? activeTopic.codeEn || activeTopic.code : activeTopic.code;
+
   // Integrated PRIMM features: Interactive Trace tab & Modify Bonus Challenge
   const [scrollTab, setScrollTab] = useState<"code" | "trace">("code");
   const [traceIdx, setTraceIdx] = useState<number>(0);
-  const [modifiedCode, setModifiedCode] = useState<string>(activeTopic.code);
+  const [modifiedCode, setModifiedCode] = useState<string>(displayTopicCode);
   const [modifyRunResult, setModifyRunResult] = useState<{
     finalOutput: string;
     matchedTarget: boolean;
@@ -327,7 +330,7 @@ export function TopicDungeonArena({
       setScreenShake(0);
       setScrollTab("code");
       setTraceIdx(0);
-      setModifiedCode(activeTopic.code);
+      setModifiedCode(displayTopicCode);
       setModifyRunResult(null);
       setModifyBonusClaimed(false);
       setRoom(
@@ -422,7 +425,7 @@ export function TopicDungeonArena({
     const out = exec.finalOutput.trim();
     const matchedTarget =
       exec.success &&
-      modifiedCode.trim() !== activeTopic.code.trim() &&
+      modifiedCode.trim() !== displayTopicCode.trim() &&
       out === modifyTargetOutput;
     setModifyRunResult({ finalOutput: out || "(no output)", matchedTarget });
     if (matchedTarget && !modifyBonusClaimed) {
@@ -959,7 +962,7 @@ export function TopicDungeonArena({
                 {scrollTab === "code" || !activeTopic.steps?.length ? (
                   <pre className="p-3 rounded-xl bg-[#0d0b14] border border-[#2f2d45] text-[#ffe27a] text-xs font-mono overflow-x-auto leading-relaxed">
                     <code>
-                      {activeTopic.code.split("\n").map((line, lineIdx) => (
+                      {displayTopicCode.split("\n").map((line, lineIdx) => (
                         <div key={lineIdx} className="flex items-start gap-3">
                           <span className="w-6 shrink-0 text-right text-[#6b6580] select-none tabular-nums">
                             {lineIdx + 1}
@@ -1003,12 +1006,16 @@ export function TopicDungeonArena({
                         </div>
 
                         <div className="font-mono text-[11px] bg-[#141220] px-2.5 py-1.5 rounded border border-[#2f2d45] text-[#ffe27a]">
-                          {step.codeLine}
+                          {uiLang === "en" ? step.codeLineEn || step.codeLine : step.codeLine}
                         </div>
 
                         <div className="flex flex-wrap gap-1.5">
-                          {Object.entries(step.variables).length > 0 ? (
-                            Object.entries(step.variables).map(([k, v]) => (
+                          {Object.entries(
+                            uiLang === "en" ? step.variablesEn || step.variables : step.variables
+                          ).length > 0 ? (
+                            Object.entries(
+                              uiLang === "en" ? step.variablesEn || step.variables : step.variables
+                            ).map(([k, v]) => (
                               <span
                                 key={k}
                                 className="px-2 py-0.5 rounded bg-[#1c1b2b] border border-[#38bdf8]/40 font-mono text-[11px] text-[#e0f2fe]"

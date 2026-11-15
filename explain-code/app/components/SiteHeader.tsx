@@ -225,12 +225,12 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
 
   return (
     <>
-      <header className="sticky top-3 z-50 mx-auto w-full max-w-6xl px-3 sm:px-6 pt-1.5">
+      <header className="sticky top-3 z-50 mx-auto w-full max-w-7xl px-3 sm:px-6 pt-1.5">
         <GlassPanel
           as="div"
           elevated={isScrolled}
           rounded="2xl"
-          className="px-3.5 sm:px-5 py-2.5"
+          className="px-3 sm:px-4 py-2.5"
         >
           <div className="flex min-h-11 items-center justify-between gap-2 sm:gap-3">
             {/* Left: Brand Logo */}
@@ -254,7 +254,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                   <span className="block text-sm sm:text-base font-extrabold tracking-tight text-[#f4efe6]">
                     {t("CODE COOL", "ExplainCode")}
                   </span>
-                  <span className="hidden xl:block text-[11px] font-semibold text-[#9a93ad]">
+                  <span className="hidden 2xl:block text-[11px] font-semibold text-[#9a93ad]">
                     {t(
                       "Open Learning & Code Explanation",
                       "Multi-Language Code Dungeon & LMS"
@@ -284,7 +284,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                       navItemRefs.current[item.href] = el;
                     }}
                     aria-current={isActive ? "page" : undefined}
-                    className={`liquid-press relative z-10 whitespace-nowrap shrink-0 rounded-full px-2.5 lg:px-4 py-1.5 text-xs lg:text-sm font-extrabold tracking-wide focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f6c945] ${
+                    className={`liquid-press relative z-10 whitespace-nowrap shrink-0 rounded-full px-2.5 lg:px-3.5 py-1.5 text-xs lg:text-[13px] font-extrabold tracking-wide focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f6c945] ${
                       isActive
                         ? "liquid-active-nav-item text-[#ffe27a]"
                         : "text-[#c4bdd6] hover:text-[#f4efe6] hover:bg-[#252238]"
@@ -299,7 +299,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
             </nav>
 
             {/* Right: Auth Controls & Language Toggle */}
-            <div className="flex items-center justify-end gap-2 shrink-0">
+            <div className="flex items-center justify-end gap-1.5 sm:gap-2 min-w-0 shrink">
               <UiLanguageToggle variant="dungeon" />
 
               {mounted && session ? (
@@ -308,7 +308,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                   {session.role === "student" && (
                     <Link
                       href="/my-learning"
-                      className={`hidden md:inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-full px-2.5 lg:px-3.5 py-1.5 text-xs font-extrabold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f6c945] ${
+                      className={`hidden md:inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-full px-2.5 lg:px-3 py-1.5 text-xs font-extrabold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f6c945] ${
                         pathname.startsWith("/my-learning")
                           ? "liquid-glass-primary-btn"
                           : "liquid-glass-btn text-[#f4efe6]"
@@ -322,7 +322,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                   {(session.role === "teacher" || session.role === "admin") && (
                     <Link
                       href="/teacher"
-                      className={`hidden md:inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-full px-2.5 lg:px-3.5 py-1.5 text-xs font-extrabold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f6c945] ${
+                      className={`hidden md:inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-full px-2.5 lg:px-3 py-1.5 text-xs font-extrabold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f6c945] ${
                         pathname.startsWith("/teacher")
                           ? "liquid-glass-primary-btn"
                           : "liquid-glass-btn text-[#f4efe6]"
@@ -348,8 +348,8 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                           .charAt(0)
                           .toUpperCase()}
                       </div>
-                      <div className="hidden sm:block md:hidden lg:block leading-tight">
-                        <p className="max-w-[110px] truncate text-xs font-extrabold text-[#f4efe6]">
+                      <div className="hidden sm:block md:hidden lg:block leading-tight min-w-0">
+                        <p className="max-w-[96px] xl:max-w-[115px] truncate text-xs font-extrabold text-[#f4efe6]">
                           {session.displayName || session.username}
                         </p>
                         <p className="text-[10px] font-semibold text-[#9a93ad]">

@@ -89,10 +89,13 @@ function deriveTraceSteps(q: DungeonQuestion, isEn: boolean): DungeonTraceStep[]
   if (q.traceSteps && q.traceSteps.length > 0) {
     return q.traceSteps.map((s) => ({
       ...s,
+      codeLine: isEn ? s.codeLineEn || s.codeLine : s.codeLine,
+      variables: isEn ? s.variablesEn || s.variables : s.variables,
       explanation: isEn ? s.explanationEn || s.explanation : s.explanation,
     }));
   }
-  if (!q.codeSnippet) {
+  const snippet = isEn ? q.codeSnippetEn || q.codeSnippet : q.codeSnippet;
+  if (!snippet) {
     return [
       {
         line: 1,
@@ -105,7 +108,7 @@ function deriveTraceSteps(q: DungeonQuestion, isEn: boolean): DungeonTraceStep[]
     ];
   }
 
-  const lines = q.codeSnippet.split("\n");
+  const lines = snippet.split("\n");
   const steps: DungeonTraceStep[] = [];
   const trackedVars: Record<string, string> = {};
 
@@ -131,7 +134,7 @@ function deriveTraceSteps(q: DungeonQuestion, isEn: boolean): DungeonTraceStep[]
     : [
         {
           line: 1,
-          codeLine: q.codeSnippet.split("\n")[0] || "",
+          codeLine: snippet.split("\n")[0] || "",
           variables: {},
           explanation: isEn ? "Trace from line 1." : "เริ่มไล่การทำงานจากบรรทัดแรก",
         },
@@ -285,11 +288,12 @@ export function BattleOverlay({
     setRelicNotice(null);
   }, []);
 
-  const displayQuestionText = activeQuestion
+  const rawQuestionText = activeQuestion
     ? isEn
       ? activeQuestion.questionEn || activeQuestion.question
       : activeQuestion.question
     : "";
+  const displayQuestionText = rawQuestionText.replace(/^\[[^\]]+\]\s*/, "");
 
   const displayChoices = useMemo(() => {
     if (!activeQuestion) return [];
@@ -904,10 +908,10 @@ export function BattleOverlay({
             {displayQuestionText}
           </h4>
 
-          {activeQuestion.codeSnippet && (
+          {(isEn ? activeQuestion.codeSnippetEn || activeQuestion.codeSnippet : activeQuestion.codeSnippet) && (
             <pre className="p-3 rounded-xl bg-[#0b0b14] border border-[#4a4766] text-[#ffe27a] text-xs font-mono overflow-x-auto leading-relaxed">
               <code>
-                {activeQuestion.codeSnippet.split("\n").map((line, lineIdx) => (
+                {(isEn ? activeQuestion.codeSnippetEn || activeQuestion.codeSnippet : activeQuestion.codeSnippet)!.split("\n").map((line, lineIdx) => (
                   <div key={lineIdx} className="flex items-start gap-3">
                     <span className="w-6 shrink-0 text-right text-[#6b6580] select-none tabular-nums">
                       {lineIdx + 1}

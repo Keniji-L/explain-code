@@ -41,6 +41,7 @@ import {
 } from "../lib/language-tracks";
 import { Course, Enrollment, Lesson } from "../lib/supabase";
 import {
+  getLocalizedCourse,
   isCoursePublic,
   loadLocalCourses,
   loadLocalEnrollments,
@@ -1524,16 +1525,16 @@ function CoursesContent() {
                           </span>
                         </div>
                         <h3 className="text-sm sm:text-base font-extrabold text-[#f4efe6]">
-                          {course.title}
+                          {getLocalizedCourse(course, uiLang).title}
                         </h3>
                         <p className="mt-1 text-xs text-[#9a93ad] line-clamp-2">
-                          {course.description}
+                          {getLocalizedCourse(course, uiLang).description}
                         </p>
                       </div>
 
                       <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-[#2f2d45]">
                         <span className="text-xs font-semibold text-[#9a93ad]">
-                          {course.teacher_name}
+                          {getLocalizedCourse(course, uiLang).teacher_name}
                         </span>
                         <div className="flex items-center gap-1.5">
                           <Link
@@ -1972,13 +1973,13 @@ function CoursesContent() {
                             </span>
                           </div>
                           <h3 className="text-base font-extrabold text-[#f4efe6]">
-                            {course.title}
+                            {getLocalizedCourse(course, uiLang).title}
                           </h3>
                         </div>
 
                         <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-[#2f2d45]">
                           <span className="text-xs font-semibold text-[#9a93ad]">
-                            {course.teacher_name}
+                            {getLocalizedCourse(course, uiLang).teacher_name}
                           </span>
                           <div className="flex items-center gap-1.5">
                             <Link
@@ -2194,8 +2195,8 @@ function CoursesContent() {
                 </p>
               </div>
 
-              {/* 4 Hero Selection Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              {/* 4 Hero Selection Cards (2x2 on tablet/desktop) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {AVATARS.map((av) => {
                   const isSelected = av.key === selectedAvatarKey;
                   return (

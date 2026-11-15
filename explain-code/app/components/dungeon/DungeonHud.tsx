@@ -70,7 +70,7 @@ export function DungeonHud({
 
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-2">
-            <span className="font-extrabold text-[#f4efe6] text-xs">{avatar.name}</span>
+            <span className="font-extrabold text-[#f4efe6] text-xs">{t(avatar.name, avatar.nameEn)}</span>
             <span className="pixel-font text-[10px] bg-[#2f2d45] px-1 rounded text-[#ffe27a]">
               Lv. {Math.floor(xp / 100) + 1}
             </span>

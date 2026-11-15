@@ -26,6 +26,7 @@ export function createRng(seed: number): () => number {
 }
 
 const NAME_PREFIX = ["ถ้ำ", "หอคอย", "สุสาน", "วิหาร", "เหมือง", "ป้อม"];
+const NAME_PREFIX_EN = ["Cavern", "Tower", "Crypt", "Temple", "Mine", "Fortress"];
 const NAME_SUFFIX = [
   "แห่งตัวแปร",
   "แห่งลูปนิรันดร์",
@@ -34,11 +35,22 @@ const NAME_SUFFIX = [
   "แห่งฟังก์ชัน",
   "แห่งข้อมูลลับ",
 ];
+const NAME_SUFFIX_EN = [
+  "of Variables",
+  "of Infinite Loops",
+  "of Conditions",
+  "of Ancient Bugs",
+  "of Functions",
+  "of Secret Data",
+];
 
 /** Stable, flavorful dungeon name derived from the course id. */
-export function dungeonNameForCourse(courseId: string): string {
+export function dungeonNameForCourse(courseId: string, uiLang: "th" | "en" = "th"): string {
   const rng = createRng(hashString(courseId));
-  const prefix = NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)];
-  const suffix = NAME_SUFFIX[Math.floor(rng() * NAME_SUFFIX.length)];
-  return `${prefix}${suffix}`;
+  const prefixIdx = Math.floor(rng() * NAME_PREFIX.length);
+  const suffixIdx = Math.floor(rng() * NAME_SUFFIX.length);
+  if (uiLang === "en") {
+    return `${NAME_PREFIX_EN[prefixIdx]} ${NAME_SUFFIX_EN[suffixIdx]}`;
+  }
+  return `${NAME_PREFIX[prefixIdx]}${NAME_SUFFIX[suffixIdx]}`;
 }

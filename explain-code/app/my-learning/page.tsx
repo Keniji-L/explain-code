@@ -12,6 +12,8 @@ import { Icon } from "../components/Icons";
 import { useUiLanguage } from "../components/LanguageProvider";
 import { Course, Enrollment, Lesson, LessonProgress } from "../lib/supabase";
 import {
+  getLocalizedCourse,
+  getLocalizedLesson,
   loadLocalCourses,
   loadLocalEnrollments,
   loadLocalLessonProgress,
@@ -381,14 +383,14 @@ export default function MyLearningPage() {
                           {t("รหัส:", "Code:")} {course.join_code}
                         </span>
                         <span className="text-xs text-[#9a93ad]">
-                          {t("ผู้สอน:", "Instructor:")} {course.teacher_name}
+                          {t("ผู้สอน:", "Instructor:")} {getLocalizedCourse(course, uiLang).teacher_name}
                         </span>
                       </div>
                       <h2 className="text-lg font-bold text-[#f4efe6]">
-                        {course.title}
+                        {getLocalizedCourse(course, uiLang).title}
                       </h2>
                       <p className="mt-1 text-xs text-[#c4bdd6]">
-                        {course.description}
+                        {getLocalizedCourse(course, uiLang).description}
                       </p>
                     </div>
 
@@ -409,7 +411,7 @@ export default function MyLearningPage() {
                           <Icon name="play" className="h-4 w-4 shrink-0" />
                           <span className="truncate">
                             {t("เรียนต่อจากที่ค้างไว้:", "Resume:")}{" "}
-                            {resumeLesson.title}
+                            {getLocalizedLesson(resumeLesson, uiLang).title}
                           </span>
                         </Link>
                       )}
@@ -453,7 +455,7 @@ export default function MyLearningPage() {
                           >
                             <div className="truncate pr-2">
                               <p className="font-bold text-[#f4efe6] truncate">
-                                {lesson.title}
+                                {getLocalizedLesson(lesson, uiLang).title}
                               </p>
                               <p className="text-[10px] text-[#9a93ad]">
                                 {prog?.completed_at

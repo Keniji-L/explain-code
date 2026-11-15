@@ -804,3 +804,90 @@ export function removeLocalExplanationHistory(id: string) {
     // ignore
   }
 }
+
+const COURSE_EN_MAP: Record<
+  string,
+  { title: string; description: string; teacher_name: string }
+> = {
+  "course-js-fundamentals": {
+    title: "JavaScript Code Reading & Tracing Fundamentals for the AI Era",
+    description:
+      "Master reading AI-generated JavaScript from variables and if/else branches to loops and functions using the Block Model.",
+    teacher_name: "Instructor Somchai Jaidee",
+  },
+  "course-async-debugging": {
+    title: "Debugging AI Code: Arrays, Functions & Async/Await",
+    description:
+      "Learn to trace array values, function inputs/outputs, and common bugs introduced in AI-generated code.",
+    teacher_name: "Instructor Somchai Jaidee",
+  },
+  "course-python-fundamentals": {
+    title: "Python Fundamentals for Reading AI Code & Data Analysis",
+    description:
+      "Understand indentation structure, if/elif/else conditions, for ... in range() loops, and Python lists.",
+    teacher_name: "Dr. Napa Data Science",
+  },
+  "course-sql-fundamentals": {
+    title: "Reading & Auditing SQL Queries for Deep Data Insights",
+    description:
+      "Trace the real execution order of SELECT, FROM, WHERE, GROUP BY, HAVING, and ORDER BY to verify AI-generated SQL.",
+    teacher_name: "Instructor Kitti Databases",
+  },
+  "course-ts-fundamentals": {
+    title: "TypeScript for Code Readers: Interfaces, Unions & Generics",
+    description:
+      "Practice reading data contracts (interface), type narrowing, and Generic <T> to catch bugs in AI-generated web code.",
+    teacher_name: "Instructor Thanakorn Web Arch",
+  },
+  "course-cpp-fundamentals": {
+    title: "C++ Fundamentals: Integer Division, References (&) & std::vector",
+    description:
+      "Explore common C++ traps in AI code including integer division, pass-by-reference (&), and vector index bounds.",
+    teacher_name: "Dr. Paweena Systems",
+  },
+  "course-java-fundamentals": {
+    title: "Java & OOP: Classes, String.equals() & Object State",
+    description:
+      "Read Class structures, main methods, == vs .equals() differences, and state-mutating OOP methods.",
+    teacher_name: "Instructor Phanuphong Software Eng",
+  },
+};
+
+const LESSON_EN_MAP: Record<string, string> = {
+  "lesson-js-1": "Lesson 1: Variables & State Flow",
+  "lesson-js-2": "Lesson 2: Decision Making with if / else",
+  "lesson-js-3": "Lesson 3: for Loops & Accumulator Variables",
+  "lesson-ai-1": "Lesson 1: Catching Array Bounds Bugs (Off-by-One Error)",
+  "lesson-py-1": "Lesson 1: Indentation & if / elif / else in Python",
+  "lesson-py-2": "Lesson 2: Looping with for ... in range() & Bounds Pitfalls",
+  "lesson-sql-1": "Lesson 1: Real Execution Order of SELECT, FROM, WHERE & ORDER BY",
+  "lesson-sql-2": "Lesson 2: Grouping with GROUP BY & Filtering Groups with HAVING",
+  "lesson-ts-1": "Lesson 1: Interfaces & Type Annotations in TypeScript",
+  "lesson-ts-2": "Lesson 2: Union Types, Type Narrowing & Generic <T>",
+  "lesson-cpp-1": "Lesson 1: Variable Types & Integer Division Traps in C++",
+  "lesson-cpp-2": "Lesson 2: Pass-by-Reference (&) & std::vector",
+  "lesson-java-1": "Lesson 1: Java Class Structure & String.equals() vs ==",
+  "lesson-java-2": "Lesson 2: OOP Classes, Constructors & Object State",
+};
+
+export function getLocalizedCourse(course: Course, uiLang: "th" | "en"): Course {
+  if (uiLang !== "en") return course;
+  const en = COURSE_EN_MAP[course.id];
+  if (!en) return course;
+  return {
+    ...course,
+    title: en.title,
+    description: en.description,
+    teacher_name: en.teacher_name,
+  };
+}
+
+export function getLocalizedLesson(lesson: Lesson, uiLang: "th" | "en"): Lesson {
+  if (uiLang !== "en") return lesson;
+  const enTitle = LESSON_EN_MAP[lesson.id];
+  if (!enTitle) return lesson;
+  return {
+    ...lesson,
+    title: enTitle,
+  };
+}
