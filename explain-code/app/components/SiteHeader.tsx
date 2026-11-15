@@ -249,7 +249,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
           rounded="2xl"
           className="px-3 sm:px-4 py-2.5"
         >
-          <div className="flex xl:grid xl:grid-cols-[1fr_auto_1fr] min-h-11 items-center justify-between gap-3 lg:gap-4">
+          <div className="flex lg:grid lg:grid-cols-[1fr_auto_1fr] min-h-11 items-center justify-between gap-3 lg:gap-4">
             {/* Left: Brand Logo */}
             <div className="flex items-center justify-start shrink-0">
               <Link
