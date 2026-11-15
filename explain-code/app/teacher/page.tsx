@@ -909,6 +909,104 @@ export default function TeacherLMSDashboardPage() {
     ])
   );
 
+  const courseStudentRows = courseStudentIds.map((stuId) => {
+    const profile = classroomStudents.find(
+      (s) => s.id === stuId || s.nickname === stuId
+    );
+    const stuProg = progress.filter(
+      (p) => p.course_id === selectedCourse?.id && p.student_id === stuId
+    );
+    const doneCount = stuProg.filter((p) => p.is_completed).length;
+    const pct =
+      selectedCourseLessons.length > 0
+        ? Math.round((doneCount / selectedCourseLessons.length) * 100)
+        : 0;
+
+    const cellValues = profile?.cellScores
+      ? (Object.entries(profile.cellScores) as [BlockCellId, number][])
+      : [];
+    const avgBlockScore =
+      cellValues.length > 0
+        ? Math.round(
+            cellValues.reduce((sum, [, val]) => sum + val, 0) / cellValues.length
+          )
+        : null;
+    const weakestEntry =
+      cellValues.length > 0
+        ? [...cellValues].sort((a, b) => a[1] - b[1])[0]
+        : null;
+    const weakestCellMeta = weakestEntry
+      ? BLOCK_MODEL_CELLS.find((c) => c.id === weakestEntry[0])
+      : null;
+
+    return {
+      stuId,
+      displayName: profile?.nickname || stuId,
+      hasProfileName: Boolean(profile?.nickname),
+      roomCode: profile?.roomCode || "",
+      xp: profile?.xp ?? 0,
+      doneCount,
+      pct,
+      avgBlockScore,
+      weakestCellId: weakestEntry ? weakestEntry[0] : null,
+      weakestCellLabel: weakestCellMeta
+        ? `${weakestCellMeta.id} · ${weakestCellMeta.shortTitle}`
+        : null,
+      weakestCellScore: weakestEntry ? Math.round(weakestEntry[1]) : null,
+      explainCount: profile?.explainCount ?? 0,
+      recentExplanations: profile?.recentExplanations ?? [],
+    };
+  });
+
+  const handleExportStudentsCsv = () => {
+    if (!selectedCourse || courseStudentRows.length === 0) return;
+    const escapeCsv = (val: string | number | null | undefined) => {
+      const str = String(val ?? "");
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+    const headers = [
+      "รหัส/ID",
+      "ชื่อนักเรียน",
+      "ห้องเรียน",
+      "บทเรียนที่เรียนจบ",
+      "บทเรียนทั้งหมด",
+      "ความคืบหน้า (%)",
+      "คะแนน Block Model เฉลี่ย (%)",
+      "ช่องที่ควรทบทวน",
+      "จำนวนครั้งที่อธิบายโค้ด",
+      "XP",
+    ];
+    const rows = courseStudentRows.map((r) => [
+      r.stuId,
+      r.displayName,
+      r.roomCode || "-",
+      r.doneCount,
+      selectedCourseLessons.length,
+      r.pct,
+      r.avgBlockScore !== null ? r.avgBlockScore : "-",
+      r.weakestCellLabel
+        ? `${r.weakestCellLabel} (${r.weakestCellScore}%)`
+        : "-",
+      r.explainCount,
+      r.xp,
+    ]);
+    const csvContent =
+      "\uFEFF" +
+      [headers, ...rows]
+        .map((row) => row.map((cell) => escapeCsv(cell)).join(","))
+        .join("\r\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `students-${selectedCourse.join_code || selectedCourse.id}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="min-h-screen bg-[#0d0b14] text-[#f4efe6]">
       <SiteHeader />
@@ -1680,7 +1778,7 @@ export default function TeacherLMSDashboardPage() {
                 ) : activeTab === "students" ? (
                   /* รายชื่อนักเรียนและความคืบหน้าในคอร์ส */
                   <div className="space-y-3">
-                    {courseStudentIds.length === 0 ? (
+                    {courseStudentRows.length === 0 ? (
                       <div className="rounded-xl border border-dashed border-[#3d395a] bg-[#1c1b2b] p-8 text-center text-xs text-[#9a93ad]">
                         ยังไม่มีนักเรียนลงทะเบียนในคอร์สนี้ (แจกรหัสคอร์ส{" "}
                         <strong className="font-mono text-[#f6c945]">
@@ -1689,43 +1787,112 @@ export default function TeacherLMSDashboardPage() {
                         ให้นักเรียนกรอกในหน้าคอร์สเรียนได้เลย)
                       </div>
                     ) : (
-                      courseStudentIds.map((stuId) => {
-                        const stuProg = progress.filter(
-                          (p) =>
-                            p.course_id === selectedCourse.id &&
-                            p.student_id === stuId
-                        );
-                        const doneCount = stuProg.filter(
-                          (p) => p.is_completed
-                        ).length;
-                        const pct =
-                          selectedCourseLessons.length > 0
-                            ? Math.round(
-                                (doneCount / selectedCourseLessons.length) * 100
-                              )
-                            : 0;
-
-                        return (
-                          <div
-                            key={stuId}
-                            className="rounded-xl border border-[#2f2d45] bg-[#1c1b2b] p-4"
+                      <>
+                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#2f2d45] bg-[#1c1b2b] px-4 py-2.5">
+                          <span className="text-xs font-bold text-[#c4bdd6]">
+                            นักเรียนในคอร์สทั้งหมด {courseStudentRows.length} คน
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleExportStudentsCsv}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#2fbf71]/50 bg-[#102a1e] px-3 py-1.5 text-xs font-bold text-[#86efac] hover:bg-[#1a3d2d] cursor-pointer"
                           >
-                            <div className="flex items-center justify-between text-xs font-bold mb-2">
-                              <span className="text-[#f4efe6]">รหัสนักเรียน: {stuId}</span>
-                              <span className="text-[#2fbf71]">
-                                เรียนจบ {doneCount}/
-                                {selectedCourseLessons.length} บทเรียน ({pct}%)
-                              </span>
+                            <span>📥 Export CSV</span>
+                          </button>
+                        </div>
+
+                        {courseStudentRows.map((row) => (
+                          <div
+                            key={row.stuId}
+                            className="rounded-xl border border-[#2f2d45] bg-[#1c1b2b] p-4 space-y-3"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-[#5a2d91] text-[#ffe27a] font-extrabold">
+                                  {row.displayName.slice(0, 1).toUpperCase()}
+                                </span>
+                                <span className="text-sm font-bold text-[#f4efe6]">
+                                  {row.displayName}
+                                </span>
+                                {row.hasProfileName && (
+                                  <span className="rounded-md border border-[#3d395a] bg-[#141220] px-2 py-0.5 font-mono text-[10px] text-[#9a93ad]">
+                                    {row.stuId}
+                                  </span>
+                                )}
+                                {row.roomCode && (
+                                  <span className="rounded-md border border-[#9b5de5]/40 bg-[#5a2d91]/30 px-2 py-0.5 text-[10px] text-[#d8b4fe]">
+                                    ห้อง {row.roomCode}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {row.xp > 0 && (
+                                  <span className="rounded-md border border-[#f6c945]/40 bg-[#281d08] px-2 py-0.5 text-[11px] text-[#f6c945]">
+                                    {row.xp} XP
+                                  </span>
+                                )}
+                                <span className="text-[#2fbf71]">
+                                  เรียนจบ {row.doneCount}/
+                                  {selectedCourseLessons.length} บทเรียน ({row.pct}%)
+                                </span>
+                              </div>
                             </div>
+
                             <div className="h-2 w-full overflow-hidden rounded-full border border-[#2f2d45] bg-[#141220]">
                               <div
                                 className="h-full rounded-full bg-[#2fbf71]"
-                                style={{ width: `${pct}%` }}
+                                style={{ width: `${row.pct}%` }}
                               />
                             </div>
+
+                            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 pt-1">
+                              {/* คะแนน Block Model */}
+                              <div className="rounded-lg border border-[#2f2d45] bg-[#141220] p-2.5 text-[11px] space-y-1">
+                                <div className="flex items-center justify-between font-bold text-[#c4bdd6]">
+                                  <span>คะแนน Block Model เฉลี่ย</span>
+                                  <span className="text-[#f6c945]">
+                                    {row.avgBlockScore !== null
+                                      ? `${row.avgBlockScore}%`
+                                      : "ยังไม่มีคะแนน"}
+                                  </span>
+                                </div>
+                                {row.weakestCellLabel ? (
+                                  <div className="text-[#9a93ad]">
+                                    จุดควรทบทวน:{" "}
+                                    <span className="text-[#fca5a5] font-semibold">
+                                      {row.weakestCellLabel} ({row.weakestCellScore}%)
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="text-[#9a93ad]">
+                                    รอผลการประเมินจากด่าน/แบบฝึกหัด
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* ประวัติการอธิบายโค้ด */}
+                              <div className="rounded-lg border border-[#2f2d45] bg-[#141220] p-2.5 text-[11px] space-y-1">
+                                <div className="flex items-center justify-between font-bold text-[#c4bdd6]">
+                                  <span>ประวัติการอธิบายโค้ด</span>
+                                  <span className="text-[#86efac]">
+                                    {row.explainCount} ครั้ง
+                                  </span>
+                                </div>
+                                {row.recentExplanations.length > 0 ? (
+                                  <div className="truncate text-[#9a93ad]">
+                                    ล่าสุด ({row.recentExplanations[0].language}):{" "}
+                                    {row.recentExplanations[0].summary}
+                                  </div>
+                                ) : (
+                                  <div className="text-[#9a93ad]">
+                                    ยังไม่มีประวัติการอธิบายโค้ด
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        );
-                      })
+                        ))}
+                      </>
                     )}
                   </div>
                 ) : null}

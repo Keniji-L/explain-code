@@ -197,32 +197,46 @@ export async function GET(req: NextRequest) {
     let studentProgressList: { student_id: string; topic_id: number }[] = [];
     let studentBadgesList: { student_id: string; badge_id: string }[] = [];
     let studentStreaksList: { student_id: string; streak: number }[] = [];
+    let studentExplainList: {
+      user_id: string;
+      language: string;
+      summary: string;
+      created_at: string;
+    }[] = [];
 
     if (dbStudents.length > 0) {
       const studentIds = dbStudents.map((s) => s.id);
-      const [latestCells, progress, badges, streaks] = await Promise.all([
-        admin
-          .from("student_cell_latest")
-          .select("student_id, cell_id, score")
-          .in("student_id", studentIds),
-        admin
-          .from("topic_progress")
-          .select("student_id, topic_id")
-          .in("student_id", studentIds),
-        admin
-          .from("student_badges")
-          .select("student_id, badge_id")
-          .in("student_id", studentIds),
-        admin
-          .from("student_streaks")
-          .select("student_id, streak")
-          .in("student_id", studentIds),
-      ]);
+      const [latestCells, progress, badges, streaks, explanations] =
+        await Promise.all([
+          admin
+            .from("student_cell_latest")
+            .select("student_id, cell_id, score")
+            .in("student_id", studentIds),
+          admin
+            .from("topic_progress")
+            .select("student_id, topic_id")
+            .in("student_id", studentIds),
+          admin
+            .from("student_badges")
+            .select("student_id, badge_id")
+            .in("student_id", studentIds),
+          admin
+            .from("student_streaks")
+            .select("student_id, streak")
+            .in("student_id", studentIds),
+          admin
+            .from("code_explanations")
+            .select("user_id, language, summary, created_at")
+            .in("user_id", studentIds)
+            .order("created_at", { ascending: false })
+            .limit(200),
+        ]);
 
       studentLatestCells = latestCells.data || [];
       studentProgressList = progress.data || [];
       studentBadgesList = badges.data || [];
       studentStreaksList = streaks.data || [];
+      studentExplainList = explanations.data || [];
     }
 
     // Map student helpers
@@ -260,6 +274,26 @@ export async function GET(req: NextRequest) {
       streaksByStudent.set(row.student_id, row.streak);
     }
 
+    const explainsByStudent = new Map<
+      string,
+      { count: number; recent: { language: string; summary: string; createdAt: string }[] }
+    >();
+    for (const row of studentExplainList) {
+      const entry = explainsByStudent.get(row.user_id) || {
+        count: 0,
+        recent: [],
+      };
+      entry.count += 1;
+      if (entry.recent.length < 3) {
+        entry.recent.push({
+          language: row.language || "code",
+          summary: row.summary || "",
+          createdAt: row.created_at,
+        });
+      }
+      explainsByStudent.set(row.user_id, entry);
+    }
+
     // Assemble students array conforming cleanly to StudentRecord interface
     const students = dbStudents.map((s) => {
       const room = roomById.get(s.classroom_id);
@@ -271,6 +305,7 @@ export async function GET(req: NextRequest) {
       );
       const badges = badgesByStudent.get(s.id) || [];
       const streak = streaksByStudent.get(s.id) ?? 1;
+      const explainInfo = explainsByStudent.get(s.id);
 
       return {
         id: s.id,
@@ -284,6 +319,8 @@ export async function GET(req: NextRequest) {
         cellScores,
         badges,
         history: [],
+        explainCount: explainInfo?.count ?? 0,
+        recentExplanations: explainInfo?.recent ?? [],
         pinHash: "",
         role: "student" as const,
       };

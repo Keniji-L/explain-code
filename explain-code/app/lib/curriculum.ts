@@ -1257,6 +1257,12 @@ export interface StudentRecord {
   completedTopics: number[];
   cellScores: Record<BlockCellId, number>;
   badges: string[];
+  explainCount?: number;
+  recentExplanations?: {
+    language: string;
+    summary: string;
+    createdAt: string;
+  }[];
   history: {
     topicId: number;
     topicTitle: string;
