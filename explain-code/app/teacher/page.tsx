@@ -2601,7 +2601,7 @@ export default function TeacherLMSDashboardPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 overflow-y-auto backdrop-blur-xs">
             <form
               onSubmit={handleSaveDungeonQuestion}
-              className="w-full max-w-xl rounded-2xl border border-[#3d395a] bg-[#141220] p-6 text-[#f4efe6] shadow-2xl space-y-4 my-8"
+              className="my-auto w-full max-w-xl rounded-2xl border border-[#3d395a] bg-[#141220] p-6 text-[#f4efe6] shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between border-b border-[#2f2d45] pb-3">
                 <h3 className="text-base sm:text-lg font-bold text-[#f6c945] flex items-center gap-2">

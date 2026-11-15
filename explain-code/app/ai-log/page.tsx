@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { SiteHeader } from "../components/SiteHeader";
@@ -11,14 +11,23 @@ type FilterCategory = "all" | AiUsageLogItem["category"];
 
 export default function AiUsageLogPage() {
   const [selectedCategory, setSelectedCategory] = useState<FilterCategory>("all");
-  const [copiedReport, setCopiedReport] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) {
+        clearTimeout(copyTimerRef.current);
+      }
+    };
+  }, []);
 
   const filteredLogs =
     selectedCategory === "all"
       ? AI_USAGE_LOGS
       : AI_USAGE_LOGS.filter((item) => item.category === selectedCategory);
 
-  const handleCopyFullReport = () => {
+  const handleCopyFullReport = async () => {
     const lines: string[] = [
       "บันทึกการใช้ AI (AI Usage Log) — โครงการ CODE COOL (ExplainCode)",
       "การแข่งขัน Vibe Coding 2026: Innovating Classrooms for a Sustainable Future",
@@ -38,9 +47,48 @@ export default function AiUsageLogPage() {
       lines.push("");
     });
 
-    navigator.clipboard.writeText(lines.join("\n"));
-    setCopiedReport(true);
-    setTimeout(() => setCopiedReport(false), 2500);
+    const reportText = lines.join("\n");
+    let copied = false;
+
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(reportText);
+        copied = true;
+      } catch {
+        copied = false;
+      }
+    }
+
+    if (!copied && typeof document !== "undefined") {
+      let textarea: HTMLTextAreaElement | null = null;
+      try {
+        textarea = document.createElement("textarea");
+        textarea.value = reportText;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        textarea.style.top = "0";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        textarea.setSelectionRange(0, reportText.length);
+        copied = document.execCommand("copy");
+      } catch {
+        copied = false;
+      } finally {
+        if (textarea && textarea.parentNode) {
+          textarea.parentNode.removeChild(textarea);
+        }
+      }
+    }
+
+    if (copyTimerRef.current) {
+      clearTimeout(copyTimerRef.current);
+    }
+    setCopyStatus(copied ? "copied" : "failed");
+    copyTimerRef.current = setTimeout(() => {
+      setCopyStatus("idle");
+    }, 2500);
   };
 
   return (
@@ -49,11 +97,11 @@ export default function AiUsageLogPage() {
         <SiteHeader />
       </div>
 
-      <main className="mx-auto flex-1 max-w-5xl w-full px-4 py-8 sm:px-6 sm:py-12 flex flex-col gap-6">
+      <main className="mx-auto flex-1 max-w-5xl w-full min-w-0 px-4 py-8 sm:px-6 sm:py-12 flex flex-col gap-6">
         {/* Header Banner */}
         <section className="rounded-2xl border-2 border-[#2f2d45] bg-[#141220] p-6 sm:p-8 shadow-lg">
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="space-y-2 max-w-3xl">
+            <div className="space-y-2 max-w-3xl min-w-0">
               <div className="inline-flex items-center gap-2 rounded-full bg-[#25193b] border border-[#9b5de5]/60 px-3.5 py-1 text-xs font-extrabold text-[#ffe27a]">
                 <Icon name="clipboard" className="h-3.5 w-3.5 text-[#f6c945]" />
                 <span>เอกสารส่งมอบรายการที่ 4 · บันทึกการใช้ AI (AI Usage Log)</span>
@@ -69,13 +117,15 @@ export default function AiUsageLogPage() {
             <div className="flex flex-wrap items-center gap-2.5 no-print">
               <button
                 type="button"
-                onClick={handleCopyFullReport}
+                onClick={() => void handleCopyFullReport()}
                 className="retro-button inline-flex items-center gap-2 rounded-xl bg-[#f6c945] px-4 py-2.5 text-xs sm:text-sm font-extrabold text-[#120f1c] hover:bg-[#ffe27a] transition-colors cursor-pointer"
               >
                 <Icon name="clipboard" className="h-4 w-4" />
                 <span>
-                  {copiedReport
+                  {copyStatus === "copied"
                     ? "คัดลอกบันทึก AI ทั้งหมดแล้ว!"
+                    : copyStatus === "failed"
+                    ? "ไม่สามารถคัดลอกอัตโนมัติได้"
                     : "คัดลอกรายงาน AI Log"}
                 </span>
               </button>
@@ -190,16 +240,16 @@ export default function AiUsageLogPage() {
             >
               {/* Top Row: Title + Category + AI Tool Badge */}
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#2f2d45] pb-3.5">
-                <div>
+                <div className="min-w-0 flex-1">
                   <span className="inline-block text-[11px] font-extrabold uppercase tracking-wider text-[#c084fc]">
                     {log.categoryLabel}
                   </span>
-                  <h2 className="text-lg sm:text-xl font-extrabold text-[#ffe27a] mt-0.5">
+                  <h2 className="text-lg sm:text-xl font-extrabold text-[#ffe27a] mt-0.5 break-words">
                     {log.promptTitle}
                   </h2>
                 </div>
 
-                <div className="inline-flex items-center gap-2 rounded-xl bg-[#1c1b2b] border border-[#3d395a] px-3 py-1.5 text-xs font-bold text-[#f4efe6]">
+                <div className="inline-flex max-w-full items-center gap-2 rounded-xl bg-[#1c1b2b] border border-[#3d395a] px-3 py-1.5 text-xs font-bold text-[#f4efe6] break-words">
                   <Icon name="sparkles" className="h-3.5 w-3.5 text-[#f6c945] shrink-0" />
                   <span>เครื่องมือ AI: {log.aiTool}</span>
                 </div>
@@ -228,12 +278,12 @@ export default function AiUsageLogPage() {
                       />
                     </div>
                   </div>
-                  <div className="text-xs text-[#c4bdd6] space-y-1">
+                  <div className="min-w-0 flex-1 text-xs text-[#c4bdd6] space-y-1">
                     <div className="font-extrabold text-[#ffe27a]">
                       บันทึกการใช้ Generative AI สร้างภาพประกอบและไอคอนตามกติกาข้อ 2.2 (หน้า 4)
                     </div>
-                    <p>
-                      ไฟล์ต้นฉบับ <code className="text-[#f4efe6]">public/logo.png</code> ถูกนำไปแปลงด้วยสคริปต์รักษาสัดส่วนภาพ (Square Padding + LANCZOS Resampling) เพื่อสร้าง <code className="text-[#f4efe6]">app/favicon.ico</code> (16×16, 32×32, 48×48, 64×64), <code className="text-[#f4efe6]">app/icon.png</code> (192×192) และ <code className="text-[#f4efe6]">app/apple-icon.png</code> (180×180)
+                    <p className="break-words">
+                      ไฟล์ต้นฉบับ <code className="text-xs break-all text-[#f4efe6]">public/logo.png</code> ถูกนำไปแปลงด้วยสคริปต์รักษาสัดส่วนภาพ (Square Padding + LANCZOS Resampling) เพื่อสร้าง <code className="text-xs break-all text-[#f4efe6]">app/favicon.ico</code> (16×16, 32×32, 48×48, 64×64), <code className="text-xs break-all text-[#f4efe6]">app/icon.png</code> (192×192) และ <code className="text-xs break-all text-[#f4efe6]">app/apple-icon.png</code> (180×180)
                     </p>
                   </div>
                 </div>
@@ -244,7 +294,7 @@ export default function AiUsageLogPage() {
                 <div className="text-xs font-extrabold text-[#c084fc] mb-1">
                   คำสั่ง (Prompt) ที่ใช้สั่งงาน AI จริง:
                 </div>
-                <p className="font-medium">&ldquo;{log.promptText}&rdquo;</p>
+                <p className="font-medium break-words">&ldquo;{log.promptText}&rdquo;</p>
               </div>
 
               {/* Problem Found & Solution Applied */}
@@ -253,14 +303,14 @@ export default function AiUsageLogPage() {
                   <div className="font-extrabold flex items-center gap-1.5 mb-1">
                     <span>⚠️ ปัญหา/ข้อจำกัดที่พบจากผลลัพธ์ของ AI:</span>
                   </div>
-                  <p className="text-[#f4efe6]/90 leading-relaxed">{log.problemFound}</p>
+                  <p className="text-[#f4efe6]/90 leading-relaxed break-words">{log.problemFound}</p>
                 </div>
 
                 <div className="rounded-xl bg-[#102a1e] border border-[#2fbf71]/50 p-4 text-[#86efac]">
                   <div className="font-extrabold flex items-center gap-1.5 mb-1">
                     <span>🛠️ วิธีการที่ทีมปรับปรุงแก้ไขและพัฒนาต่อ:</span>
                   </div>
-                  <p className="text-[#f4efe6]/90 leading-relaxed">{log.solutionApplied}</p>
+                  <p className="text-[#f4efe6]/90 leading-relaxed break-words">{log.solutionApplied}</p>
                 </div>
               </div>
 
@@ -269,13 +319,13 @@ export default function AiUsageLogPage() {
                 <div className="font-extrabold text-[#ffe27a] mb-1">
                   🔍 คำอธิบายโครงสร้างและการทำงานของโค้ด (Code Structure &amp; Execution Flow):
                 </div>
-                <p className="text-[#c4bdd6] leading-relaxed">{log.codeExplanation}</p>
-                <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                <p className="text-[#c4bdd6] leading-relaxed break-words">{log.codeExplanation}</p>
+                <div className="mt-2.5 flex min-w-0 flex-wrap items-center gap-1.5">
                   <span className="text-[11px] font-bold text-[#9a93ad]">ไฟล์ที่เกี่ยวข้อง:</span>
                   {log.relatedFiles.map((file) => (
                     <code
                       key={file}
-                      className="rounded-md bg-[#0d0b14] border border-[#2f2d45] px-2 py-0.5 text-[11px] font-bold text-[#ffe27a]"
+                      className="max-w-full break-all rounded-md bg-[#0d0b14] border border-[#2f2d45] px-2 py-0.5 text-[11px] font-bold text-[#ffe27a]"
                     >
                       {file}
                     </code>

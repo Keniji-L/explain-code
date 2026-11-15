@@ -6,6 +6,10 @@ import {
   TraceStep,
 } from "../curriculum";
 import { ExplainCodeResult } from "../explain-code";
+import {
+  GEMINI_MODEL_FALLBACK_CHAIN,
+  callGeminiGenerateJson,
+} from "../gemini-client";
 import { LearningLanguage, runCodeByLanguage } from "../language-tracks";
 import { CustomDungeonPayload, normalizeLearningLanguage } from "../custom-dungeon";
 import { DungeonQuestion, DungeonTraceStep } from "./questions";
@@ -414,42 +418,24 @@ ${explanation?.summary ? `- บริบทสรุปโค้ด: ${explanati
 ${numberedLines}`;
 
   try {
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.25,
-          },
-        }),
-        signal: AbortSignal.timeout(15000),
-      }
-    );
+    const geminiResult = await callGeminiGenerateJson<{
+      title?: unknown;
+      subtitle?: unknown;
+      questions?: unknown;
+      steps?: unknown;
+    }>({
+      apiKey,
+      prompt,
+      temperature: 0.25,
+      timeoutMs: 15000,
+      models: GEMINI_MODEL_FALLBACK_CHAIN,
+    });
 
-    if (!response.ok) {
+    if (!geminiResult.ok || !geminiResult.data) {
       return null;
     }
 
-    const data = await response.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText || typeof rawText !== "string") {
-      return null;
-    }
-
-    const cleanedText = rawText
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
-
-    const parsed = JSON.parse(cleanedText);
+    const parsed = geminiResult.data;
     if (!parsed || !Array.isArray(parsed.questions) || parsed.questions.length < 2) {
       return null;
     }

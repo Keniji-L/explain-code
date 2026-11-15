@@ -1611,7 +1611,7 @@ export const AI_USAGE_LOGS: AiUsageLogItem[] = [
     solutionApplied:
       "เพิ่มระบบ Hybrid Fallback Engine (Deterministic Code Analyzer & Heuristic Evaluator) ที่สลับมาวิเคราะห์โครงสร้างโค้ดและสร้างโจทย์ดันเจี้ยน 3 เฟสได้อัตโนมัติภายในเสี้ยววินาทีแม้ไม่มี API Key พร้อมระบบสลับโมเดล Gemini สำรองอัตโนมัติเมื่อโควตาเต็ม และจำกัดอัตราเรียกใช้ (Rate Limiting ต่อ IP และโควตา Guest)",
     codeExplanation:
-      "Route Handlers ฝั่งเซิร์ฟเวอร์อ่านค่า process.env.GEMINI_API_KEY เฉพาะใน Node.js runtime (ไม่ส่งออกไปที่ฝั่ง Client เด็ดขาดตามกติกาหน้า 4) เรียก gemini-3.5-flash-lite แบบกำหนด JSON Schema ผ่าน gemini-client.ts ซึ่งจะสลับไปโมเดลสำรอง (gemini-3.6-flash / gemini-3.7-flash / gemini-2.0-flash-lite) อัตโนมัติเมื่อโควตาเต็ม และหากเกิดข้อผิดพลาดทั้งหมดจะสลับไปใช้ฟังก์ชันวิเคราะห์โครงสร้างโค้ดใน explain-code.ts ทันที",
+      "Route Handlers ฝั่งเซิร์ฟเวอร์อ่านค่า process.env.GEMINI_API_KEY เฉพาะใน Node.js runtime (ไม่ส่งออกไปที่ฝั่ง Client เด็ดขาดตามกติกาหน้า 4) เรียก gemini-3.5-flash-lite แบบกำหนด JSON Schema ผ่าน gemini-client.ts ซึ่งจะสลับไปโมเดลสำรอง (gemini-3.6-flash / gemini-3.7-flash) อัตโนมัติเมื่อโควตาเต็ม และหากเกิดข้อผิดพลาดทั้งหมดจะสลับไปใช้ฟังก์ชันวิเคราะห์โครงสร้างโค้ดใน explain-code.ts ทันที",
     relatedFiles: [
       "app/api/explain/route.ts",
       "app/api/explain/to-dungeon/route.ts",
