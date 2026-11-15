@@ -390,9 +390,9 @@ export async function POST(req: NextRequest) {
             if (studentRows && studentRows.length > 0) {
               const studentRow = studentRows[0];
               const validPin =
-                !studentRow.pin_hash ||
-                studentRow.pin_hash === secretHash ||
-                studentRow.pin_hash === pepperedSecretHash;
+                Boolean(studentRow.pin_hash) &&
+                (studentRow.pin_hash === secretHash ||
+                  studentRow.pin_hash === pepperedSecretHash);
 
               if (!validPin) {
                 return NextResponse.json(
@@ -559,9 +559,9 @@ export async function POST(req: NextRequest) {
 
               // ตรวจสอบความถูกต้องของ PIN
               const validPin =
-                !studentRow.pin_hash ||
-                studentRow.pin_hash === pinHash ||
-                studentRow.pin_hash === pepperedPinHash;
+                Boolean(studentRow.pin_hash) &&
+                (studentRow.pin_hash === pinHash ||
+                  studentRow.pin_hash === pepperedPinHash);
 
               if (!validPin) {
                 return NextResponse.json(
@@ -593,18 +593,41 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const fallbackRes = NextResponse.json({
-        authenticated: true,
-        source: "local",
-        role: "student",
-        pinHash,
-      });
-      return withSessionCookie(fallbackRes, {
-        userId: `stu-${nick}`,
-        username: nick,
-        displayName: nick,
-        role: "student",
-      });
+      const demoStudent = INITIAL_STUDENTS.find(
+        (s) => s.nickname.toLowerCase() === nick.toLowerCase()
+      );
+      if (demoStudent) {
+        if (
+          demoStudent.pinHash &&
+          demoStudent.pinHash !== pinHash &&
+          demoStudent.pinHash !== pepperedPinHash &&
+          String(pin).trim() !== "1234"
+        ) {
+          return NextResponse.json(
+            { error: "รหัส PIN 4 หลักไม่ถูกต้องสำหรับชื่อเล่นนี้" },
+            { status: 401 }
+          );
+        }
+        const fallbackRes = NextResponse.json({
+          authenticated: true,
+          source: "local",
+          role: "student",
+          pinHash,
+          student: demoStudent,
+        });
+        return withSessionCookie(fallbackRes, {
+          userId: demoStudent.id || `stu-${demoStudent.nickname}`,
+          username: demoStudent.nickname,
+          displayName: demoStudent.nickname,
+          role: "student",
+          roomCode: demoStudent.roomCode,
+        });
+      }
+
+      return NextResponse.json(
+        { error: "ไม่พบบัญชีนักเรียนนี้ กรุณาสมัครสมาชิกก่อนเข้าสู่ระบบ" },
+        { status: 404 }
+      );
     }
 
     // ==================== 1.5. ซิงค์ข้อมูลนักเรียนล่าสุดจาก Supabase (Role: student) ====================
@@ -991,7 +1014,7 @@ export async function POST(req: NextRequest) {
               const tRow = teacherRows[0];
 
               // ตรวจสอบความถูกต้องของรหัสผ่าน
-              if (tRow.password_hash && tRow.password_hash !== passwordHash) {
+              if (!tRow.password_hash || tRow.password_hash !== passwordHash) {
                 return NextResponse.json(
                   { error: "รหัสผ่านไม่ถูกต้อง (บัญชีครูตัวอย่างใช้รหัสผ่าน: 12345678)" },
                   { status: 401 }
@@ -1065,20 +1088,47 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const fallbackTeacherLoginRes = NextResponse.json({
-        authenticated: true,
-        source: "local",
-        role: "teacher",
-        passwordHash,
-        teacherStatus: "approved",
-      });
-      return withSessionCookie(fallbackTeacherLoginRes, {
-        userId: `tch-${uname}`,
-        username: uname,
-        displayName: uname,
-        role: "teacher",
-        teacherStatus: "approved",
-      });
+      const demoTeacher = INITIAL_TEACHERS.find(
+        (t) => t.username.toLowerCase() === uname.toLowerCase()
+      );
+      if (demoTeacher) {
+        if (
+          demoTeacher.passwordHash &&
+          demoTeacher.passwordHash !== passwordHash &&
+          pwd !== "12345678"
+        ) {
+          return NextResponse.json(
+            { error: "รหัสผ่านไม่ถูกต้อง (บัญชีครูตัวอย่างใช้รหัสผ่าน: 12345678)" },
+            { status: 401 }
+          );
+        }
+        const fallbackTeacherLoginRes = NextResponse.json({
+          authenticated: true,
+          source: "local",
+          role: "teacher",
+          passwordHash,
+          teacherStatus: "approved",
+          teacher: {
+            id: demoTeacher.id || `tch-${demoTeacher.username}`,
+            username: demoTeacher.username,
+            displayName: demoTeacher.displayName || demoTeacher.username,
+            role: "teacher",
+            teacherStatus: "approved",
+          },
+        });
+        return withSessionCookie(fallbackTeacherLoginRes, {
+          userId: demoTeacher.id || `tch-${demoTeacher.username}`,
+          username: demoTeacher.username,
+          displayName: demoTeacher.displayName || demoTeacher.username,
+          role: "teacher",
+          teacherStatus: "approved",
+        });
+      }
+
+      return NextResponse.json(
+        { error: "ไม่พบบัญชีครูผู้สอนนี้ กรุณาสมัครสมาชิกก่อนเข้าสู่ระบบ" },
+        { status: 404 }
+      );
     }
 
     // ==================== 4. สมัครบัญชีครูผู้สอนใหม่ (Role: teacher) ====================
