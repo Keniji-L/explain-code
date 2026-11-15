@@ -47,11 +47,11 @@ interface AuthSession {
   roomCode?: string;
 }
 
-function formatAttemptTimestamp(isoStr?: string): string {
-  if (!isoStr) return "เมื่อสักครู่";
+function formatAttemptTimestamp(isoStr?: string, uiLang: "th" | "en" = "th"): string {
+  if (!isoStr) return uiLang === "en" ? "Just now" : "เมื่อสักครู่";
   try {
     const d = new Date(isoStr);
-    return d.toLocaleString("th-TH", {
+    return d.toLocaleString(uiLang === "en" ? "en-US" : "th-TH", {
       timeZone: "Asia/Bangkok",
       month: "short",
       day: "numeric",
@@ -59,12 +59,12 @@ function formatAttemptTimestamp(isoStr?: string): string {
       minute: "2-digit",
     });
   } catch {
-    return "เมื่อสักครู่";
+    return uiLang === "en" ? "Just now" : "เมื่อสักครู่";
   }
 }
 
 export default function ExplainCodeApp() {
-  const { t } = useUiLanguage();
+  const { uiLang, t } = useUiLanguage();
   const [appMode, setAppMode] = useState<AppMode>("landing");
   const [studentTab, setStudentTab] = useState<StudentTab>("quest");
   const [authSession, setAuthSession] = useState<AuthSession | null>(null);
@@ -324,7 +324,10 @@ export default function ExplainCodeApp() {
     if (!nick && !pin) {
       setAuthMessage({
         type: "error",
-        text: "กรุณากรอกชื่อเล่นสมมติและรหัส PIN 4 หลักก่อนเข้าเล่น (ห้ามเว้นว่าง)",
+        text: t(
+          "กรุณากรอกชื่อเล่นสมมติและรหัส PIN 4 หลักก่อนเข้าเล่น (ห้ามเว้นว่าง)",
+          "Please enter your nickname and 4-digit PIN before playing (cannot be empty)."
+        ),
       });
       return;
     }
@@ -332,7 +335,10 @@ export default function ExplainCodeApp() {
     if (!nick) {
       setAuthMessage({
         type: "error",
-        text: "กรุณากรอกชื่อเล่นสมมติของคุณ (ห้ามเว้นว่าง)",
+        text: t(
+          "กรุณากรอกชื่อเล่นสมมติของคุณ (ห้ามเว้นว่าง)",
+          "Please enter your nickname (cannot be empty)."
+        ),
       });
       return;
     }
@@ -340,7 +346,10 @@ export default function ExplainCodeApp() {
     if (!pin) {
       setAuthMessage({
         type: "error",
-        text: "กรุณากรอกรหัส PIN 4 หลัก (ห้ามเว้นว่าง)",
+        text: t(
+          "กรุณากรอกรหัส PIN 4 หลัก (ห้ามเว้นว่าง)",
+          "Please enter your 4-digit PIN (cannot be empty)."
+        ),
       });
       return;
     }
@@ -348,7 +357,10 @@ export default function ExplainCodeApp() {
     if (pin.length !== 4) {
       setAuthMessage({
         type: "error",
-        text: "รหัส PIN นักเรียนต้องเป็นตัวเลข 4 หลักให้ครบถ้วน",
+        text: t(
+          "รหัส PIN นักเรียนต้องเป็นตัวเลข 4 หลักให้ครบถ้วน",
+          "Student PIN must be 4 digits."
+        ),
       });
       return;
     }
@@ -357,7 +369,12 @@ export default function ExplainCodeApp() {
     if (!pdpaLoginCheck.valid) {
       setAuthMessage({
         type: "error",
-        text: pdpaLoginCheck.reason || "ตามหลัก PDPA 2562 กรุณาใช้ชื่อเล่นสมมติเท่านั้น",
+        text:
+          pdpaLoginCheck.reason ||
+          t(
+            "ตามหลัก PDPA 2562 กรุณาใช้ชื่อเล่นสมมติเท่านั้น",
+            "Per PDPA guidelines, please use a nickname only."
+          ),
       });
       return;
     }
@@ -377,7 +394,7 @@ export default function ExplainCodeApp() {
     if (!res.ok) {
       setAuthMessage({
         type: "error",
-        text: data.error || "เข้าสู่ระบบไม่สำเร็จ",
+        text: data.error || t("เข้าสู่ระบบไม่สำเร็จ", "Login failed"),
       });
       return;
     }
@@ -411,7 +428,10 @@ export default function ExplainCodeApp() {
     if (!found) {
       setAuthMessage({
         type: "error",
-        text: `ยังไม่มีชื่อเล่น "${nick}" ในระบบ กรุณากดแท็บ "สมัครเข้าเล่นใหม่" แล้วใส่รหัสห้องจากครู`,
+        text: t(
+          `ยังไม่มีชื่อเล่น "${nick}" ในระบบ กรุณากดแท็บ "สมัครเข้าเล่นใหม่" แล้วใส่รหัสห้องจากครู`,
+          `Nickname "${nick}" was not found. Please switch to "Sign Up" and enter your teacher's room code.`
+        ),
       });
       setStudentAuthTab("register");
       return;
@@ -420,7 +440,10 @@ export default function ExplainCodeApp() {
     if (!data.authenticated || (data.pinHash && found.pinHash !== data.pinHash)) {
       setAuthMessage({
         type: "error",
-        text: "รหัส PIN 4 หลักไม่ถูกต้อง (บัญชีตัวอย่างใช้รหัส PIN: 1234)",
+        text: t(
+          "รหัส PIN 4 หลักไม่ถูกต้อง (บัญชีตัวอย่างใช้รหัส PIN: 1234)",
+          "Incorrect 4-digit PIN (demo account PIN: 1234)."
+        ),
       });
       return;
     }
@@ -448,7 +471,10 @@ export default function ExplainCodeApp() {
     if (!nick && !pin) {
       setAuthMessage({
         type: "error",
-        text: "กรุณาตั้งชื่อเล่นสมมติและรหัส PIN 4 หลักก่อนกดสมัคร (ห้ามเว้นว่าง)",
+        text: t(
+          "กรุณาตั้งชื่อเล่นสมมติและรหัส PIN 4 หลักก่อนกดสมัคร (ห้ามเว้นว่าง)",
+          "Please set a nickname and 4-digit PIN before signing up (cannot be empty)."
+        ),
       });
       return;
     }
@@ -456,7 +482,10 @@ export default function ExplainCodeApp() {
     if (!nick) {
       setAuthMessage({
         type: "error",
-        text: "กรุณาตั้งชื่อเล่นสมมติของคุณ (ห้ามเว้นว่าง)",
+        text: t(
+          "กรุณาตั้งชื่อเล่นสมมติของคุณ (ห้ามเว้นว่าง)",
+          "Please set your nickname (cannot be empty)."
+        ),
       });
       return;
     }
@@ -464,7 +493,10 @@ export default function ExplainCodeApp() {
     if (!pin) {
       setAuthMessage({
         type: "error",
-        text: "กรุณาตั้งรหัส PIN 4 หลัก (ห้ามเว้นว่าง)",
+        text: t(
+          "กรุณาตั้งรหัส PIN 4 หลัก (ห้ามเว้นว่าง)",
+          "Please set a 4-digit PIN (cannot be empty)."
+        ),
       });
       return;
     }
@@ -472,7 +504,10 @@ export default function ExplainCodeApp() {
     if (pin.length !== 4) {
       setAuthMessage({
         type: "error",
-        text: "รหัส PIN นักเรียนต้องเป็นตัวเลข 4 หลักให้ครบถ้วน",
+        text: t(
+          "รหัส PIN นักเรียนต้องเป็นตัวเลข 4 หลักให้ครบถ้วน",
+          "Student PIN must be 4 digits."
+        ),
       });
       return;
     }
@@ -481,7 +516,12 @@ export default function ExplainCodeApp() {
     if (!pdpaLoginCheck.valid) {
       setAuthMessage({
         type: "error",
-        text: pdpaLoginCheck.reason || "ตามหลัก PDPA 2562 กรุณาใช้ชื่อเล่นสมมติเท่านั้น",
+        text:
+          pdpaLoginCheck.reason ||
+          t(
+            "ตามหลัก PDPA 2562 กรุณาใช้ชื่อเล่นสมมติเท่านั้น",
+            "Per PDPA guidelines, please use a nickname only."
+          ),
       });
       return;
     }
@@ -491,9 +531,14 @@ export default function ExplainCodeApp() {
       if (!roomExists) {
         setAuthMessage({
           type: "error",
-          text: `ไม่พบรหัสห้อง ${rawCode} (เว้นว่างได้หากไม่มีรหัสห้อง หรือใช้: ${classrooms
-            .map((c) => c.roomCode)
-            .join(", ")})`,
+          text: t(
+            `ไม่พบรหัสห้อง ${rawCode} (เว้นว่างได้หากไม่มีรหัสห้อง หรือใช้: ${classrooms
+              .map((c) => c.roomCode)
+              .join(", ")})`,
+            `Room code ${rawCode} not found (leave blank if none, or use: ${classrooms
+              .map((c) => c.roomCode)
+              .join(", ")})`
+          ),
         });
         return;
       }
@@ -505,7 +550,10 @@ export default function ExplainCodeApp() {
     if (existing) {
       setAuthMessage({
         type: "error",
-        text: `ชื่อเล่น "${nick}" มีในระบบแล้ว กรุณาเปลี่ยนชื่อเล่นสมมติ หรือสลับไปแท็บ "เข้าเล่น"`,
+        text: t(
+          `ชื่อเล่น "${nick}" มีในระบบแล้ว กรุณาเปลี่ยนชื่อเล่นสมมติ หรือสลับไปแท็บ "เข้าเล่น"`,
+          `Nickname "${nick}" is already taken. Please choose another or switch to "Login".`
+        ),
       });
       return;
     }
@@ -570,17 +618,32 @@ export default function ExplainCodeApp() {
     const pwd = teacherPassword.trim();
 
     if (!uname && !pwd) {
-      setTeacherAuthError("กรุณากรอกชื่อผู้ใช้และรหัสผ่านสำหรับครูก่อนเข้าสู่ระบบ (ห้ามเว้นว่าง)");
+      setTeacherAuthError(
+        t(
+          "กรุณากรอกชื่อผู้ใช้และรหัสผ่านสำหรับครูก่อนเข้าสู่ระบบ (ห้ามเว้นว่าง)",
+          "Please enter teacher username and password before logging in (cannot be empty)."
+        )
+      );
       return;
     }
 
     if (!uname) {
-      setTeacherAuthError("กรุณากรอกชื่อผู้ใช้ (ครู) ก่อนเข้าสู่ระบบ (ห้ามเว้นว่าง)");
+      setTeacherAuthError(
+        t(
+          "กรุณากรอกชื่อผู้ใช้ (ครู) ก่อนเข้าสู่ระบบ (ห้ามเว้นว่าง)",
+          "Please enter teacher username before logging in (cannot be empty)."
+        )
+      );
       return;
     }
 
     if (!pwd) {
-      setTeacherAuthError("กรุณากรอกรหัสผ่านสำหรับครู (ห้ามเว้นว่าง)");
+      setTeacherAuthError(
+        t(
+          "กรุณากรอกรหัสผ่านสำหรับครู (ห้ามเว้นว่าง)",
+          "Please enter teacher password (cannot be empty)."
+        )
+      );
       return;
     }
 
@@ -597,7 +660,9 @@ export default function ExplainCodeApp() {
     const data = await res.json();
 
     if (!res.ok) {
-      setTeacherAuthError(data.error || "เข้าสู่ระบบครูไม่สำเร็จ");
+      setTeacherAuthError(
+        data.error || t("เข้าสู่ระบบครูไม่สำเร็จ", "Teacher login failed")
+      );
       return;
     }
 
@@ -617,7 +682,10 @@ export default function ExplainCodeApp() {
 
     if (!foundTeacher) {
       setTeacherAuthError(
-        `ไม่พบบัญชีครู "${uname}" กรุณากดแท็บ "สมัครบัญชีครูใหม่" หรือใช้บัญชี "ครูตัวอย่าง"`
+        t(
+          `ไม่พบบัญชีครู "${uname}" กรุณากดแท็บ "สมัครบัญชีครูใหม่" หรือใช้บัญชี "ครูตัวอย่าง"`,
+          `Teacher account "${uname}" not found. Switch to "Register Teacher" or use the demo account.`
+        )
       );
       return;
     }
@@ -638,27 +706,52 @@ export default function ExplainCodeApp() {
     const pwd = teacherPassword.trim();
 
     if (!uname && !pwd) {
-      setTeacherAuthError("กรุณาตั้งชื่อผู้ใช้และรหัสผ่านก่อนกดสมัครบัญชีครู (ห้ามเว้นว่าง)");
+      setTeacherAuthError(
+        t(
+          "กรุณาตั้งชื่อผู้ใช้และรหัสผ่านก่อนกดสมัครบัญชีครู (ห้ามเว้นว่าง)",
+          "Please set username and password before registering (cannot be empty)."
+        )
+      );
       return;
     }
 
     if (!uname) {
-      setTeacherAuthError("กรุณาตั้งชื่อผู้ใช้ (ครู) (ห้ามเว้นว่าง)");
+      setTeacherAuthError(
+        t(
+          "กรุณาตั้งชื่อผู้ใช้ (ครู) (ห้ามเว้นว่าง)",
+          "Please set teacher username (cannot be empty)."
+        )
+      );
       return;
     }
 
     if (!pwd) {
-      setTeacherAuthError("กรุณาตั้งรหัสผ่านสำหรับครู (ห้ามเว้นว่าง)");
+      setTeacherAuthError(
+        t(
+          "กรุณาตั้งรหัสผ่านสำหรับครู (ห้ามเว้นว่าง)",
+          "Please set teacher password (cannot be empty)."
+        )
+      );
       return;
     }
 
     if (pwd.length < 4) {
-      setTeacherAuthError("รหัสผ่านสำหรับครูต้องมีความยาวอย่างน้อย 4 ตัวอักษร");
+      setTeacherAuthError(
+        t(
+          "รหัสผ่านสำหรับครูต้องมีความยาวอย่างน้อย 4 ตัวอักษร",
+          "Teacher password must be at least 4 characters long."
+        )
+      );
       return;
     }
 
-    if (teachers.some((t) => t.username.toLowerCase() === uname.toLowerCase())) {
-      setTeacherAuthError("ชื่อผู้ใช้นี้มีในระบบแล้ว กรุณาเข้าสู่ระบบ");
+    if (teachers.some((teacher) => teacher.username.toLowerCase() === uname.toLowerCase())) {
+      setTeacherAuthError(
+        t(
+          "ชื่อผู้ใช้นี้มีในระบบแล้ว กรุณาเข้าสู่ระบบ",
+          "This username already exists. Please log in."
+        )
+      );
       setTeacherAuthTab("login");
       return;
     }
@@ -677,7 +770,9 @@ export default function ExplainCodeApp() {
     const data = await res.json();
 
     if (!res.ok) {
-      setTeacherAuthError(data.error || "สมัครบัญชีครูไม่สำเร็จ");
+      setTeacherAuthError(
+        data.error || t("สมัครบัญชีครูไม่สำเร็จ", "Teacher registration failed")
+      );
       return;
     }
 
@@ -847,10 +942,11 @@ export default function ExplainCodeApp() {
 
     const newHistoryItem = {
       topicId: result.topicId,
-      topicTitle: topicObj?.title || `เรื่องที่ ${result.topicId}`,
+      topicTitle:
+        topicObj?.title || t(`เรื่องที่ ${result.topicId}`, `Topic ${result.topicId}`),
       scorePercent: result.scorePercent,
       xpEarned: result.earnedXp,
-      timestamp: "เมื่อสักครู่",
+      timestamp: t("เมื่อสักครู่", "Just now"),
     };
 
     const nextHistory = [newHistoryItem, ...currentStudentSnapshot.history];
@@ -955,10 +1051,11 @@ export default function ExplainCodeApp() {
             const formattedHistory = historyData.attempts.map((att: any) => ({
               topicId: att.topic_id,
               topicTitle:
-                TOPICS.find((t) => t.id === att.topic_id)?.title || `เรื่องที่ ${att.topic_id}`,
+                TOPICS.find((topicItem) => topicItem.id === att.topic_id)?.title ||
+                t(`เรื่องที่ ${att.topic_id}`, `Topic ${att.topic_id}`),
               scorePercent: att.score_percent,
               xpEarned: att.xp_earned,
-              timestamp: formatAttemptTimestamp(att.created_at),
+              timestamp: formatAttemptTimestamp(att.created_at, uiLang),
             }));
 
             setStudents((prev) => {
@@ -1003,7 +1100,10 @@ export default function ExplainCodeApp() {
       try {
         await fn(e);
       } catch {
-        const msg = "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่อีกครั้ง";
+        const msg = t(
+          "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่อีกครั้ง",
+          "Cannot connect to server. Please try again."
+        );
         if (role === "teacher") setTeacherAuthError(msg);
         else setAuthMessage({ type: "error", text: msg });
       } finally {
@@ -1253,7 +1353,7 @@ export default function ExplainCodeApp() {
               className="inline-flex items-center gap-1.5 rounded-xl border-2 border-[#f6c945]/70 bg-[#1c1b2b] px-3.5 py-1.5 text-[13px] font-extrabold text-[#ffe27a] hover:border-[#f6c945] hover:bg-[#281d08] transition cursor-pointer"
             >
               <Icon name="home" size={16} className="text-[#f6c945]" />
-              <span>← กลับไปหน้าแรก</span>
+              <span>{t("← กลับไปหน้าแรก", "← Back to Home")}</span>
             </button>
             <Image
               src="/logo.png"
@@ -1263,13 +1363,13 @@ export default function ExplainCodeApp() {
               className="h-8 w-8 rounded-lg object-contain border border-[#f6c945]/50 bg-[#0d0b14] shrink-0"
             />
             <span>
-              CODE COOL {isTeacherRole ? "· ครูผู้สอน" : "· นักเรียน"}
+              CODE COOL {isTeacherRole ? t("· ครูผู้สอน", "· Teacher") : t("· นักเรียน", "· Student")}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
             <span className="hidden sm:inline text-[13px] font-bold text-[#9a93ad]">
-              สลับบทบาท (Role):
+              {t("สลับบทบาท (Role):", "Switch Role:")}
             </span>
             <button
               type="button"
@@ -1282,7 +1382,9 @@ export default function ExplainCodeApp() {
             >
               <Icon name={isTeacherRole ? "user" : "users"} size={18} />
               <span>
-                {isTeacherRole ? "ไปฝั่งนักเรียน" : "ไปฝั่งครูผู้สอน"}
+                {isTeacherRole
+                  ? t("ไปฝั่งนักเรียน", "Go to Student")
+                  : t("ไปฝั่งครูผู้สอน", "Go to Teacher")}
               </span>
             </button>
           </div>
@@ -1305,7 +1407,7 @@ export default function ExplainCodeApp() {
                 }`}
               >
                 <Icon name="user" size={18} />
-                <span>Role: นักเรียน</span>
+                <span>{t("Role: นักเรียน", "Role: Student")}</span>
               </button>
 
               <button
@@ -1321,7 +1423,7 @@ export default function ExplainCodeApp() {
                 }`}
               >
                 <Icon name="users" size={18} />
-                <span>Role: ครูผู้สอน</span>
+                <span>{t("Role: ครูผู้สอน", "Role: Teacher")}</span>
               </button>
             </div>
 
@@ -1331,11 +1433,14 @@ export default function ExplainCodeApp() {
                 <div>
                   <h1 className="text-[26px] font-extrabold text-[#f4efe6] tracking-tight">
                     {studentAuthTab === "login"
-                      ? "พร้อมลุยเควสต์?"
-                      : "สมัครเข้าห้องเรียนใหม่"}
+                      ? t("พร้อมลุยเควสต์?", "Ready for the Quest?")
+                      : t("สมัครเข้าห้องเรียนใหม่", "Join a New Classroom")}
                   </h1>
                   <p className="text-[14px] text-[#9a93ad] mt-0.5">
-                    อ่านโค้ดทีละขั้น เก็บ XP และตรา แล้วดูว่าตัวเองเข้าใจโค้ดตรงไหน
+                    {t(
+                      "อ่านโค้ดทีละขั้น เก็บ XP และตรา แล้วดูว่าตัวเองเข้าใจโค้ดตรงไหน",
+                      "Read code step by step, earn XP and badges, and see where you master code."
+                    )}
                   </p>
                 </div>
 
@@ -1354,7 +1459,7 @@ export default function ExplainCodeApp() {
                     }`}
                   >
                     <Icon name="play" size={16} filled={studentAuthTab === "login"} />
-                    <span>มีชื่อเล่นแล้ว (เข้าเล่น)</span>
+                    <span>{t("มีชื่อเล่นแล้ว (เข้าเล่น)", "Login (Have Nickname)")}</span>
                   </button>
 
                   <button
@@ -1370,7 +1475,7 @@ export default function ExplainCodeApp() {
                     }`}
                   >
                     <Icon name="user" size={16} />
-                    <span>สมัครเข้าเล่นใหม่</span>
+                    <span>{t("สมัครเข้าเล่นใหม่", "Sign Up New")}</span>
                   </button>
                 </div>
 
@@ -1389,15 +1494,15 @@ export default function ExplainCodeApp() {
                     <div className="flex-1 leading-relaxed">
                       <p className="font-extrabold text-[14px] mb-0.5">
                         {authMessage.type === "error"
-                          ? "แจ้งเตือนการกรอกข้อมูล"
-                          : "ดำเนินการสำเร็จ"}
+                          ? t("แจ้งเตือนการกรอกข้อมูล", "Input Notice")
+                          : t("ดำเนินการสำเร็จ", "Success")}
                       </p>
                       <p>{authMessage.text}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => setAuthMessage(null)}
-                      aria-label="ปิดกล่องแจ้งเตือน"
+                      aria-label={t("ปิดกล่องแจ้งเตือน", "Close alert")}
                       className="rounded-lg px-2 py-1 text-xs font-extrabold opacity-75 hover:bg-black/25 hover:opacity-100 cursor-pointer"
                     >
                       ✕
@@ -1414,24 +1519,24 @@ export default function ExplainCodeApp() {
                     <div className="flex flex-col gap-1.5">
                       <div className="flex items-center justify-between">
                         <label className="text-[14px] font-extrabold text-[#f4efe6]">
-                          ชื่อเล่นสมมติ
+                          {t("ชื่อเล่นสมมติ", "Nickname")}
                         </label>
                         <span className="text-[12px] font-semibold text-[#9a93ad]">
-                          ห้ามใช้ชื่อจริงหรืออีเมล (PDPA)
+                          {t("ห้ามใช้ชื่อจริงหรืออีเมล (PDPA)", "No real names or emails (PDPA)")}
                         </span>
                       </div>
                       <input
                         type="text"
                         value={loginNickname}
                         onChange={(e) => setLoginNickname(e.target.value)}
-                        placeholder="เช่น แมวส้ม"
+                        placeholder={t("เช่น แมวส้ม", "e.g. OrangeCat")}
                         className="w-full px-4 py-3.5 rounded-xl bg-[#0d0b14] border-2 border-[#2f2d45] text-[16px] font-bold text-[#f4efe6] focus:outline-none focus:border-[#f6c945]"
                       />
                     </div>
 
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[14px] font-extrabold text-[#f4efe6]">
-                        รหัส PIN 4 หลัก
+                        {t("รหัส PIN 4 หลัก", "4-Digit PIN")}
                       </label>
                       <input
                         type="password"
@@ -1451,7 +1556,11 @@ export default function ExplainCodeApp() {
                       className="press-gold disabled:opacity-60 w-full py-4 rounded-2xl text-[18px] font-extrabold flex items-center justify-center gap-2.5 cursor-pointer mt-1"
                     >
                       <Icon name="play" size={22} filled />
-                      <span>{isSubmitting ? "กำลังตรวจสอบ..." : "เริ่มเล่นเลย"}</span>
+                      <span>
+                        {isSubmitting
+                          ? t("กำลังตรวจสอบ...", "Checking...")
+                          : t("เริ่มเล่นเลย", "Start Playing")}
+                      </span>
                     </button>
                   </form>
                 ) : (
@@ -1462,13 +1571,13 @@ export default function ExplainCodeApp() {
                   >
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[14px] font-extrabold text-[#f4efe6]">
-                        1. ตั้งชื่อเล่นสมมติของคุณ (PDPA)
+                        {t("1. ตั้งชื่อเล่นสมมติของคุณ (PDPA)", "1. Set Your Nickname (PDPA)")}
                       </label>
                       <input
                         type="text"
                         value={loginNickname}
                         onChange={(e) => setLoginNickname(e.target.value)}
-                        placeholder="เช่น เสือน้อย, โลมาสีฟ้า"
+                        placeholder={t("เช่น เสือน้อย, โลมาสีฟ้า", "e.g. LittleTiger, BlueDolphin")}
                         className="w-full px-4 py-3 rounded-xl bg-[#0d0b14] border-2 border-[#2f2d45] text-[16px] font-bold text-[#f4efe6] focus:outline-none focus:border-[#f6c945]"
                       />
                     </div>
@@ -1476,7 +1585,7 @@ export default function ExplainCodeApp() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[14px] font-extrabold text-[#f4efe6]">
-                          2. ตั้งรหัส PIN 4 หลัก
+                          {t("2. ตั้งรหัส PIN 4 หลัก", "2. Set 4-Digit PIN")}
                         </label>
                         <input
                           type="password"
@@ -1492,13 +1601,13 @@ export default function ExplainCodeApp() {
 
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[14px] font-extrabold text-[#f4efe6]">
-                          3. รหัสห้องจากครู (เว้นว่างได้)
+                          {t("3. รหัสห้องจากครู (เว้นว่างได้)", "3. Teacher Room Code (Optional)")}
                         </label>
                         <input
                           type="text"
                           value={signupRoomCode}
                           onChange={(e) => setSignupRoomCode(e.target.value)}
-                          placeholder="เว้นว่างได้ (หรือใส่รหัสห้อง)"
+                          placeholder={t("เว้นว่างได้ (หรือใส่รหัสห้อง)", "Optional (or enter room code)")}
                           className="w-full px-4 py-3 rounded-xl bg-[#281d08] border-2 border-[#f6c945] font-code font-extrabold text-[16px] text-[#ffe27a] placeholder:font-sans placeholder:font-normal placeholder:text-[13px] placeholder:text-[#9a93ad] focus:outline-none focus:border-[#ffe27a]"
                         />
                       </div>
@@ -1510,7 +1619,11 @@ export default function ExplainCodeApp() {
                       className="press-gold disabled:opacity-60 w-full py-4 rounded-2xl text-[18px] font-extrabold flex items-center justify-center gap-2.5 cursor-pointer mt-1"
                     >
                       <Icon name="user" size={22} />
-                      <span>{isSubmitting ? "กำลังสมัคร..." : "สมัครเข้าเล่นทันที"}</span>
+                      <span>
+                        {isSubmitting
+                          ? t("กำลังสมัคร...", "Signing up...")
+                          : t("สมัครเข้าเล่นทันที", "Sign Up & Play")}
+                      </span>
                     </button>
                   </form>
                 )}
@@ -1523,11 +1636,14 @@ export default function ExplainCodeApp() {
                 <div>
                   <h1 className="text-[24px] font-extrabold text-[#f4efe6]">
                     {teacherAuthTab === "login"
-                      ? "เข้าสู่ระบบสำหรับครู"
-                      : "สมัครบัญชีครูผู้สอนใหม่"}
+                      ? t("เข้าสู่ระบบสำหรับครู", "Teacher Login")
+                      : t("สมัครบัญชีครูผู้สอนใหม่", "Register New Teacher")}
                   </h1>
                   <p className="text-[13px] font-semibold text-[#9a93ad] mt-0.5">
-                    สร้างห้องเรียน ดูแผนที่ Block Model เฉลี่ยทั้งห้อง และปรับการสอน
+                    {t(
+                      "สร้างห้องเรียน ดูแผนที่ Block Model เฉลี่ยทั้งห้อง และปรับการสอน",
+                      "Create classrooms, view class-wide Block Model mastery, and adjust instruction."
+                    )}
                   </p>
                 </div>
 
@@ -1544,7 +1660,7 @@ export default function ExplainCodeApp() {
                         : "bg-[#1c1b2b] border-[#2f2d45] text-[#9a93ad]"
                     }`}
                   >
-                    เข้าสู่ระบบครู
+                    {t("เข้าสู่ระบบครู", "Teacher Login")}
                   </button>
 
                   <button
@@ -1559,7 +1675,7 @@ export default function ExplainCodeApp() {
                         : "bg-[#1c1b2b] border-[#2f2d45] text-[#9a93ad]"
                     }`}
                   >
-                    สมัครบัญชีครูใหม่
+                    {t("สมัครบัญชีครูใหม่", "Register Teacher")}
                   </button>
                 </div>
 
@@ -1573,14 +1689,14 @@ export default function ExplainCodeApp() {
                     </span>
                     <div className="flex-1 leading-relaxed">
                       <p className="font-extrabold text-[14px] mb-0.5">
-                        แจ้งเตือนการกรอกข้อมูล
+                        {t("แจ้งเตือนการกรอกข้อมูล", "Input Notice")}
                       </p>
                       <p>{teacherAuthError}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => setTeacherAuthError("")}
-                      aria-label="ปิดกล่องแจ้งเตือน"
+                      aria-label={t("ปิดกล่องแจ้งเตือน", "Close alert")}
                       className="rounded-lg px-2 py-1 text-xs font-extrabold opacity-75 hover:bg-black/25 hover:opacity-100 cursor-pointer"
                     >
                       ✕
@@ -1599,14 +1715,14 @@ export default function ExplainCodeApp() {
                 >
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[14px] font-extrabold text-[#f4efe6]">
-                      ชื่อผู้ใช้ (ครู)
+                      {t("ชื่อผู้ใช้ (ครู)", "Username (Teacher)")}
                     </label>
                     <input
                       type="text"
                       value={teacherUsername}
                       autoComplete="username"
                       onChange={(e) => setTeacherUsername(e.target.value)}
-                      placeholder="เช่น ครูตัวอย่าง"
+                      placeholder={t("เช่น ครูตัวอย่าง", "e.g. DemoTeacher")}
                       className="w-full px-4 py-3 rounded-xl bg-[#0d0b14] border-2 border-[#2f2d45] text-[15px] font-bold text-[#f4efe6] focus:outline-none focus:border-[#f6c945]"
                     />
                   </div>
@@ -1614,13 +1730,13 @@ export default function ExplainCodeApp() {
                   {teacherAuthTab === "register" && (
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[14px] font-extrabold text-[#f4efe6]">
-                        ชื่อที่แสดงในระบบ
+                        {t("ชื่อที่แสดงในระบบ", "Display Name")}
                       </label>
                       <input
                         type="text"
                         value={teacherDisplayName}
                         onChange={(e) => setTeacherDisplayName(e.target.value)}
-                        placeholder="เช่น ครูสมศรี (วิทยาการคำนวณ)"
+                        placeholder={t("เช่น ครูสมศรี (วิทยาการคำนวณ)", "e.g. Ms. Somsri (CS)")}
                         className="w-full px-4 py-3 rounded-xl bg-[#0d0b14] border-2 border-[#2f2d45] text-[15px] font-bold text-[#f4efe6] focus:outline-none focus:border-[#f6c945]"
                       />
                     </div>
@@ -1628,7 +1744,7 @@ export default function ExplainCodeApp() {
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[14px] font-extrabold text-[#f4efe6]">
-                      รหัสผ่าน
+                      {t("รหัสผ่าน", "Password")}
                     </label>
                     <div className="relative">
                       <input
@@ -1646,15 +1762,19 @@ export default function ExplainCodeApp() {
                       <button
                         type="button"
                         onClick={() => setShowSecret((v) => !v)}
-                        aria-label={showSecret ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                        aria-label={
+                          showSecret
+                            ? t("ซ่อนรหัสผ่าน", "Hide password")
+                            : t("แสดงรหัสผ่าน", "Show password")
+                        }
                         className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg text-[12px] font-extrabold text-[#ffe27a] bg-[#252238] border border-[#3d395a] hover:border-[#f6c945] cursor-pointer"
                       >
-                        {showSecret ? "ซ่อน" : "แสดง"}
+                        {showSecret ? t("ซ่อน", "Hide") : t("แสดง", "Show")}
                       </button>
                     </div>
                     {teacherAuthTab === "register" && (
                       <p className="text-[12px] font-semibold text-[#9a93ad]">
-                        ตั้งรหัสผ่านอย่างน้อย 4 ตัวอักษร
+                        {t("ตั้งรหัสผ่านอย่างน้อย 4 ตัวอักษร", "Password must be at least 4 characters.")}
                       </p>
                     )}
                   </div>
@@ -1669,19 +1789,22 @@ export default function ExplainCodeApp() {
                     <Icon name="users" size={20} />
                     <span>
                       {isSubmitting
-                        ? "กำลังตรวจสอบ..."
+                        ? t("กำลังตรวจสอบ...", "Checking...")
                         : teacherAuthTab === "login"
-                        ? "เข้าสู่ระบบสำหรับครู"
-                        : "สร้างบัญชีครูและเข้าใช้งาน"}
+                        ? t("เข้าสู่ระบบสำหรับครู", "Teacher Login")
+                        : t("สร้างบัญชีครูและเข้าใช้งาน", "Create Teacher Account")}
                     </span>
                   </button>
                 </form>
 
                 <p className="text-[12px] font-semibold text-[#9a93ad] leading-relaxed text-center">
-                  หน้านี้แสดงเฉพาะชื่อเล่นสมมติและคะแนน ไม่แสดงข้อมูลส่วนบุคคลจริงของนักเรียน
+                  {t(
+                    "หน้านี้แสดงเฉพาะชื่อเล่นสมมติและคะแนน ไม่แสดงข้อมูลส่วนบุคคลจริงของนักเรียน",
+                    "Only nicknames and scores are shown here; no real student personal data is displayed."
+                  )}
                 </p>
                 <div className="pt-2 border-t border-[#2f2d45] flex items-center justify-center gap-2 text-[12px] text-[#9a93ad]">
-                  <span className="font-bold">บัญชีทดสอบ:</span>
+                  <span className="font-bold">{t("บัญชีทดสอบ:", "Demo account:")}</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -1692,7 +1815,7 @@ export default function ExplainCodeApp() {
                     }}
                     className="px-2.5 py-1 rounded-lg font-extrabold bg-[#1c1b2b] border border-[#3d395a] text-[#ffe27a] hover:border-[#f6c945] cursor-pointer"
                   >
-                    ใช้บัญชีครูตัวอย่าง
+                    {t("ใช้บัญชีครูตัวอย่าง", "Use Demo Teacher")}
                   </button>
                 </div>
               </>
@@ -1754,7 +1877,7 @@ export default function ExplainCodeApp() {
               onClick={() => setAppMode("landing")}
               className="px-2.5 py-1 rounded-lg bg-[#1c1b2b] border border-[#3d395a] hover:border-[#f6c945]/60 text-[12px] font-bold text-[#f4efe6] cursor-pointer"
             >
-              ← หน้าแรก
+              {t("← หน้าแรก", "← Home")}
             </button>
             <button
               type="button"
@@ -1771,17 +1894,20 @@ export default function ExplainCodeApp() {
               <span>CODE COOL</span>
             </button>
             <span className="px-2.5 py-0.5 rounded-full bg-[#25193b] border border-[#9b5de5]/60 text-[#e9d5ff] text-[12px] font-extrabold">
-              นักเรียน: {currentStudent.nickname} (ห้อง {currentStudent.roomCode})
+              {t(
+                `นักเรียน: ${currentStudent.nickname} (ห้อง ${currentStudent.roomCode})`,
+                `Student: ${currentStudent.nickname} (Room ${currentStudent.roomCode})`
+              )}
             </span>
           </div>
 
           {/* เมนูนำทางฝั่งนักเรียน */}
           <nav className="flex items-center gap-1.5 flex-wrap">
             {[
-              { id: "quest" as StudentTab, label: "เส้นทางเควสต์", icon: "route" as const },
-              { id: "practice" as StudentTab, label: "ฝึกอ่านโค้ด", icon: "play" as const },
+              { id: "quest" as StudentTab, label: t("เส้นทางเควสต์", "Quest Map"), icon: "route" as const },
+              { id: "practice" as StudentTab, label: t("ฝึกอ่านโค้ด", "Practice"), icon: "play" as const },
               { id: "learn" as StudentTab, label: "Block Model", icon: "book" as const },
-              { id: "profile" as StudentTab, label: "โปรไฟล์", icon: "user" as const },
+              { id: "profile" as StudentTab, label: t("โปรไฟล์", "Profile"), icon: "user" as const },
             ].map((tab) => {
               const active = studentTab === tab.id;
               return (
@@ -1813,7 +1939,7 @@ export default function ExplainCodeApp() {
 
             <div
               className="px-2.5 py-1 rounded-xl bg-[#1c1b2b] border border-[#3d395a] text-[#f6c945] text-[13px] font-extrabold flex items-center gap-1"
-              title="สตรีคการฝึกต่อเนื่อง"
+              title={t("สตรีคการฝึกต่อเนื่อง", "Practice streak")}
             >
               <Icon name="flame" size={16} filled />
               <span>{currentStudent.streak}</span>
@@ -1823,10 +1949,10 @@ export default function ExplainCodeApp() {
               type="button"
               onClick={handleLogout}
               className="px-3 py-1.5 rounded-xl bg-[#1c1b2b] hover:bg-[#2d141c] border border-[#3d395a] hover:border-[#c0283a] text-[#f4efe6] hover:text-[#fca5a5] text-[12px] font-extrabold flex items-center gap-1.5 cursor-pointer"
-              title="ออกจากระบบหรือสลับบทบาท"
+              title={t("ออกจากระบบหรือสลับบทบาท", "Log out or switch role")}
             >
               <Icon name="logout" size={16} />
-              <span>ออกจากระบบ</span>
+              <span>{t("ออกจากระบบ", "Log Out")}</span>
             </button>
           </div>
         </div>
@@ -1845,13 +1971,19 @@ export default function ExplainCodeApp() {
                   </div>
                   <div>
                     <span className="px-2.5 py-0.5 rounded-full bg-[#120f1c] border border-[#f6c945]/50 text-[#ffe27a] text-[11px] font-extrabold">
-                      เควสต์ประจำวัน · โบนัส +30 XP
+                      {t("เควสต์ประจำวัน · โบนัส +30 XP", "Daily Quest · Bonus +30 XP")}
                     </span>
                     <h3 className="text-[18px] font-extrabold text-[#f4efe6] mt-1">
-                      ฝึกอ่านโค้ดและตอบคำถามช่องการทำงานจริง (E1–E4)
+                      {t(
+                        "ฝึกอ่านโค้ดและตอบคำถามช่องการทำงานจริง (E1–E4)",
+                        "Practice reading code and answering Execution questions (E1–E4)"
+                      )}
                     </h3>
                     <p className="text-[13px] font-semibold text-[#ffe27a]/90 mt-0.5">
-                      สะสม XP จากความเข้าใจโดยตรง ไม่คิดคะแนนจากความเร็ว
+                      {t(
+                        "สะสม XP จากความเข้าใจโดยตรง ไม่คิดคะแนนจากความเร็ว",
+                        "Earn XP from true comprehension — never scored by speed."
+                      )}
                     </p>
                   </div>
                 </div>
@@ -1861,7 +1993,7 @@ export default function ExplainCodeApp() {
                   onClick={() => {
                     const nextTopicId =
                       TOPICS.find(
-                        (t) => !currentStudent.completedTopics.includes(t.id)
+                        (topicItem) => !currentStudent.completedTopics.includes(topicItem.id)
                       )?.id || 1;
                     setSelectedTopicId(nextTopicId);
                     setStudentTab("practice");
@@ -1869,7 +2001,7 @@ export default function ExplainCodeApp() {
                   className="press-gold px-6 py-3.5 rounded-xl text-[15px] font-extrabold flex items-center justify-center gap-2 cursor-pointer shrink-0"
                 >
                   <Icon name="play" size={18} filled />
-                  <span>เริ่มเล่นเควสต์วันนี้</span>
+                  <span>{t("เริ่มเล่นเควสต์วันนี้", "Start Today's Quest")}</span>
                 </button>
               </div>
 
@@ -1878,19 +2010,25 @@ export default function ExplainCodeApp() {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <span className="text-[12px] font-extrabold text-[#ffe27a]">
-                      คำแนะนำจากครู ({currentStudentRoom?.roomName || currentStudent.roomCode})
+                      {t(
+                        `คำแนะนำจากครู (${currentStudentRoom?.roomName || currentStudent.roomCode})`,
+                        `Teacher's Pin (${currentStudentRoom?.roomName || currentStudent.roomCode})`
+                      )}
                     </span>
                     <h4 className="text-[16px] font-extrabold text-[#f4efe6] mt-0.5">
                       {TOPICS.find(
-                        (t) => t.id === currentStudentRoom?.pinnedReviewTopicId
-                      )?.title || "เรื่องที่ 4 · วนซ้ำ while"}
+                        (topicItem) => topicItem.id === currentStudentRoom?.pinnedReviewTopicId
+                      )?.title || t("เรื่องที่ 4 · วนซ้ำ while", "Topic 4 · while Loops")}
                     </h4>
                   </div>
                   <Icon name="bulb" size={22} className="text-[#f6c945] shrink-0" />
                 </div>
                 <p className="text-[13px] text-[#9a93ad]">
                   {currentStudentRoom?.pinnedReviewNote ||
-                    "ฝึกเดินโค้ดดูค่าตัวแปรและเงื่อนไขการหยุดลูป"}
+                    t(
+                      "ฝึกเดินโค้ดดูค่าตัวแปรและเงื่อนไขการหยุดลูป",
+                      "Trace variables and loop termination conditions."
+                    )}
                 </p>
                 <button
                   type="button"
@@ -1903,7 +2041,7 @@ export default function ExplainCodeApp() {
                   className="press-secondary w-full py-2.5 rounded-xl text-[14px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Icon name="play" size={16} filled />
-                  <span>เข้าเล่นเรื่องที่ครูแนะนำ</span>
+                  <span>{t("เข้าเล่นเรื่องที่ครูแนะนำ", "Play Recommended Topic")}</span>
                 </button>
               </div>
             </div>
@@ -1913,10 +2051,13 @@ export default function ExplainCodeApp() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-[24px] font-extrabold text-[#f4efe6]">
-                    เส้นทางเควสต์ 7 เรื่อง
+                    {t("เส้นทางเควสต์ 7 เรื่อง", "7-Topic Quest Path")}
                   </h2>
                   <p className="text-[14px] font-semibold text-[#9a93ad]">
-                    ผ่านแล้ว {currentStudent.completedTopics.length}/7 เรื่อง · บอสด่านเปิดเมื่อผ่านอย่างน้อย 4 เรื่อง
+                    {t(
+                      `ผ่านแล้ว ${currentStudent.completedTopics.length}/7 เรื่อง · บอสด่านเปิดเมื่อผ่านอย่างน้อย 4 เรื่อง`,
+                      `Completed ${currentStudent.completedTopics.length}/7 topics · Boss unlocks after 4+ topics`
+                    )}
                   </p>
                 </div>
 
@@ -1930,8 +2071,8 @@ export default function ExplainCodeApp() {
                   }`}
                 >
                   {unlockAllDemo
-                    ? "✓ ปลดล็อกทุกเรื่องแล้ว"
-                    : "ปลดล็อกทุกเรื่อง (โหมดสาธิต)"}
+                    ? t("✓ ปลดล็อกทุกเรื่องแล้ว", "✓ All Topics Unlocked")
+                    : t("ปลดล็อกทุกเรื่อง (โหมดสาธิต)", "Unlock All (Demo Mode)")}
                 </button>
               </div>
 
@@ -1989,18 +2130,21 @@ export default function ExplainCodeApp() {
                               }`}
                             >
                               {isPassed
-                                ? "ผ่านแล้ว"
+                                ? t("ผ่านแล้ว", "Passed")
                                 : unlocked
                                 ? isBoss
-                                  ? "บอสด่านพร้อมลุย!"
-                                  : "พร้อมเข้าเล่น"
+                                  ? t("บอสด่านพร้อมลุย!", "Boss Ready!")
+                                  : t("พร้อมเข้าเล่น", "Ready")
                                 : isBoss
-                                ? `ล็อก (ผ่านแล้ว ${currentStudent.completedTopics.length}/4 เรื่อง)`
-                                : "ล็อก"}
+                                ? t(
+                                    `ล็อก (ผ่านแล้ว ${currentStudent.completedTopics.length}/4 เรื่อง)`,
+                                    `Locked (${currentStudent.completedTopics.length}/4 done)`
+                                  )
+                                : t("ล็อก", "Locked")}
                             </span>
 
                             <span className="text-[12px] font-bold text-[#9a93ad]">
-                              ช่อง{" "}
+                              {t("ช่อง", "Cells")}{" "}
                               {topic.questions.map((q) => q.cellId).join(", ")}
                             </span>
                           </div>
@@ -2017,7 +2161,9 @@ export default function ExplainCodeApp() {
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#2f2d45]">
                         <span className="text-[13px] font-extrabold text-[#ffe27a] flex items-center gap-1.5">
                           <Icon name="shield" size={16} />
-                          <span>ตรา: {topic.badgeReward.name}</span>
+                          <span>
+                            {t("ตรา:", "Badge:")} {topic.badgeReward.name}
+                          </span>
                         </span>
 
                         <button
@@ -2042,10 +2188,10 @@ export default function ExplainCodeApp() {
                           />
                           <span>
                             {isPassed
-                              ? "เล่นซ้ำ"
+                              ? t("เล่นซ้ำ", "Replay")
                               : unlocked
-                              ? "เริ่มเล่นด่านนี้"
-                              : "ยังไม่ปลดล็อก"}
+                              ? t("เริ่มเล่นด่านนี้", "Start Stage")
+                              : t("ยังไม่ปลดล็อก", "Locked")}
                           </span>
                         </button>
                       </div>
@@ -2075,35 +2221,66 @@ export default function ExplainCodeApp() {
             <div className="bg-[#141220] border-2 border-[#2f2d45] rounded-2xl p-6 flex flex-col gap-4">
               <h2 className="text-[24px] font-extrabold text-[#f4efe6] flex items-center gap-2">
                 <Icon name="book" size={24} className="text-[#f6c945]" />
-                <span>รู้จัก Block Model 12 ช่อง และวิธีเรียน 4 ขั้น (PRIMM)</span>
+                <span>
+                  {t(
+                    "รู้จัก Block Model 12 ช่อง และวิธีเรียน 4 ขั้น (PRIMM)",
+                    "Understanding the 12-Cell Block Model & 4-Step PRIMM Method"
+                  )}
+                </span>
               </h2>
               <p className="text-[15px] text-[#9a93ad]">
-                เวลาเราสั่ง AI ให้เขียนโค้ดให้ การจะบอกว่าเรา &ldquo;เข้าใจโค้ดนั้นจริง&rdquo; ไม่ใช่แค่อ่านออกทีละคำ แต่ต้องเข้าใจครบทั้ง <strong className="text-[#f4efe6]">3 มิติ</strong> ในทุกระดับของโค้ด ตั้งแต่บรรทัดเดี่ยวไปจนถึงภาพรวมทั้งโปรแกรม รวมเป็น <strong className="text-[#ffe27a]">12 ช่องของ Block Model</strong>
+                {uiLang === "en" ? (
+                  <>
+                    When AI writes code for us, truly &ldquo;understanding the code&rdquo; means more than reading words — it requires mastering <strong className="text-[#f4efe6]">3 dimensions</strong> across every level of code, from a single line to the whole program: the <strong className="text-[#ffe27a]">12 cells of the Block Model</strong>.
+                  </>
+                ) : (
+                  <>
+                    เวลาเราสั่ง AI ให้เขียนโค้ดให้ การจะบอกว่าเรา &ldquo;เข้าใจโค้ดนั้นจริง&rdquo; ไม่ใช่แค่อ่านออกทีละคำ แต่ต้องเข้าใจครบทั้ง <strong className="text-[#f4efe6]">3 มิติ</strong> ในทุกระดับของโค้ด ตั้งแต่บรรทัดเดี่ยวไปจนถึงภาพรวมทั้งโปรแกรม รวมเป็น <strong className="text-[#ffe27a]">12 ช่องของ Block Model</strong>
+                  </>
+                )}
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-1">
                 <div className="p-4 rounded-xl bg-[#25193b] border border-[#9b5de5]/60">
                   <div className="text-[15px] font-extrabold text-[#e9d5ff]">
-                    มิติที่ 1 · โครงสร้างโค้ด (Text Surface: T1–T4)
+                    {t(
+                      "มิติที่ 1 · โครงสร้างโค้ด (Text Surface: T1–T4)",
+                      "Dimension 1 · Text Surface (T1–T4)"
+                    )}
                   </div>
                   <p className="text-[14px] text-[#f4efe6]/90 mt-1">
-                    อ่านไวยากรณ์ เครื่องหมาย ขอบเขตบล็อก `if/else`, ลูป `for/while` และการเชื่อมโยงพารามิเตอร์ออกอย่างถูกต้อง
+                    {t(
+                      "อ่านไวยากรณ์ เครื่องหมาย ขอบเขตบล็อก `if/else`, ลูป `for/while` และการเชื่อมโยงพารามิเตอร์ออกอย่างถูกต้อง",
+                      "Accurately read syntax, symbols, `if/else` and `for/while` block scopes, and parameter links."
+                    )}
                   </p>
                 </div>
                 <div className="p-4 rounded-xl bg-[#281d08] border border-[#f6c945]/60">
                   <div className="text-[15px] font-extrabold text-[#ffe27a]">
-                    มิติที่ 2 · การทำงานเมื่อรันจริง (Execution: E1–E4)
+                    {t(
+                      "มิติที่ 2 · การทำงานเมื่อรันจริง (Execution: E1–E4)",
+                      "Dimension 2 · Execution (E1–E4)"
+                    )}
                   </div>
                   <p className="text-[14px] text-[#f4efe6]/90 mt-1">
-                    แกะรอยได้ว่าเมื่อรันจริง โค้ดเดินไปบรรทัดไหนบ้าง ค่าตัวแปรเปลี่ยนเป็นเท่าไหร่ และพิมพ์ผลลัพธ์อะไรออกมา
+                    {t(
+                      "แกะรอยได้ว่าเมื่อรันจริง โค้ดเดินไปบรรทัดไหนบ้าง ค่าตัวแปรเปลี่ยนเป็นเท่าไหร่ และพิมพ์ผลลัพธ์อะไรออกมา",
+                      "Trace which lines execute at runtime, how variables change, and what output is printed."
+                    )}
                   </p>
                 </div>
                 <div className="p-4 rounded-xl bg-[#102a1e] border border-[#2fbf71]/60">
                   <div className="text-[15px] font-extrabold text-[#86efac]">
-                    มิติที่ 3 · หน้าที่และเป้าหมาย (Function: F1–F4)
+                    {t(
+                      "มิติที่ 3 · หน้าที่และเป้าหมาย (Function: F1–F4)",
+                      "Dimension 3 · Function & Purpose (F1–F4)"
+                    )}
                   </div>
                   <p className="text-[14px] text-[#f4efe6]/90 mt-1">
-                    อธิบายได้ว่าแต่ละบรรทัด แต่ละบล็อก และทั้งโปรแกรมมีไว้ทำไม แก้ปัญหาอะไร และตรวจจับบั๊กที่ขัดกับเป้าหมายได้
+                    {t(
+                      "อธิบายได้ว่าแต่ละบรรทัด แต่ละบล็อก และทั้งโปรแกรมมีไว้ทำไม แก้ปัญหาอะไร และตรวจจับบั๊กที่ขัดกับเป้าหมายได้",
+                      "Explain why each line, block, and program exists, what problem it solves, and catch logic bugs."
+                    )}
                   </p>
                 </div>
               </div>
@@ -2111,7 +2288,10 @@ export default function ExplainCodeApp() {
 
             <BlockModelGrid
               cellScores={currentStudent.cellScores}
-              title="สำรวจทั้ง 12 ช่องของ Block Model (คลิกที่ช่องเพื่อดูตัวอย่างคำถามและไปฝึก)"
+              title={t(
+                "สำรวจทั้ง 12 ช่องของ Block Model (คลิกที่ช่องเพื่อดูตัวอย่างคำถามและไปฝึก)",
+                "Explore All 12 Block Model Cells (Click any cell to view sample questions & practice)"
+              )}
               onSelectTopic={(topicId) => {
                 setSelectedTopicId(topicId);
                 setStudentTab("practice");
@@ -2123,10 +2303,18 @@ export default function ExplainCodeApp() {
               <div>
                 <h3 className="text-[18px] font-extrabold text-[#f4efe6] flex items-center gap-2">
                   <Icon name="code" size={20} className="text-[#f6c945]" />
-                  <span>ห้องทดลองรันโค้ด JavaScript จริง (ตรวจสอบโค้ดที่ AI เขียนให้)</span>
+                  <span>
+                    {t(
+                      "ห้องทดลองรันโค้ด JavaScript จริง (ตรวจสอบโค้ดที่ AI เขียนให้)",
+                      "Live JavaScript Sandbox (Verify AI-Generated Code)"
+                    )}
+                  </span>
                 </h3>
                 <p className="text-[13px] font-semibold text-[#9a93ad]">
-                  วางโค้ด JavaScript ที่คุณได้มาจาก AI แล้วกดรันจริงเพื่อดูผลลัพธ์จาก console.log โดยไม่ใช้การเดา
+                  {t(
+                    "วางโค้ด JavaScript ที่คุณได้มาจาก AI แล้วกดรันจริงเพื่อดูผลลัพธ์จาก console.log โดยไม่ใช้การเดา",
+                    "Paste JavaScript code from AI and run it for real to inspect console.log output without guessing."
+                  )}
                 </p>
               </div>
 
@@ -2144,20 +2332,26 @@ export default function ExplainCodeApp() {
                     const res = runJavaScriptReal(playgroundCode);
                     setPlaygroundOutput(
                       res.success
-                        ? res.finalOutput || "(โค้ดทำงานสำเร็จแต่ไม่มีคำสั่ง console.log)"
-                        : `ข้อผิดพลาด: ${res.error}`
+                        ? res.finalOutput ||
+                            t(
+                              "(โค้ดทำงานสำเร็จแต่ไม่มีคำสั่ง console.log)",
+                              "(Code ran successfully with no console.log output)"
+                            )
+                        : `${t("ข้อผิดพลาด:", "Error:")} ${res.error}`
                     );
                   }}
                   className="press-gold px-5 py-2.5 rounded-xl text-[14px] font-extrabold flex items-center gap-2 cursor-pointer"
                 >
                   <Icon name="play" size={18} />
-                  <span>รันโค้ดจริง</span>
+                  <span>{t("รันโค้ดจริง", "Run Code")}</span>
                 </button>
               </div>
 
               {playgroundOutput && (
                 <div className="p-4 rounded-xl bg-[#102a1e] border-2 border-[#2fbf71]/50 text-[#86efac]">
-                  <div className="text-[13px] font-extrabold">ผลลัพธ์จากการรันโค้ดจริง:</div>
+                  <div className="text-[13px] font-extrabold">
+                    {t("ผลลัพธ์จากการรันโค้ดจริง:", "Actual Execution Output:")}
+                  </div>
                   <pre className="font-code font-extrabold text-[16px] mt-1 !bg-transparent !border-0 !p-0">
                     {playgroundOutput}
                   </pre>
@@ -2173,20 +2367,24 @@ export default function ExplainCodeApp() {
             {/* การ์ดข้อมูลสรุปนักเรียน */}
             <div className="bg-[#141220] border-2 border-[#2f2d45] rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <StatusCircle variant="badge" size="lg" label="โปรไฟล์นักเรียน" />
+                <StatusCircle variant="badge" size="lg" label={t("โปรไฟล์นักเรียน", "Student Profile")} />
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="text-[24px] font-extrabold text-[#f4efe6]">
-                      โปรไฟล์ของ {currentStudent.nickname}
+                      {t(
+                        `โปรไฟล์ของ ${currentStudent.nickname}`,
+                        `${currentStudent.nickname}'s Profile`
+                      )}
                     </h2>
                     <span className="px-3 py-0.5 rounded-full bg-[#25193b] border border-[#9b5de5]/60 text-[#e9d5ff] text-[13px] font-extrabold">
-                      รหัสห้อง {currentStudent.roomCode}
+                      {t(`รหัสห้อง ${currentStudent.roomCode}`, `Room ${currentStudent.roomCode}`)}
                     </span>
                   </div>
                   <p className="text-[14px] font-semibold text-[#9a93ad] mt-0.5">
-                    เลเวล {studentLevel} · สะสม {currentStudent.xp} XP · ต่อเนื่อง {currentStudent.streak} วัน · ผ่านแล้ว{" "}
-                    {currentStudent.completedTopics.length}/7 เรื่อง · ความเข้าใจเฉลี่ย{" "}
-                    {studentAvgMastery}% ({getMasteryStatus(studentAvgMastery).label})
+                    {t(
+                      `เลเวล ${studentLevel} · สะสม ${currentStudent.xp} XP · ต่อเนื่อง ${currentStudent.streak} วัน · ผ่านแล้ว ${currentStudent.completedTopics.length}/7 เรื่อง · ความเข้าใจเฉลี่ย ${studentAvgMastery}% (${getMasteryStatus(studentAvgMastery, uiLang).label})`,
+                      `Level ${studentLevel} · ${currentStudent.xp} XP · ${currentStudent.streak}d streak · ${currentStudent.completedTopics.length}/7 topics · Avg mastery ${studentAvgMastery}% (${getMasteryStatus(studentAvgMastery, uiLang).label})`
+                    )}
                   </p>
                 </div>
               </div>
@@ -2197,7 +2395,7 @@ export default function ExplainCodeApp() {
                 className="press-gold px-4 py-2.5 rounded-xl text-[14px] font-extrabold flex items-center gap-2 cursor-pointer"
               >
                 <Icon name="route" size={18} />
-                <span>ไปฝึกเรื่องถัดไป</span>
+                <span>{t("ไปฝึกเรื่องถัดไป", "Go to Next Topic")}</span>
               </button>
             </div>
 
@@ -2206,7 +2404,7 @@ export default function ExplainCodeApp() {
               <div className="bg-[#102a1e] border-2 border-[#2fbf71]/50 rounded-2xl p-5 text-[#86efac]">
                 <div className="flex items-center gap-2 font-extrabold text-[16px]">
                   <Icon name="check" size={20} />
-                  <span>ด้านที่เก่ง (เข้าใจ 80% ขึ้นไป)</span>
+                  <span>{t("ด้านที่เก่ง (เข้าใจ 80% ขึ้นไป)", "Strengths (80%+ Mastery)")}</span>
                 </div>
                 <div className="mt-3 space-y-2">
                   {strongStudentCells.length > 0 ? (
@@ -2216,7 +2414,7 @@ export default function ExplainCodeApp() {
                         className="p-2.5 rounded-xl bg-[#0d0b14]/70 border border-[#2fbf71]/30 flex items-center justify-between text-[14px] font-bold text-[#f4efe6]"
                       >
                         <span>
-                          ช่อง {c.id} · {c.shortTitle}
+                          {t("ช่อง", "Cell")} {c.id} · {c.shortTitle}
                         </span>
                         <span className="font-extrabold text-[#86efac]">
                           {currentStudent.cellScores[c.id]}%
@@ -2225,7 +2423,10 @@ export default function ExplainCodeApp() {
                     ))
                   ) : (
                     <p className="text-[14px]">
-                      ฝึกทำโจทย์เพิ่มเพื่อปลดล็อกช่องที่เก่งเกิน 80%!
+                      {t(
+                        "ฝึกทำโจทย์เพิ่มเพื่อปลดล็อกช่องที่เก่งเกิน 80%!",
+                        "Keep practicing to unlock cells above 80% mastery!"
+                      )}
                     </p>
                   )}
                 </div>
@@ -2234,7 +2435,7 @@ export default function ExplainCodeApp() {
               <div className="bg-[#2d141c] border-2 border-[#c0283a]/60 rounded-2xl p-5 text-[#fca5a5]">
                 <div className="flex items-center gap-2 font-extrabold text-[16px]">
                   <Icon name="bulb" size={20} />
-                  <span>ด้านที่ควรทบทวนเพิ่มเติม</span>
+                  <span>{t("ด้านที่ควรทบทวนเพิ่มเติม", "Needs Review")}</span>
                 </div>
                 <div className="mt-3 space-y-2">
                   {reviewStudentCells.length > 0 ? (
@@ -2244,7 +2445,7 @@ export default function ExplainCodeApp() {
                         className="p-2.5 rounded-xl bg-[#0d0b14]/70 border border-[#c0283a]/30 flex items-center justify-between gap-2 text-[14px] font-bold text-[#f4efe6]"
                       >
                         <span>
-                          ช่อง {c.id} · {c.shortTitle} ({currentStudent.cellScores[c.id]}%)
+                          {t("ช่อง", "Cell")} {c.id} · {c.shortTitle} ({currentStudent.cellScores[c.id]}%)
                         </span>
                         <button
                           type="button"
@@ -2254,13 +2455,16 @@ export default function ExplainCodeApp() {
                           }}
                           className="px-2.5 py-1 rounded-lg bg-[#c0283a] hover:bg-[#e11d48] text-white text-[12px] font-extrabold cursor-pointer"
                         >
-                          ฝึกทบทวน →
+                          {t("ฝึกทบทวน →", "Review →")}
                         </button>
                       </div>
                     ))
                   ) : (
                     <p className="text-[14px] font-bold">
-                      ยอดเยี่ยมมาก! คุณผ่านเกณฑ์ความเข้าใจเกิน 60% ทุกช่องแล้ว
+                      {t(
+                        "ยอดเยี่ยมมาก! คุณผ่านเกณฑ์ความเข้าใจเกิน 60% ทุกช่องแล้ว",
+                        "Awesome! You have scored above 60% across all cells."
+                      )}
                     </p>
                   )}
                 </div>
@@ -2270,7 +2474,10 @@ export default function ExplainCodeApp() {
             {/* แผนที่ความเข้าใจ 12 ช่องของนักเรียน */}
             <BlockModelGrid
               cellScores={currentStudent.cellScores}
-              title={`แผนที่ความเข้าใจ 12 ช่องของ ${currentStudent.nickname}`}
+              title={t(
+                `แผนที่ความเข้าใจ 12 ช่องของ ${currentStudent.nickname}`,
+                `${currentStudent.nickname}'s 12-Cell Understanding Map`
+              )}
               onSelectTopic={(topicId) => {
                 setSelectedTopicId(topicId);
                 setStudentTab("practice");
@@ -2283,7 +2490,7 @@ export default function ExplainCodeApp() {
                 <h3 className="text-[17px] font-extrabold text-[#f4efe6] flex items-center gap-2">
                   <Icon name="shield" size={20} className="text-[#f6c945]" />
                   <span>
-                    ตราความสำเร็จที่ได้รับ (
+                    {t("ตราความสำเร็จที่ได้รับ", "Earned Badges")} (
                     {TOPICS.filter((tp) =>
                       currentStudent.badges.includes(tp.badgeReward.id)
                     ).length +
@@ -2294,13 +2501,13 @@ export default function ExplainCodeApp() {
                   </span>
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {TOPICS.map((t) => {
+                  {TOPICS.map((topicItem) => {
                     const unlocked = currentStudent.badges.includes(
-                      t.badgeReward.id
+                      topicItem.badgeReward.id
                     );
                     return (
                       <div
-                        key={t.badgeReward.id}
+                        key={topicItem.badgeReward.id}
                         className={`p-3 rounded-xl border flex items-center gap-3 ${
                           unlocked
                             ? "bg-[#25193b] border-[#9b5de5] text-[#f4efe6]"
@@ -2310,14 +2517,14 @@ export default function ExplainCodeApp() {
                         <StatusCircle
                           variant={unlocked ? "badge" : "locked"}
                           size="sm"
-                          label={t.badgeReward.name}
+                          label={topicItem.badgeReward.name}
                         />
                         <div className="min-w-0">
                           <div className="text-[14px] font-extrabold truncate">
-                            {t.badgeReward.name}
+                            {topicItem.badgeReward.name}
                           </div>
                           <div className="text-[12px] truncate text-[#9a93ad]">
-                            {t.badgeReward.description}
+                            {topicItem.badgeReward.description}
                           </div>
                         </div>
                       </div>
@@ -2328,7 +2535,7 @@ export default function ExplainCodeApp() {
                 <div className="pt-2 border-t border-[#2f2d45] space-y-2.5">
                   <div className="text-[13px] font-extrabold text-[#ffe27a] flex items-center gap-1.5">
                     <Icon name="sparkles" size={14} className="text-[#f6c945]" />
-                    <span>ตราความสำเร็จลับ (Secret Badges)</span>
+                    <span>{t("ตราความสำเร็จลับ (Secret Badges)", "Secret Badges")}</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {SECRET_BADGES.map((sb) => {
@@ -2349,7 +2556,7 @@ export default function ExplainCodeApp() {
                           />
                           <div className="min-w-0">
                             <div className="text-[14px] font-extrabold truncate">
-                              {unlocked ? sb.name : "??? (ความลับ)"}
+                              {unlocked ? sb.name : t("??? (ความลับ)", "??? (Secret)")}
                             </div>
                             <div className="text-[12px] truncate text-[#9a93ad]">
                               {sb.description}
@@ -2365,7 +2572,7 @@ export default function ExplainCodeApp() {
               <div className="lg:col-span-6 bg-[#141220] border-2 border-[#2f2d45] rounded-2xl p-5 flex flex-col gap-3">
                 <h3 className="text-[17px] font-extrabold text-[#f4efe6] flex items-center gap-2">
                   <Icon name="chart" size={20} className="text-[#f6c945]" />
-                  <span>ประวัติการฝึกอ่านโค้ดล่าสุด</span>
+                  <span>{t("ประวัติการฝึกอ่านโค้ดล่าสุด", "Recent Practice History")}</span>
                 </h3>
                 {currentStudent.history.length > 0 ? (
                   <div className="space-y-2.5">
@@ -2379,7 +2586,7 @@ export default function ExplainCodeApp() {
                             {h.topicTitle}
                           </div>
                           <div className="text-[12px] text-[#9a93ad]">
-                            {h.timestamp} · ความเข้าใจ {h.scorePercent}%
+                            {h.timestamp} · {t("ความเข้าใจ", "Mastery")} {h.scorePercent}%
                           </div>
                         </div>
                         <span className="px-2.5 py-1 rounded-lg bg-[#281d08] text-[#ffe27a] border border-[#f6c945]/60 text-[13px] font-extrabold">
@@ -2390,7 +2597,10 @@ export default function ExplainCodeApp() {
                   </div>
                 ) : (
                   <p className="text-[14px] text-[#9a93ad]">
-                    ยังไม่มีประวัติการเล่น เริ่มฝึกเรื่องที่ 1 ในหน้าเส้นทางเควสต์ได้เลย!
+                    {t(
+                      "ยังไม่มีประวัติการเล่น เริ่มฝึกเรื่องที่ 1 ในหน้าเส้นทางเควสต์ได้เลย!",
+                      "No play history yet. Start Topic 1 on the Quest Map!"
+                    )}
                   </p>
                 )}
               </div>
@@ -2404,13 +2614,22 @@ export default function ExplainCodeApp() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <span className="px-3 py-1 rounded-full bg-[#25193b] border border-[#9b5de5]/60 text-[#e9d5ff] text-[12px] font-extrabold">
-                  รายการส่งงาน · บันทึกการใช้ AI (AI Log {AI_USAGE_LOGS.length} Prompts)
+                  {t(
+                    `รายการส่งงาน · บันทึกการใช้ AI (AI Log ${AI_USAGE_LOGS.length} Prompts)`,
+                    `Submission · AI Usage Log (${AI_USAGE_LOGS.length} Prompts)`
+                  )}
                 </span>
                 <h2 className="text-[22px] font-extrabold text-[#f4efe6] mt-2">
-                  บันทึกการใช้ AI พัฒนาโปรเจกต์ &ldquo;CODE COOL&rdquo;
+                  {t(
+                    'บันทึกการใช้ AI พัฒนาโปรเจกต์ "CODE COOL"',
+                    'AI Usage Log for Developing "CODE COOL"'
+                  )}
                 </h2>
                 <p className="text-[14px] text-[#9a93ad]">
-                  แสดงรายการ Prompt ที่ใช้จริง เครื่องมือ AI ปัญหาที่พบ วิธีที่ทีมปรับปรุงแก้ไข และคำอธิบายโครงสร้างโค้ดตามกติกาการแข่งขันหน้า 4–5
+                  {t(
+                    "แสดงรายการ Prompt ที่ใช้จริง เครื่องมือ AI ปัญหาที่พบ วิธีที่ทีมปรับปรุงแก้ไข และคำอธิบายโครงสร้างโค้ดตามกติกาการแข่งขันหน้า 4–5",
+                    "Shows actual prompts used, AI tools, issues found, team fixes, and code structure explanations."
+                  )}
                 </p>
               </div>
               <Link
@@ -2418,7 +2637,7 @@ export default function ExplainCodeApp() {
                 className="press-gold px-4 py-2 rounded-xl text-[13px] font-extrabold inline-flex items-center gap-1.5"
               >
                 <Icon name="clipboard" size={16} />
-                <span>เปิดหน้ารายงาน AI Log ฉบับเต็ม →</span>
+                <span>{t("เปิดหน้ารายงาน AI Log ฉบับเต็ม →", "Open Full AI Log →")}</span>
               </Link>
             </div>
 
@@ -2438,26 +2657,30 @@ export default function ExplainCodeApp() {
                       </div>
                     </div>
                     <span className="px-2.5 py-1 rounded-lg bg-[#141220] border border-[#3d395a] text-[12px] font-bold text-[#f4efe6]">
-                      เครื่องมือ AI: {log.aiTool}
+                      {t("เครื่องมือ AI:", "AI Tool:")} {log.aiTool}
                     </span>
                   </div>
                   <div className="p-3 rounded-xl bg-[#141220] border border-[#2f2d45] text-[14px] text-[#f4efe6]">
-                    <strong className="text-[#c084fc]">Prompt ที่สั่ง AI: </strong>
+                    <strong className="text-[#c084fc]">{t("Prompt ที่สั่ง AI: ", "Prompt: ")}</strong>
                     {log.promptText}
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[13px]">
                     <div className="p-3 rounded-xl bg-[#2d141c] border border-[#c0283a]/40 text-[#fca5a5]">
-                      <strong>ปัญหาที่พบจากโค้ด/เนื้อหาที่ AI สร้าง:</strong>
+                      <strong>
+                        {t("ปัญหาที่พบจากโค้ด/เนื้อหาที่ AI สร้าง:", "Issues Found in AI Output:")}
+                      </strong>
                       <p className="mt-0.5 text-[#f4efe6]/90">{log.problemFound}</p>
                     </div>
                     <div className="p-3 rounded-xl bg-[#102a1e] border border-[#2fbf71]/40 text-[#86efac]">
-                      <strong>วิธีที่ทีมปรับแก้และพัฒนาต่อ:</strong>
+                      <strong>
+                        {t("วิธีที่ทีมปรับแก้และพัฒนาต่อ:", "Team Fixes & Improvements:")}
+                      </strong>
                       <p className="mt-0.5 text-[#f4efe6]/90">{log.solutionApplied}</p>
                     </div>
                   </div>
                   <div className="p-3 rounded-xl bg-[#141220] border border-[#3d395a] text-[13px] text-[#c4bdd6]">
                     <strong className="text-[#ffe27a]">
-                      คำอธิบายโครงสร้างและการทำงานของโค้ด:{" "}
+                      {t("คำอธิบายโครงสร้างและการทำงานของโค้ด: ", "Code Structure & Explanation: ")}
                     </strong>
                     {log.codeExplanation}
                   </div>

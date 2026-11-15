@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
 import {
   TopicQuest,
@@ -10,6 +12,7 @@ import {
   runCodeByLanguage,
 } from "../lib/language-tracks";
 import { Icon, StatusCircle } from "./Icons";
+import { useUiLanguage } from "./LanguageProvider";
 
 interface PracticeArenaProps {
   topic: TopicQuest;
@@ -58,6 +61,7 @@ export function PracticeArena({
   currentStudent,
   studentId,
 }: PracticeArenaProps) {
+  const { t } = useUiLanguage();
   const [primmStep, setPrimmStep] = useState<PrimmStep>(1);
 
   // ขั้น 1 & 2: ทำนายผล & เทียบผลรันจริง
@@ -201,13 +205,16 @@ export function PracticeArena({
       setAiEvalResult({
         score: data.score ?? 80,
         passed: Boolean(data.passed),
-        feedback: data.feedback || "ตรวจคำอธิบายเรียบร้อย",
+        feedback: data.feedback || t("ตรวจคำอธิบายเรียบร้อย", "Explanation evaluated"),
       });
     } catch {
       setAiEvalResult({
         score: 80,
         passed: true,
-        feedback: "อธิบายแนวคิดการทำงานของโค้ดได้ตรงประเด็นดีมาก!",
+        feedback: t(
+          "อธิบายแนวคิดการทำงานของโค้ดได้ตรงประเด็นดีมาก!",
+          "Great job explaining the core behavior of the code!"
+        ),
       });
     } finally {
       setAiEvalLoading(false);
@@ -324,7 +331,7 @@ export function PracticeArena({
               className="press-secondary px-3 py-2 rounded-xl text-[14px] font-bold flex items-center gap-1.5 cursor-pointer"
             >
               <Icon name="back" size={18} />
-              <span>กลับเส้นทางเควสต์</span>
+              <span>{t("กลับเส้นทางเควสต์", "Back to Quest Map")}</span>
             </button>
             <div>
               <div className="flex items-center gap-2">
@@ -332,7 +339,7 @@ export function PracticeArena({
                 {topic.isBoss && (
                   <span className="px-2.5 py-0.5 rounded-full bg-[#5a2d91] border border-[#9b5de5] text-[#ffe27a] text-[12px] font-extrabold flex items-center gap-1">
                     <Icon name="bug" size={14} />
-                    <span>บอสด่าน</span>
+                    <span>{t("บอสด่าน", "Stage Boss")}</span>
                   </span>
                 )}
               </div>
@@ -342,17 +349,38 @@ export function PracticeArena({
 
           <div className="flex items-center gap-2 bg-[#281d08] border-2 border-[#f6c945]/70 rounded-xl px-3.5 py-1.5 text-[#ffe27a] font-extrabold text-[14px]">
             <Icon name="star" size={18} filled />
-            <span>XP สะสมในด่านนี้: +{totalEarnedXp} XP</span>
+            <span>
+              {t(
+                `XP สะสมในด่านนี้: +${totalEarnedXp} XP`,
+                `Stage XP Earned: +${totalEarnedXp} XP`
+              )}
+            </span>
           </div>
         </div>
 
         {/* แถบตัวบอกวิธีเรียน 4 ขั้น (อิงลำดับ PRIMM) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           {[
-            { step: 1 as PrimmStep, title: "1 · ทำนายผล", desc: "ทายผลก่อนรันจริง" },
-            { step: 2 as PrimmStep, title: "2 · เทียบผลรันจริง", desc: "รันโค้ดจริงเทียบที่ทาย" },
-            { step: 3 as PrimmStep, title: "3 · เดินโค้ดและตอบ", desc: "ตอบคำถามรายช่อง" },
-            { step: 4 as PrimmStep, title: "4 · แก้ค่าแล้วทายใหม่", desc: "เปลี่ยนค่าแล้วทำนาย" },
+            {
+              step: 1 as PrimmStep,
+              title: t("1 · ทำนายผล", "1 · Predict"),
+              desc: t("ทายผลก่อนรันจริง", "Guess output first"),
+            },
+            {
+              step: 2 as PrimmStep,
+              title: t("2 · เทียบผลรันจริง", "2 · Run & Compare"),
+              desc: t("รันโค้ดจริงเทียบที่ทาย", "Run & verify guess"),
+            },
+            {
+              step: 3 as PrimmStep,
+              title: t("3 · เดินโค้ดและตอบ", "3 · Trace & Answer"),
+              desc: t("ตอบคำถามรายช่อง", "Answer cell questions"),
+            },
+            {
+              step: 4 as PrimmStep,
+              title: t("4 · แก้ค่าแล้วทายใหม่", "4 · Modify"),
+              desc: t("เปลี่ยนค่าแล้วทำนาย", "Edit & predict again"),
+            },
           ].map((item) => {
             const isCurrent = primmStep === item.step;
             const isDone = primmStep > item.step;
@@ -395,9 +423,18 @@ export function PracticeArena({
       {/* กรณีเป็นบอสด่าน แสดงสถานการณ์โค้ดจาก AI */}
       {topic.aiScenario && (
         <div className="bg-[#25193b] border-2 border-[#9b5de5] rounded-2xl p-4 flex items-start gap-3 text-[#e9d5ff]">
-          <StatusCircle variant="boss" size="sm" label="บอสด่านจับบั๊กจาก AI" />
+          <StatusCircle
+            variant="boss"
+            size="sm"
+            label={t("บอสด่านจับบั๊กจาก AI", "AI Bug Boss")}
+          />
           <div>
-            <div className="text-[15px] font-extrabold text-[#ffe27a]">ภารกิจบอสด่าน: จับบั๊กจากโค้ดที่ AI เขียน</div>
+            <div className="text-[15px] font-extrabold text-[#ffe27a]">
+              {t(
+                "ภารกิจบอสด่าน: จับบั๊กจากโค้ดที่ AI เขียน",
+                "Boss Mission: Catch Bugs in AI-Generated Code"
+              )}
+            </div>
             <p className="text-[14px] mt-0.5 text-[#f4efe6]">{topic.aiScenario}</p>
           </div>
         </div>
@@ -412,10 +449,15 @@ export function PracticeArena({
               <div className="px-4 py-3 bg-[#1c1b2b] border-b border-[#2f2d45] text-[#ffe27a] flex items-center justify-between">
                 <div className="flex items-center gap-2 font-extrabold text-[15px]">
                   <Icon name="code" size={20} className="text-[#f6c945]" />
-                  <span>โค้ด {language.toUpperCase()} ที่ใช้ฝึกอ่าน</span>
+                  <span>
+                    {t(
+                      `โค้ด ${language.toUpperCase()} ที่ใช้ฝึกอ่าน`,
+                      `${language.toUpperCase()} Code to Read`
+                    )}
+                  </span>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full bg-[#252238] border border-[#3d395a] text-[#c4bdd6] text-[12px] font-bold">
-                  {codeLines.length} บรรทัด
+                  {codeLines.length} {t("บรรทัด", "lines")}
                 </span>
               </div>
 
@@ -449,12 +491,12 @@ export function PracticeArena({
                       </pre>
                       {isStepLine && (
                         <span className="px-2 py-0.5 rounded-md bg-[#f6c945] text-[#120f1c] text-[12px] font-extrabold shrink-0">
-                          ขั้นที่ {currentTrace.stepNumber}
+                          {t(`ขั้นที่ ${currentTrace.stepNumber}`, `Step ${currentTrace.stepNumber}`)}
                         </span>
                       )}
                       {!isStepLine && isQuestionLine && (
                         <span className="px-2 py-0.5 rounded-md bg-[#9b5de5] text-white text-[12px] font-extrabold shrink-0">
-                          บรรทัดที่ถาม
+                          {t("บรรทัดที่ถาม", "Target Line")}
                         </span>
                       )}
                     </div>
@@ -467,8 +509,10 @@ export function PracticeArena({
                 <div className="p-4 bg-[#1c1b2b] border-t-2 border-[#2f2d45] flex flex-col gap-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-[14px] font-extrabold text-[#ffe27a]">
-                      เดินโค้ดทีละขั้น: ขั้นที่ {currentTrace.stepNumber} จาก {topic.steps.length} (บรรทัดที่{" "}
-                      {currentTrace.line})
+                      {t(
+                        `เดินโค้ดทีละขั้น: ขั้นที่ ${currentTrace.stepNumber} จาก ${topic.steps.length} (บรรทัดที่ ${currentTrace.line})`,
+                        `Step Trace: Step ${currentTrace.stepNumber} of ${topic.steps.length} (Line ${currentTrace.line})`
+                      )}
                     </span>
                     <div className="flex items-center gap-2">
                       <button
@@ -480,7 +524,7 @@ export function PracticeArena({
                         disabled={traceIdx === 0}
                         className="press-secondary px-3 py-1.5 rounded-xl text-[13px] font-extrabold disabled:opacity-50 cursor-pointer"
                       >
-                        ← ก่อนหน้า
+                        {t("← ก่อนหน้า", "← Prev")}
                       </button>
                       <button
                         type="button"
@@ -488,7 +532,11 @@ export function PracticeArena({
                         className="press-gold px-3.5 py-1.5 rounded-xl text-[13px] font-extrabold flex items-center gap-1.5 cursor-pointer"
                       >
                         <Icon name="play" size={16} />
-                        <span>{isAutoWalking ? "หยุดเดินอัตโนมัติ" : "เดินโค้ดอัตโนมัติ"}</span>
+                        <span>
+                          {isAutoWalking
+                            ? t("หยุดเดินอัตโนมัติ", "Pause Auto")
+                            : t("เดินโค้ดอัตโนมัติ", "Auto Step")}
+                        </span>
                       </button>
                       <button
                         type="button"
@@ -499,14 +547,16 @@ export function PracticeArena({
                         disabled={traceIdx === topic.steps.length - 1}
                         className="press-teal px-3 py-1.5 rounded-xl text-[13px] font-extrabold disabled:opacity-50 cursor-pointer"
                       >
-                        ถัดไป →
+                        {t("ถัดไป →", "Next →")}
                       </button>
                     </div>
                   </div>
 
                   {/* คำอธิบายจังหวะปัจจุบัน */}
                   <div className="bg-[#141220] border border-[#2f2d45] rounded-xl p-3 text-[14px] text-[#f4efe6]">
-                    <span className="font-extrabold text-[#f6c945]">การทำงานในขั้นนี้: </span>
+                    <span className="font-extrabold text-[#f6c945]">
+                      {t("การทำงานในขั้นนี้:", "What happens here:")}{" "}
+                    </span>
                     {currentTrace.explanation}
                   </div>
 
@@ -514,7 +564,10 @@ export function PracticeArena({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="bg-[#141220] border border-[#2f2d45] rounded-xl p-3">
                       <div className="text-[13px] font-extrabold text-[#ffe27a] mb-2">
-                        ตารางค่าตัวแปร (ในขั้นที่ {currentTrace.stepNumber})
+                        {t(
+                          `ตารางค่าตัวแปร (ในขั้นที่ ${currentTrace.stepNumber})`,
+                          `Variable Table (Step ${currentTrace.stepNumber})`
+                        )}
                       </div>
                       <div className="space-y-1.5">
                         {Object.entries(currentTrace.variables).map(([varName, val]) => (
@@ -531,7 +584,7 @@ export function PracticeArena({
 
                     <div className="bg-[#141220] border border-[#2f2d45] rounded-xl p-3 flex flex-col justify-between">
                       <div className="text-[13px] font-extrabold text-[#ffe27a] mb-2">
-                        ผลลัพธ์บนหน้าจอ (console.log)
+                        {t("ผลลัพธ์บนหน้าจอ (console.log)", "Screen Output (console.log)")}
                       </div>
                       {currentTrace.outputSoFar.length > 0 ? (
                         <div className="p-2.5 rounded-lg bg-[#102a1e] border border-[#2fbf71]/50 font-code font-extrabold text-[#86efac]">
@@ -539,7 +592,7 @@ export function PracticeArena({
                         </div>
                       ) : (
                         <div className="p-2.5 rounded-lg bg-[#1c1b2b] text-[13px] text-[#9a93ad]">
-                          ยังไม่มีการพิมพ์ออกหน้าจอในขั้นนี้
+                          {t("ยังไม่มีการพิมพ์ออกหน้าจอในขั้นนี้", "No output printed at this step")}
                         </div>
                       )}
                     </div>
@@ -556,10 +609,13 @@ export function PracticeArena({
               <div className="bg-[#141220] border-2 border-[#2f2d45] rounded-2xl p-5 flex flex-col gap-4">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="px-3 py-1 rounded-full bg-[#5a2d91] border border-[#9b5de5] text-[#ffe27a] text-[13px] font-extrabold">
-                    ขั้นที่ 1 · ทำนายผล (Predict)
+                    {t("ขั้นที่ 1 · ทำนายผล (Predict)", "Step 1 · Predict")}
                   </span>
                   <span className="text-[13px] font-semibold text-[#9a93ad]">
-                    อ่านโค้ดด้านซ้ายแล้วทายผลก่อนรันจริง
+                    {t(
+                      "อ่านโค้ดด้านซ้ายแล้วทายผลก่อนรันจริง",
+                      "Read the code on the left and predict the output"
+                    )}
                   </span>
                 </div>
 
@@ -589,13 +645,16 @@ export function PracticeArena({
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[13px] font-semibold text-[#9a93ad]">
-                    หรือพิมพ์คำทำนายของคุณเอง:
+                    {t("หรือพิมพ์คำทำนายของคุณเอง:", "Or type your own prediction:")}
                   </label>
                   <input
                     type="text"
                     value={predictedAnswer}
                     onChange={(e) => setPredictedAnswer(e.target.value)}
-                    placeholder="พิมพ์ผลลัพธ์ที่คาดว่าจะพิมพ์ออกมา..."
+                    placeholder={t(
+                      "พิมพ์ผลลัพธ์ที่คาดว่าจะพิมพ์ออกมา...",
+                      "Type expected output..."
+                    )}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#0d0b14] border-2 border-[#2f2d45] text-[#f4efe6] font-code focus:outline-none focus:border-[#f6c945]"
                   />
                 </div>
@@ -607,7 +666,12 @@ export function PracticeArena({
                   className="press-gold w-full py-3 rounded-xl text-[16px] font-extrabold flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   <Icon name="play" size={20} />
-                  <span>รันโค้ดจริงเพื่อเทียบผลกับที่ทาย</span>
+                  <span>
+                    {t(
+                      "รันโค้ดจริงเพื่อเทียบผลกับที่ทาย",
+                      "Run Real Code & Compare"
+                    )}
+                  </span>
                 </button>
               </div>
             )}
@@ -617,16 +681,21 @@ export function PracticeArena({
               <div className="bg-[#141220] border-2 border-[#2f2d45] rounded-2xl p-5 flex flex-col gap-4">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="px-3 py-1 rounded-full bg-[#5a2d91] border border-[#9b5de5] text-[#ffe27a] text-[13px] font-extrabold">
-                    ขั้นที่ 2 · เทียบผลรันจริง (Run)
+                    {t("ขั้นที่ 2 · เทียบผลรันจริง (Run)", "Step 2 · Run & Compare")}
                   </span>
                   <span className="px-3 py-1 rounded-lg bg-[#281d08] text-[#ffe27a] border border-[#f6c945]/60 text-[13px] font-extrabold">
-                    +{predictXp} XP จากการทำนายและตรวจสอบผลจริง
+                    {t(
+                      `+${predictXp} XP จากการทำนายและตรวจสอบผลจริง`,
+                      `+${predictXp} XP for predicting & verifying`
+                    )}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="p-4 rounded-xl bg-[#1c1b2b] border border-[#2f2d45]">
-                    <div className="text-[13px] font-bold text-[#9a93ad]">สิ่งที่คุณทำนายไว้:</div>
+                    <div className="text-[13px] font-bold text-[#9a93ad]">
+                      {t("สิ่งที่คุณทำนายไว้:", "Your Prediction:")}
+                    </div>
                     <div className="font-code text-[20px] font-extrabold text-[#f4efe6] mt-1">
                       {predictedAnswer}
                     </div>
@@ -635,7 +704,9 @@ export function PracticeArena({
                   <div className="p-4 rounded-xl bg-[#102a1e] border-2 border-[#2fbf71]/50">
                     <div className="text-[13px] font-bold text-[#86efac] flex items-center gap-1">
                       <Icon name="check" size={16} />
-                      <span>ผลลัพธ์จากการรันโค้ดจริง:</span>
+                      <span>
+                        {t("ผลลัพธ์จากการรันโค้ดจริง:", "Actual Output:")}
+                      </span>
                     </div>
                     <div className="font-code text-[20px] font-extrabold text-[#86efac] mt-1">
                       {realRunResult.finalOutput}
@@ -661,8 +732,11 @@ export function PracticeArena({
                     />
                     <span>
                       {predictedAnswer.trim() === realRunResult.finalOutput.trim()
-                        ? "ทายตรงกับผลรันจริงเป๊ะ!"
-                        : "ผลรันจริงต่างจากที่ทายไว้ มาดูเหตุผลกัน:"}
+                        ? t("ทายตรงกับผลรันจริงเป๊ะ!", "Spot on! Exact match!")
+                        : t(
+                            "ผลรันจริงต่างจากที่ทายไว้ มาดูเหตุผลกัน:",
+                            "Actual output differs from your guess — let's see why:"
+                          )}
                     </span>
                   </div>
                   <p className="text-[14px] mt-1 text-[#f4efe6]">{topic.predictExplanation}</p>
@@ -673,7 +747,12 @@ export function PracticeArena({
                   onClick={() => setPrimmStep(3)}
                   className="press-teal w-full py-3 rounded-xl text-[16px] font-extrabold flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>ไปขั้นที่ 3 · เดินโค้ดและตอบคำถามตามช่อง Block Model →</span>
+                  <span>
+                    {t(
+                      "ไปขั้นที่ 3 · เดินโค้ดและตอบคำถามตามช่อง Block Model →",
+                      "Next: Step 3 · Trace & Block Model Questions →"
+                    )}
+                  </span>
                 </button>
               </div>
             )}
@@ -683,7 +762,10 @@ export function PracticeArena({
               <div className="bg-[#141220] border-2 border-[#2f2d45] rounded-2xl p-5 flex flex-col gap-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="px-3 py-1 rounded-full bg-[#5a2d91] border border-[#9b5de5] text-[#ffe27a] text-[13px] font-extrabold">
-                    ขั้นที่ 3 · เดินโค้ดและตอบคำถาม (ข้อ {currentQIdx + 1}/{topic.questions.length})
+                    {t(
+                      `ขั้นที่ 3 · เดินโค้ดและตอบคำถาม (ข้อ ${currentQIdx + 1}/${topic.questions.length})`,
+                      `Step 3 · Trace & Answer (Q ${currentQIdx + 1}/${topic.questions.length})`
+                    )}
                   </span>
                 </div>
 
@@ -707,7 +789,10 @@ export function PracticeArena({
                         }`}
                       >
                         <span>
-                          ข้อ {idx + 1} (ช่อง {q.cellId})
+                          {t(
+                            `ข้อ ${idx + 1} (ช่อง ${q.cellId})`,
+                            `Q${idx + 1} (${q.cellId})`
+                          )}
                         </span>
                         {st === "correct" && <Icon name="check" size={15} />}
                       </button>
@@ -718,8 +803,8 @@ export function PracticeArena({
                 {/* ตัวคำถาม */}
                 <div className="p-4 rounded-xl bg-[#1c1b2b] border border-[#2f2d45]">
                   <div className="text-[12px] font-bold text-[#c084fc]">
-                    {currentCellMeta.levelName} · {currentCellMeta.dimensionName} (ดูบรรทัดที่{" "}
-                    {currentQ.targetLine})
+                    {currentCellMeta.levelName} · {currentCellMeta.dimensionName} (
+                    {t(`ดูบรรทัดที่ ${currentQ.targetLine}`, `Line ${currentQ.targetLine}`)})
                   </div>
                   <h3 className="text-[17px] font-extrabold text-[#f4efe6] mt-1">
                     {currentQ.question}
@@ -764,7 +849,7 @@ export function PracticeArena({
                         </span>
                         {showAsCorrect && (
                           <span className="px-2 py-0.5 rounded bg-[#2fbf71] text-[#120f1c] text-[12px] font-extrabold shrink-0">
-                            คำตอบที่ถูก
+                            {t("คำตอบที่ถูก", "Correct Answer")}
                           </span>
                         )}
                       </button>
@@ -778,7 +863,10 @@ export function PracticeArena({
                     <Icon name="bulb" size={24} className="shrink-0 mt-0.5" />
                     <div>
                       <div className="font-extrabold text-[15px]">
-                        ยังไม่ตรงจุด · นี่คือคำใบ้ (ลองเลือกคำตอบใหม่อีกครั้ง ไม่หักคะแนน!)
+                        {t(
+                          "ยังไม่ตรงจุด · นี่คือคำใบ้ (ลองเลือกคำตอบใหม่อีกครั้ง ไม่หักคะแนน!)",
+                          "Not quite · Here's a hint (try again, no penalty!)"
+                        )}
                       </div>
                       <p className="text-[14px] mt-1 text-[#f4efe6]">{currentQ.hint}</p>
                     </div>
@@ -803,8 +891,14 @@ export function PracticeArena({
                         />
                         <span>
                           {currentQState.status === "correct"
-                            ? "ถูกต้อง! เข้าใจช่อง " + currentQ.cellId + " ชัดเจน"
-                            : "เฉลยจากการตอบครั้งที่ 2 (อ่านเหตุผลเพื่อเก็บ XP ต่อได้เลย)"}
+                            ? t(
+                                `ถูกต้อง! เข้าใจช่อง ${currentQ.cellId} ชัดเจน`,
+                                `Correct! Cell ${currentQ.cellId} mastered`
+                              )
+                            : t(
+                                "เฉลยจากการตอบครั้งที่ 2 (อ่านเหตุผลเพื่อเก็บ XP ต่อได้เลย)",
+                                "Answer revealed on 2nd attempt (read the explanation to continue)"
+                              )}
                         </span>
                       </span>
                       <span className="px-2.5 py-0.5 rounded-full bg-[#0d0b14] border border-[#f6c945]/50 text-[#ffe27a] text-[13px] font-extrabold">
@@ -820,7 +914,7 @@ export function PracticeArena({
                           onClick={() => setCurrentQIdx((i) => i + 1)}
                           className="press-teal px-4 py-2 rounded-xl text-[14px] font-extrabold cursor-pointer"
                         >
-                          ข้อถัดไป →
+                          {t("ข้อถัดไป →", "Next Question →")}
                         </button>
                       ) : allQuestionsDone ? (
                         <button
@@ -828,7 +922,10 @@ export function PracticeArena({
                           onClick={() => setPrimmStep(4)}
                           className="press-gold px-4 py-2 rounded-xl text-[14px] font-extrabold cursor-pointer"
                         >
-                          ไปขั้นที่ 4 · แก้ค่าแล้วทายใหม่ →
+                          {t(
+                            "ไปขั้นที่ 4 · แก้ค่าแล้วทายใหม่ →",
+                            "Next: Step 4 · Modify & Predict →"
+                          )}
                         </button>
                       ) : null}
                     </div>
@@ -839,10 +936,13 @@ export function PracticeArena({
                 <div className="mt-2 pt-4 border-t-2 border-[#2f2d45] flex flex-col gap-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-[14px] font-extrabold text-[#ffe27a]">
-                      เสริมความเข้าใจ: ลองสรุปด้วยภาษาของคุณเองว่าโค้ดนี้ทำงานอย่างไร (+10 XP)
+                      {t(
+                        "เสริมความเข้าใจ: ลองสรุปด้วยภาษาของคุณเองว่าโค้ดนี้ทำงานอย่างไร (+10 XP)",
+                        "Bonus: Explain in your own words how this code works (+10 XP)"
+                      )}
                     </span>
                     <span className="text-[12px] font-semibold text-[#9a93ad]">
-                      ตรวจผ่านหลังบ้าน
+                      {t("ตรวจผ่านหลังบ้าน", "Server-evaluated")}
                     </span>
                   </div>
                   <div className="flex gap-2">
@@ -850,7 +950,10 @@ export function PracticeArena({
                       type="text"
                       value={freeExplanation}
                       onChange={(e) => setFreeExplanation(e.target.value)}
-                      placeholder="เช่น โค้ดนี้สร้างตัวแปรเก็บค่า แล้ววนลูปบวกสะสมก่อนพิมพ์ผลลัพธ์..."
+                      placeholder={t(
+                        "เช่น โค้ดนี้สร้างตัวแปรเก็บค่า แล้ววนลูปบวกสะสมก่อนพิมพ์ผลลัพธ์...",
+                        "e.g., This code initializes a variable, loops to accumulate a sum, and prints it..."
+                      )}
                       className="flex-1 px-3.5 py-2 rounded-xl bg-[#0d0b14] border-2 border-[#2f2d45] text-[14px] text-[#f4efe6]"
                     />
                     <button
@@ -859,12 +962,20 @@ export function PracticeArena({
                       disabled={aiEvalLoading || !freeExplanation.trim()}
                       className="press-secondary px-4 py-2 rounded-xl text-[13px] font-extrabold shrink-0 cursor-pointer"
                     >
-                      {aiEvalLoading ? "กำลังตรวจ..." : "ตรวจคำอธิบาย"}
+                      {aiEvalLoading
+                        ? t("กำลังตรวจ...", "Checking...")
+                        : t("ตรวจคำอธิบาย", "Check Explanation")}
                     </button>
                   </div>
                   {aiEvalResult && (
                     <div className="p-3 rounded-xl bg-[#25193b] border border-[#9b5de5] text-[13px] text-[#e9d5ff]">
-                      <strong>ผลการตรวจ ({aiEvalResult.score}%):</strong> {aiEvalResult.feedback}
+                      <strong>
+                        {t(
+                          `ผลการตรวจ (${aiEvalResult.score}%):`,
+                          `Evaluation (${aiEvalResult.score}%):`
+                        )}
+                      </strong>{" "}
+                      {aiEvalResult.feedback}
                     </div>
                   )}
                 </div>
@@ -876,33 +987,40 @@ export function PracticeArena({
               <div className="bg-[#141220] border-2 border-[#2f2d45] rounded-2xl p-5 flex flex-col gap-4">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="px-3 py-1 rounded-full bg-[#f6c945] text-[#120f1c] text-[13px] font-extrabold">
-                    ขั้นที่ 4 · แก้ค่าแล้วทายใหม่ (Modify)
+                    {t("ขั้นที่ 4 · แก้ค่าแล้วทายใหม่ (Modify)", "Step 4 · Modify")}
                   </span>
                   <span className="text-[13px] font-bold text-[#9a93ad]">
-                    เปลี่ยนค่าในโค้ดแล้วทำนายผลอีกครั้ง
+                    {t(
+                      "เปลี่ยนค่าในโค้ดแล้วทำนายผลอีกครั้ง",
+                      "Modify the code and predict the new output"
+                    )}
                   </span>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-[#281d08] border border-[#f6c945]/60 text-[#ffe27a]">
                   <div className="font-extrabold text-[15px]">
-                    โจทย์ลองแก้ค่า: {topic.modifyChallenge.instruction}
+                    {t("โจทย์ลองแก้ค่า:", "Modify Challenge:")} {topic.modifyChallenge.instruction}
                   </div>
                   <div className="text-[13px] mt-0.5 text-[#f4efe6]">
-                    จุดที่เปลี่ยน: <code className="font-bold text-[#ffe27a]">{topic.modifyChallenge.changeDescription}</code>
+                    {t("จุดที่เปลี่ยน:", "Target change:")}{" "}
+                    <code className="font-bold text-[#ffe27a]">{topic.modifyChallenge.changeDescription}</code>
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between">
                     <label className="text-[13px] font-extrabold text-[#ffe27a]">
-                      แก้ไขโค้ด {language.toUpperCase()} ด้านล่างได้เลย:
+                      {t(
+                        `แก้ไขโค้ด ${language.toUpperCase()} ด้านล่างได้เลย:`,
+                        `Edit the ${language.toUpperCase()} code below:`
+                      )}
                     </label>
                     <button
                       type="button"
                       onClick={() => setModifiedCode(topic.modifyChallenge.suggestedCode)}
                       className="text-[12px] font-bold text-[#f6c945] underline cursor-pointer"
                     >
-                      รีเซ็ตเป็นโค้ดที่แก้ค่าตามโจทย์
+                      {t("รีเซ็ตเป็นโค้ดที่แก้ค่าตามโจทย์", "Reset to suggested code")}
                     </button>
                   </div>
                   <textarea
@@ -915,7 +1033,10 @@ export function PracticeArena({
 
                 <div className="flex flex-col gap-2">
                   <span className="text-[14px] font-extrabold text-[#f4efe6]">
-                    ทายว่าโค้ดที่แก้ค่าแล้วจะพิมพ์อะไรออกทางหน้าจอ:
+                    {t(
+                      "ทายว่าโค้ดที่แก้ค่าแล้วจะพิมพ์อะไรออกทางหน้าจอ:",
+                      "Predict what the modified code will print:"
+                    )}
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     {topic.modifyChallenge.options.map((opt) => (
@@ -942,7 +1063,12 @@ export function PracticeArena({
                   className="press-teal w-full py-3 rounded-xl text-[16px] font-extrabold flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   <Icon name="play" size={20} />
-                  <span>รันโค้ดที่แก้แล้วจริงและตรวจคำทำนาย</span>
+                  <span>
+                    {t(
+                      "รันโค้ดที่แก้แล้วจริงและตรวจคำทำนาย",
+                      "Run Modified Code & Check Prediction"
+                    )}
+                  </span>
                 </button>
 
                 {modifyRunResult && (
@@ -957,13 +1083,16 @@ export function PracticeArena({
                   >
                     {modifyRunResult.error ? (
                       <div>
-                        <strong>โค้ดมีข้อผิดพลาดไวยากรณ์:</strong> {modifyRunResult.error}
+                        <strong>
+                          {t("โค้ดมีข้อผิดพลาดไวยากรณ์:", "Syntax Error:")}
+                        </strong>{" "}
+                        {modifyRunResult.error}
                       </div>
                     ) : (
                       <>
                         <div className="font-extrabold text-[15px] flex items-center justify-between">
                           <span>
-                            ผลรันจริงของโค้ดใหม่คือ:{" "}
+                            {t("ผลรันจริงของโค้ดใหม่คือ:", "Modified code output:")}{" "}
                             <code className="px-2 py-0.5 rounded bg-[#0d0b14] text-[#ffe27a] font-extrabold">
                               {modifyRunResult.finalOutput}
                             </code>
@@ -977,7 +1106,12 @@ export function PracticeArena({
                           className="press-gold w-full mt-3 py-2.5 rounded-xl text-[15px] font-extrabold flex items-center justify-center gap-2 cursor-pointer"
                         >
                           <Icon name="gift" size={20} />
-                          <span>สรุปผลความเข้าใจ รับ XP และตราประจำเรื่อง →</span>
+                          <span>
+                            {t(
+                              "สรุปผลความเข้าใจ รับ XP และตราประจำเรื่อง →",
+                              "View Summary, Claim XP & Badge →"
+                            )}
+                          </span>
                         </button>
                       </>
                     )}
@@ -995,39 +1129,57 @@ export function PracticeArena({
           <StatusCircle
             variant={topic.isBoss ? "boss" : "passed"}
             size="lg"
-            label="ผ่านเควสต์สำเร็จ"
+            label={t("ผ่านเควสต์สำเร็จ", "Quest Cleared")}
           />
 
           <div>
             <span className="px-3 py-1 rounded-full bg-[#102a1e] border border-[#2fbf71]/50 text-[#86efac] text-[13px] font-extrabold">
-              ผ่านเควสต์เรียบร้อย!
+              {t("ผ่านเควสต์เรียบร้อย!", "Quest Completed!")}
             </span>
             <h2 className="text-[26px] font-extrabold text-[#f4efe6] mt-2">
               {topic.title}
             </h2>
             <p className="text-[15px] text-[#9a93ad] mt-1">
-              คุณผ่านครบทั้ง 4 ขั้นตอน (ทำนายผล · เทียบผลรันจริง · เดินโค้ดตอบคำถาม · แก้ค่าแล้วทายใหม่)
+              {t(
+                "คุณผ่านครบทั้ง 4 ขั้นตอน (ทำนายผล · เทียบผลรันจริง · เดินโค้ดตอบคำถาม · แก้ค่าแล้วทายใหม่)",
+                "You completed all 4 steps (Predict · Run & Compare · Trace & Answer · Modify)"
+              )}
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
             <div className="p-4 rounded-2xl bg-[#281d08] border-2 border-[#f6c945]/70 flex items-center gap-3 text-left">
-              <StatusCircle variant="current" size="md" label="XP ที่ได้รับ" />
+              <StatusCircle
+                variant="current"
+                size="md"
+                label={t("XP ที่ได้รับ", "XP Earned")}
+              />
               <div>
-                <div className="text-[13px] font-bold text-[#ffe27a]">รางวัลความเข้าใจ</div>
+                <div className="text-[13px] font-bold text-[#ffe27a]">
+                  {t("รางวัลความเข้าใจ", "Mastery Reward")}
+                </div>
                 <div className="text-[22px] font-extrabold text-[#f6c945]">
                   +{totalEarnedXp} XP
                 </div>
                 <div className="text-[12px] text-[#f4efe6]/80">
-                  คำนวณจากความเข้าใจในช่อง Block Model
+                  {t(
+                    "คำนวณจากความเข้าใจในช่อง Block Model",
+                    "Calculated from Block Model mastery"
+                  )}
                 </div>
               </div>
             </div>
 
             <div className="p-4 rounded-2xl bg-[#25193b] border-2 border-[#9b5de5] flex items-center gap-3 text-left">
-              <StatusCircle variant="badge" size="md" label="ตราที่ได้รับ" />
+              <StatusCircle
+                variant="badge"
+                size="md"
+                label={t("ตราที่ได้รับ", "Badge Earned")}
+              />
               <div>
-                <div className="text-[13px] font-bold text-[#e9d5ff]">ได้รับตราใหม่!</div>
+                <div className="text-[13px] font-bold text-[#e9d5ff]">
+                  {t("ได้รับตราใหม่!", "New Badge Unlocked!")}
+                </div>
                 <div className="text-[18px] font-extrabold text-[#ffe27a]">
                   {topic.badgeReward.name}
                 </div>
@@ -1041,7 +1193,10 @@ export function PracticeArena({
           {/* สรุปช่อง Block Model ที่ได้ฝึกในเรื่องนี้ */}
           <div className="w-full bg-[#1c1b2b] border border-[#2f2d45] rounded-xl p-4 text-left">
             <div className="text-[14px] font-extrabold text-[#ffe27a] mb-2">
-              สรุปช่อง Block Model ที่อัปเดตเข้าโปรไฟล์ของคุณ:
+              {t(
+                "สรุปช่อง Block Model ที่อัปเดตเข้าโปรไฟล์ของคุณ:",
+                "Block Model Cells Updated on Your Profile:"
+              )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {topic.questions.map((q) => {
@@ -1055,7 +1210,7 @@ export function PracticeArena({
                   >
                     <div className="flex items-center justify-between">
                       <span className="px-2 py-0.5 rounded bg-[#25193b] text-[#e9d5ff] text-[12px] font-extrabold">
-                        ช่อง {q.cellId}
+                        {t("ช่อง", "Cell")} {q.cellId}
                       </span>
                       <span className="text-[14px] font-extrabold text-[#86efac]">
                         {score}%
@@ -1076,7 +1231,12 @@ export function PracticeArena({
             className="press-gold w-full py-3.5 rounded-xl text-[16px] font-extrabold flex items-center justify-center gap-2 cursor-pointer"
           >
             <Icon name="check" size={20} />
-            <span>อัปเดตโปรไฟล์และกลับสู่เส้นทางเควสต์</span>
+            <span>
+              {t(
+                "อัปเดตโปรไฟล์และกลับสู่เส้นทางเควสต์",
+                "Update Profile & Return to Quest Map"
+              )}
+            </span>
           </button>
         </div>
       )}

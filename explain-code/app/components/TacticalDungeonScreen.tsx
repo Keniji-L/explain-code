@@ -18,6 +18,7 @@ import {
   generateTacticalDungeon,
   getInitialPlayerCombatState,
 } from "../lib/dungeon/tacticalMonsters";
+import { useUiLanguage } from "./LanguageProvider";
 
 interface TacticalDungeonScreenProps {
   onBackToPortal: () => void;
@@ -47,6 +48,7 @@ export function TacticalDungeonScreen({
   onBackToPortal,
   onRecordVictory,
 }: TacticalDungeonScreenProps) {
+  const { t } = useUiLanguage();
   const [dungeonRooms, setDungeonRooms] = useState<Record<string, TacticalDungeonRoom>>(
     generateTacticalDungeon()
   );
@@ -89,7 +91,10 @@ export function TacticalDungeonScreen({
           {
             turn: 1,
             sender: "system",
-            message: `เริ่มการต่อสู้กับ ${room.monster.name}! สแกนดูสคริปต์ศัตรูเพื่อวางแผนแก้ทาง`,
+            message: t(
+              `เริ่มการต่อสู้กับ ${room.monster.name}! สแกนดูสคริปต์ศัตรูเพื่อวางแผนแก้ทาง`,
+              `Battle started against ${room.monster.name}! Scan enemy script to plan your counter.`
+            ),
             type: "info",
           },
         ]);
@@ -111,10 +116,15 @@ export function TacticalDungeonScreen({
     const res = executePlayerSpell(spellCode, snapshot);
 
     if (!res.success) {
-      setSandboxSimulation(`ตรวจพบปัญหา: ${res.errorMessage}`);
+      setSandboxSimulation(
+        t(`ตรวจพบปัญหา: ${res.errorMessage}`, `Issue detected: ${res.errorMessage}`)
+      );
     } else if (res.action) {
       setSandboxSimulation(
-        `จำลองผลสำเร็จ: ดาเมจฐาน ${res.action.baseDamage} ธาตุ ${res.action.element} (${res.action.hitCount} ฮิต) | มานาที่ใช้: ${res.action.manaConsumed} MP`
+        t(
+          `จำลองผลสำเร็จ: ดาเมจฐาน ${res.action.baseDamage} ธาตุ ${res.action.element} (${res.action.hitCount} ฮิต) | มานาที่ใช้: ${res.action.manaConsumed} MP`,
+          `Simulation OK: Base DMG ${res.action.baseDamage}, Element ${res.action.element} (${res.action.hitCount} hit(s)) | Mana: ${res.action.manaConsumed} MP`
+        )
       );
     }
   };
@@ -215,7 +225,12 @@ export function TacticalDungeonScreen({
 
     const passes = room.npcEvent.checkCodePasses(spellCode);
     if (passes) {
-      setNpcFeedback(`ยอดเยี่ยม! คุณผ่านคำขอแล้ว: ${room.npcEvent.rewardDescription}`);
+      setNpcFeedback(
+        t(
+          `ยอดเยี่ยม! คุณผ่านคำขอแล้ว: ${room.npcEvent.rewardDescription}`,
+          `Awesome! Request fulfilled: ${room.npcEvent.rewardDescription}`
+        )
+      );
       // Apply Rune snippet to player's active code
       const rewardedRune = room.npcEvent.rewardRune;
       setPlayer((prev) => ({
@@ -227,7 +242,12 @@ export function TacticalDungeonScreen({
         handleClearCurrentRoom();
       }, 1500);
     } else {
-      setNpcFeedback("โค้ดยังไม่ตรงตามเงื่อนไขที่ NPC ต้องการ ลองตรวจสอบ Requirement อีกครั้ง!");
+      setNpcFeedback(
+        t(
+          "โค้ดยังไม่ตรงตามเงื่อนไขที่ NPC ต้องการ ลองตรวจสอบ Requirement อีกครั้ง!",
+          "Code does not meet the NPC's requirements yet. Check the Requirement again!"
+        )
+      );
     }
   };
 
@@ -252,7 +272,10 @@ export function TacticalDungeonScreen({
                 </span>
               </div>
               <h1 className="text-base font-bold text-slate-100 leading-tight">
-                CODE DEPTHS : สังเวียนดวลตรรกะเวทมนตร์
+                {t(
+                  "CODE DEPTHS : สังเวียนดวลตรรกะเวทมนตร์",
+                  "CODE DEPTHS : Tactical Spell Logic Arena"
+                )}
               </h1>
             </div>
           </div>
@@ -299,8 +322,12 @@ export function TacticalDungeonScreen({
 
             {/* Armor & Integrity */}
             <div className="hidden sm:flex flex-col text-right text-xs">
-              <span className="text-slate-400 text-[10px]">เกราะป้องกัน (Armor)</span>
-              <span className="font-bold text-amber-300 font-mono">{player.baseArmor} หน่วย</span>
+              <span className="text-slate-400 text-[10px]">
+                {t("เกราะป้องกัน (Armor)", "Armor")}
+              </span>
+              <span className="font-bold text-amber-300 font-mono">
+                {player.baseArmor} {t("หน่วย", "pts")}
+              </span>
             </div>
           </div>
 
@@ -309,7 +336,7 @@ export function TacticalDungeonScreen({
               onClick={onBackToPortal}
               className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition border border-slate-700"
             >
-              กลับหน้าหลัก
+              {t("กลับหน้าหลัก", "Back to Home")}
             </button>
           </div>
         </div>
@@ -323,10 +350,13 @@ export function TacticalDungeonScreen({
               Tactical Dungeon Map
             </span>
             <h2 className="text-3xl font-black text-white mt-2">
-              เลือกเส้นทางพิชิตดันเจี้ยน
+              {t("เลือกเส้นทางพิชิตดันเจี้ยน", "Choose Your Dungeon Path")}
             </h2>
             <p className="text-xs text-slate-400 mt-1">
-              คลิกที่ห้องที่มีสถานะพร้อมเข้า เพื่อเริ่มการดวลตรรกะ หรือพบปะกับ NPC ช่างตีเหล็ก
+              {t(
+                "คลิกที่ห้องที่มีสถานะพร้อมเข้า เพื่อเริ่มการดวลตรรกะ หรือพบปะกับ NPC ช่างตีเหล็ก",
+                "Click an available room to start a logic battle or meet the Blacksmith NPC."
+              )}
             </p>
           </div>
 
@@ -361,22 +391,26 @@ export function TacticalDungeonScreen({
                           {room.roomType === "boss" && "Boss Battle"}
                         </span>
                         {isCleared && (
-                          <span className="text-xs text-emerald-400 font-bold">ผ่านแล้ว ✓</span>
+                          <span className="text-xs text-emerald-400 font-bold">
+                            {t("ผ่านแล้ว ✓", "Cleared ✓")}
+                          </span>
                         )}
                         {isAvailable && (
                           <span className="text-xs text-indigo-400 font-bold animate-pulse">
-                            เข้าได้ ➔
+                            {t("เข้าได้ ➔", "Enter ➔")}
                           </span>
                         )}
                       </div>
                       <h3 className="text-sm font-bold text-white truncate">{room.name}</h3>
                       <p className="text-xs text-slate-400 mt-1 line-clamp-2">
-                        {room.monster?.description || room.npcEvent?.dialog || "ห้องลึกลับในดันเจี้ยน"}
+                        {room.monster?.description ||
+                          room.npcEvent?.dialog ||
+                          t("ห้องลึกลับในดันเจี้ยน", "Mysterious dungeon chamber")}
                       </p>
                     </div>
 
                     <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-                      <span>ชั้นที่ {room.floor + 1}</span>
+                      <span>{t(`ชั้นที่ ${room.floor + 1}`, `Floor ${room.floor + 1}`)}</span>
                       {room.monster && (
                         <span className="text-indigo-300 font-semibold font-mono">
                           {room.monster.element} Element
@@ -406,17 +440,17 @@ export function TacticalDungeonScreen({
                     {currentMonster.tier} Enemy
                   </span>
                   <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-indigo-300 font-mono font-bold">
-                    ธาตุ: {currentMonster.element}
+                    {t("ธาตุ:", "Element:")} {currentMonster.element}
                   </span>
                   <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-amber-300 font-mono">
-                    เกราะ: {currentMonster.baseArmor}
+                    {t("เกราะ:", "Armor:")} {currentMonster.baseArmor}
                   </span>
                 </div>
                 <h2 className="text-xl sm:text-2xl font-black text-white mt-0.5">
                   {currentMonster.name}
                 </h2>
                 <p className="text-xs text-slate-400">
-                  สถานะปัจจุบัน:{" "}
+                  {t("สถานะปัจจุบัน:", "Current Stance:")}{" "}
                   <span className="text-cyan-300 font-bold">{currentMonster.currentStance}</span>
                 </p>
               </div>
@@ -445,7 +479,9 @@ export function TacticalDungeonScreen({
                 onClick={() => setInspectEnemyModalOpen(true)}
                 className="px-4 py-2.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500 text-indigo-300 text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
               >
-                <span>🔍 สแกนโค้ดศัตรู (Code X-Ray)</span>
+                <span>
+                  {t("🔍 สแกนโค้ดศัตรู (Code X-Ray)", "🔍 Code X-Ray Enemy Script")}
+                </span>
               </button>
             </div>
           </div>
@@ -456,14 +492,16 @@ export function TacticalDungeonScreen({
             <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col gap-4">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-indigo-400">
-                  สคริปต์เวทมนตร์ของผู้เล่น (Player Spell Engine)
+                  {t("สคริปต์เวทมนตร์ของผู้เล่น (Player Spell Engine)", "Player Spell Engine Script")}
                 </span>
                 <span className="text-slate-400">JavaScript Sandbox Runtime</span>
               </div>
 
               {/* Quick Snippet Injector Buttons */}
               <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 flex flex-wrap gap-2 text-xs">
-                <span className="text-slate-400 text-[11px] self-center mr-1">แทรกตรรกะลัด:</span>
+                <span className="text-slate-400 text-[11px] self-center mr-1">
+                  {t("แทรกตรรกะลัด:", "Quick Snippets:")}
+                </span>
                 <button
                   type="button"
                   onClick={() =>
@@ -473,7 +511,7 @@ export function TacticalDungeonScreen({
                   }
                   className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-300 text-[11px] transition"
                 >
-                  + เจาะเกราะ 40% (ไฟ)
+                  {t("+ เจาะเกราะ 40% (ไฟ)", "+ 40% Armor Pierce (Fire)")}
                 </button>
                 <button
                   type="button"
@@ -484,7 +522,7 @@ export function TacticalDungeonScreen({
                   }
                   className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 text-[11px] transition"
                 >
-                  + ธาตุสายฟ้า (แก้ทางน้ำ)
+                  {t("+ ธาตุสายฟ้า (แก้ทางน้ำ)", "+ Lightning (Counter Water)")}
                 </button>
                 <button
                   type="button"
@@ -495,7 +533,7 @@ export function TacticalDungeonScreen({
                   }
                   className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-emerald-300 text-[11px] transition"
                 >
-                  + ลูป 3 ฮิต (Multi-cast)
+                  {t("+ ลูป 3 ฮิต (Multi-cast)", "+ 3-Hit Multi-cast")}
                 </button>
                 <button
                   type="button"
@@ -506,7 +544,7 @@ export function TacticalDungeonScreen({
                   }
                   className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-purple-300 text-[11px] transition"
                 >
-                  + เสี่ยงโชคคริติคอล 30%
+                  {t("+ เสี่ยงโชคคริติคอล 30%", "+ 30% Crit Chance")}
                 </button>
               </div>
 
@@ -514,7 +552,9 @@ export function TacticalDungeonScreen({
               <div className="relative">
                 <div className="bg-slate-950 px-4 py-2 rounded-t-xl border border-b-0 border-slate-800 text-xs font-mono text-slate-400 flex justify-between">
                   <span>spell_engine.js</span>
-                  <span>{spellCode.split("\n").length} บรรทัด</span>
+                  <span>
+                    {spellCode.split("\n").length} {t("บรรทัด", "lines")}
+                  </span>
                 </div>
                 <textarea
                   value={spellCode}
@@ -538,14 +578,14 @@ export function TacticalDungeonScreen({
                   onClick={handleTestSandbox}
                   className="w-1/3 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold transition"
                 >
-                  จำลองรันใน Sandbox
+                  {t("จำลองรันใน Sandbox", "Test in Sandbox")}
                 </button>
                 <button
                   type="button"
                   onClick={handleCastSpell}
                   className="flex-1 py-3 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white text-sm font-extrabold shadow-lg shadow-indigo-500/25 transition transform active:scale-95"
                 >
-                  ร่ายมนตร์โจมตี (Cast Spell) ➔
+                  {t("ร่ายมนตร์โจมตี (Cast Spell) ➔", "Cast Spell ➔")}
                 </button>
               </div>
             </div>
@@ -553,8 +593,10 @@ export function TacticalDungeonScreen({
             {/* Right: Battlefield Log & Combat Feedback */}
             <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col h-[560px]">
               <div className="flex items-center justify-between text-xs text-slate-400 mb-3 border-b border-slate-800 pb-2">
-                <span className="font-bold text-slate-300">บันทึกเหตุการณ์ในสนามรบ (Battle Log)</span>
-                <span>เทิร์นที่ {turnNumber}</span>
+                <span className="font-bold text-slate-300">
+                  {t("บันทึกเหตุการณ์ในสนามรบ (Battle Log)", "Battle Log")}
+                </span>
+                <span>{t(`เทิร์นที่ ${turnNumber}`, `Turn ${turnNumber}`)}</span>
               </div>
 
               {/* Log Scroll Area */}
@@ -624,18 +666,21 @@ export function TacticalDungeonScreen({
 
                 <div className="bg-slate-950/80 rounded-2xl p-5 border border-slate-800">
                   <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider block mb-1">
-                    ข้อกำหนดในการปรับแต่งโค้ด (Refactor Challenge):
+                    {t(
+                      "ข้อกำหนดในการปรับแต่งโค้ด (Refactor Challenge):",
+                      "Refactor Challenge Requirement:"
+                    )}
                   </span>
                   <p className="text-xs text-slate-300">{event.codeRequirementDescription}</p>
                   <p className="text-xs text-amber-300 font-semibold mt-2">
-                    รางวัลเมื่อผ่าน: {event.rewardDescription}
+                    {t("รางวัลเมื่อผ่าน:", "Reward:")} {event.rewardDescription}
                   </p>
                 </div>
 
                 {/* Editor to solve NPC request */}
                 <div>
                   <label className="block text-xs font-bold text-slate-400 mb-1">
-                    ปรับแต่งโค้ดเพื่อส่งมอบให้ NPC:
+                    {t("ปรับแต่งโค้ดเพื่อส่งมอบให้ NPC:", "Edit code to submit to NPC:")}
                   </label>
                   <textarea
                     value={spellCode}
@@ -648,7 +693,7 @@ export function TacticalDungeonScreen({
                 {npcFeedback && (
                   <div
                     className={`p-4 rounded-xl text-xs font-semibold ${
-                      npcFeedback.includes("ยอดเยี่ยม")
+                      npcFeedback.includes("ยอดเยี่ยม") || npcFeedback.includes("Awesome")
                         ? "bg-emerald-950/40 border border-emerald-800 text-emerald-300"
                         : "bg-rose-950/40 border border-rose-800 text-rose-300"
                     }`}
@@ -662,13 +707,13 @@ export function TacticalDungeonScreen({
                     onClick={handleSubmitToNpc}
                     className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white font-extrabold text-sm shadow-lg transition"
                   >
-                    ส่งมอบโค้ดให้ NPC ตรวจสอบ
+                    {t("ส่งมอบโค้ดให้ NPC ตรวจสอบ", "Submit Code to NPC")}
                   </button>
                   <button
                     onClick={() => setGameState("map")}
                     className="px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold border border-slate-700"
                   >
-                    ข้ามเหตุการณ์นี้
+                    {t("ข้ามเหตุการณ์นี้", "Skip Event")}
                   </button>
                 </div>
               </div>
@@ -690,11 +735,16 @@ export function TacticalDungeonScreen({
                   Mission Accomplished
                 </span>
                 <h2 className="text-3xl font-black text-white mt-1 mb-2">
-                  คุณพิชิตเดอะ คอร์ ด้วยสคริปต์เวทมนตร์สำเร็จ!
+                  {t(
+                    "คุณพิชิตเดอะ คอร์ ด้วยสคริปต์เวทมนตร์สำเร็จ!",
+                    "You Conquered The Core with Your Spell Script!"
+                  )}
                 </h2>
                 <p className="text-sm text-slate-400 max-w-lg mx-auto mb-6">
-                  คุณได้พิสูจน์แล้วว่าการเขียนโค้ดคือการวางกลยุทธ์ การสลับธาตุแก้ทาง การจัดการมานา
-                  และการดักทางสคริปต์ของศัตรูอย่างชาญฉลาด
+                  {t(
+                    "คุณได้พิสูจน์แล้วว่าการเขียนโค้ดคือการวางกลยุทธ์ การสลับธาตุแก้ทาง การจัดการมานา และการดักทางสคริปต์ของศัตรูอย่างชาญฉลาด",
+                    "You proved that coding is strategy — countering elements, managing mana, and outsmarting enemy scripts."
+                  )}
                 </p>
               </>
             ) : (
@@ -706,10 +756,13 @@ export function TacticalDungeonScreen({
                   Player Defeated
                 </span>
                 <h2 className="text-3xl font-black text-white mt-1 mb-2">
-                  พลังชีวิตของผู้เล่นหมดลง
+                  {t("พลังชีวิตของผู้เล่นหมดลง", "Player HP Depleted")}
                 </h2>
                 <p className="text-sm text-slate-400 max-w-lg mx-auto mb-6">
-                  การต่อสู้ครั้งนี้ทำให้เห็นจุดบกพร่องในสคริปต์เวทมนตร์ ปรับแก้เงื่อนไขและกลับมาท้าทายใหม่ได้ทันที
+                  {t(
+                    "การต่อสู้ครั้งนี้ทำให้เห็นจุดบกพร่องในสคริปต์เวทมนตร์ ปรับแก้เงื่อนไขและกลับมาท้าทายใหม่ได้ทันที",
+                    "This battle revealed flaws in your spell script. Adjust your conditions and challenge again!"
+                  )}
                 </p>
               </>
             )}
@@ -723,13 +776,13 @@ export function TacticalDungeonScreen({
                 }}
                 className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg transition"
               >
-                เล่นรอบใหม่ (New Run)
+                {t("เล่นรอบใหม่ (New Run)", "New Run")}
               </button>
               <button
                 onClick={onBackToPortal}
                 className="px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm border border-slate-700"
               >
-                กลับหน้าหลัก
+                {t("กลับหน้าหลัก", "Back to Home")}
               </button>
             </div>
           </div>
@@ -746,7 +799,10 @@ export function TacticalDungeonScreen({
                   Code X-Ray Profiler
                 </span>
                 <h3 className="text-lg font-black text-white">
-                  สคริปต์พฤติกรรมของ {currentMonster.name}
+                  {t(
+                    `สคริปต์พฤติกรรมของ ${currentMonster.name}`,
+                    `Behavior Script: ${currentMonster.name}`
+                  )}
                 </h3>
               </div>
               <button
@@ -758,7 +814,11 @@ export function TacticalDungeonScreen({
             </div>
 
             <p className="text-xs text-slate-400">
-              {currentMonster.description} อ่านโค้ดด้านล่างเพื่อหาวิธีแก้ทางและหลีกเลี่ยงการถูกดูดซับดาเมจ:
+              {currentMonster.description}{" "}
+              {t(
+                "อ่านโค้ดด้านล่างเพื่อหาวิธีแก้ทางและหลีกเลี่ยงการถูกดูดซับดาเมจ:",
+                "Read the code below to find how to counter and avoid damage absorption:"
+              )}
             </p>
 
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-cyan-300 leading-relaxed overflow-x-auto max-h-80 overflow-y-auto">
@@ -768,14 +828,19 @@ export function TacticalDungeonScreen({
             </div>
 
             <div className="bg-indigo-950/30 p-3 rounded-xl border border-indigo-800/40 text-xs text-indigo-300">
-              💡 <strong>คำแนะนำเชิงกลยุทธ์:</strong> ตรวจดูเงื่อนไข `if` ของศัตรู แล้วปรับค่า `spell.element` หรือ `spell.armorPiercing` ในฟังก์ชันของคุณเพื่อหลบการดูดซับ
+              💡{" "}
+              <strong>{t("คำแนะนำเชิงกลยุทธ์:", "Tactical Tip:")}</strong>{" "}
+              {t(
+                "ตรวจดูเงื่อนไข `if` ของศัตรู แล้วปรับค่า `spell.element` หรือ `spell.armorPiercing` ในฟังก์ชันของคุณเพื่อหลบการดูดซับ",
+                "Inspect the enemy's `if` conditions, then adjust `spell.element` or `spell.armorPiercing` in your function to bypass absorption."
+              )}
             </div>
 
             <button
               onClick={() => setInspectEnemyModalOpen(false)}
               className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700"
             >
-              ปิดหน้าต่างสแกนโค้ด
+              {t("ปิดหน้าต่างสแกนโค้ด", "Close Code X-Ray")}
             </button>
           </div>
         </div>

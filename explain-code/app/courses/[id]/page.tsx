@@ -24,10 +24,12 @@ import { PixelSpriteView } from "../../components/dungeon/PixelSpriteView";
 import { getMonsterDef } from "../../lib/dungeon/monsters";
 import { generateDungeonRoom } from "../../lib/dungeon/mapgen";
 import { hashString, dungeonNameForCourse } from "../../lib/dungeon/seed";
+import { useUiLanguage } from "../../components/LanguageProvider";
 
 function CourseDetailContent() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useUiLanguage();
   const courseId = String(params?.id || "");
 
   const [session, setSession] = useState<ClientAuthSession | null>(null);
@@ -63,12 +65,12 @@ function CourseDetailContent() {
       <div className="min-h-screen bg-[#0d0b14] text-[#f4efe6]">
         <SiteHeader />
         <main className="mx-auto max-w-4xl px-4 py-12 text-center">
-          <h1 className="text-xl font-bold text-[#f4efe6]">ไม่พบคอร์สที่คุณต้องการ</h1>
+          <h1 className="text-xl font-bold text-[#f4efe6]">{t("ไม่พบคอร์สที่คุณต้องการ", "Course not found")}</h1>
           <Link
             href="/courses"
             className="mt-4 inline-block rounded-xl bg-[#2fbf71] px-4 py-2 text-xs font-extrabold text-[#0b0b14] hover:bg-[#34d37d] transition-colors"
           >
-            ← กลับไปหน้ารวมคอร์ส
+            {t("← กลับไปหน้ารวมคอร์ส", "← Back to Courses")}
           </Link>
         </main>
       </div>
@@ -101,11 +103,16 @@ function CourseDetailContent() {
     setPrivateCodeError(null);
     const clean = privateCodeInput.trim().toUpperCase();
     if (!clean) {
-      setPrivateCodeError("กรุณากรอกรหัสเข้าร่วมคอร์ส");
+      setPrivateCodeError(t("กรุณากรอกรหัสเข้าร่วมคอร์ส", "Please enter the course join code"));
       return;
     }
     if (clean !== course.join_code.toUpperCase()) {
-      setPrivateCodeError("รหัสเข้าร่วมคอร์สไม่ถูกต้อง กรุณาตรวจสอบกับครูผู้สอนอีกครั้ง");
+      setPrivateCodeError(
+        t(
+          "รหัสเข้าร่วมคอร์สไม่ถูกต้อง กรุณาตรวจสอบกับครูผู้สอนอีกครั้ง",
+          "Invalid join code. Please check with your teacher."
+        )
+      );
       return;
     }
     const nextUnlocked = unlockPrivateCourseId(course.id);
@@ -146,20 +153,22 @@ function CourseDetailContent() {
         <SiteHeader />
         <main className="mx-auto max-w-lg px-4 py-12">
           <div className="rounded-2xl border border-[#9b5de5]/60 bg-[#141220] p-6 sm:p-8 text-center shadow-xl space-y-4">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#9b5de5]/50 bg-[#25193b] px-3 py-1 text-xs font-extrabold text-[#e9d5ff]">
-              🔒 คอร์สเรียนแบบส่วนตัว (Private Course)
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#9b5de5]/60 bg-[#25193b] px-3 py-1 text-xs font-extrabold text-[#e9d5ff]">
+              {t("🔒 คอร์สเรียนแบบส่วนตัว (Private Course)", "🔒 Private Course")}
             </span>
             <h1 className="text-xl font-bold text-[#f4efe6]">{course.title}</h1>
             <p className="text-xs text-[#c4bdd6] leading-relaxed">
-              ครูผู้สอน ({course.teacher_name}) ตั้งค่าคอร์สนี้เป็นแบบส่วนตัว
-              กรุณากรอกรหัสเข้าร่วมคอร์ส (Join Code) เพื่อเข้าถึงบทเรียนและดันเจี้ยน
+              {t(
+                `ครูผู้สอน (${course.teacher_name}) ตั้งค่าคอร์สนี้เป็นแบบส่วนตัว กรุณากรอกรหัสเข้าร่วมคอร์ส (Join Code) เพื่อเข้าถึงบทเรียนและดันเจี้ยน`,
+                `Instructor (${course.teacher_name}) set this course to private. Enter the Join Code to access lessons and dungeons.`
+              )}
             </p>
             <form onSubmit={handleUnlockPrivateCourse} className="space-y-3 pt-2">
               <input
                 type="text"
                 value={privateCodeInput}
                 onChange={(e) => setPrivateCodeInput(e.target.value.toUpperCase())}
-                placeholder="กรอกรหัสเข้าร่วมคอร์ส..."
+                placeholder={t("กรอกรหัสเข้าร่วมคอร์ส...", "Enter course join code...")}
                 className="w-full rounded-xl border border-[#3d395a] bg-[#0d0b14] px-4 py-2.5 text-center font-mono text-sm font-bold uppercase text-[#ffe27a] placeholder:text-[#7c7491] focus:border-[#f6c945] focus:outline-hidden"
               />
               {privateCodeError && (
@@ -170,13 +179,13 @@ function CourseDetailContent() {
                   href="/courses"
                   className="rounded-xl border border-[#3d395a] bg-[#1c1b2b] px-4 py-2.5 text-xs font-bold text-[#f4efe6] hover:bg-[#252238]"
                 >
-                  ← กลับหน้าดันเจี้ยน
+                  {t("← กลับหน้าดันเจี้ยน", "← Back to Dungeons")}
                 </Link>
                 <button
                   type="submit"
                   className="rounded-xl bg-[#2fbf71] px-5 py-2.5 text-xs font-extrabold text-[#0b0b14] hover:bg-[#34d37d] cursor-pointer"
                 >
-                  ยืนยันรหัสเข้าเรียน →
+                  {t("ยืนยันรหัสเข้าเรียน →", "Unlock Course →")}
                 </button>
               </div>
             </form>
@@ -253,7 +262,7 @@ function CourseDetailContent() {
             href="/courses"
             className="text-xs font-semibold text-[#9a93ad] hover:text-[#f4efe6] transition-colors"
           >
-            ← กลับไปหน้ารายการคอร์สทั้งหมด
+            {t("← กลับไปหน้ารายการคอร์สทั้งหมด", "← Back to All Courses")}
           </Link>
         </div>
 
@@ -268,14 +277,14 @@ function CourseDetailContent() {
                     : "border-[#9b5de5]/60 bg-[#25193b] text-[#e9d5ff]"
                 }`}
               >
-                {isPublic ? "🌐 คอร์สสาธารณะ" : "🔒 คอร์สส่วนตัว"}
+                {isPublic ? t("🌐 คอร์สสาธารณะ", "🌐 Public Course") : t("🔒 คอร์สส่วนตัว", "🔒 Private Course")}
               </span>
               <span className="rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-3 py-1 text-xs font-bold text-[#f6c945]">
-                รหัสคอร์ส: {course.join_code}
+                {t("รหัสคอร์ส:", "Course Code:")} {course.join_code}
               </span>
             </div>
             <span className="text-xs font-medium text-[#9a93ad]">
-              ผู้สอน: <strong className="text-[#f4efe6]">{course.teacher_name}</strong>
+              {t("ผู้สอน:", "Instructor:")} <strong className="text-[#f4efe6]">{course.teacher_name}</strong>
             </span>
           </div>
 
@@ -289,9 +298,9 @@ function CourseDetailContent() {
           {session && (
             <div className="mt-5 rounded-xl border border-[#2f2d45] bg-[#1c1b2b] p-4">
               <div className="flex items-center justify-between text-xs font-bold mb-1.5">
-                <span className="text-[#e8e1cf]">ความคืบหน้าของคุณในคอร์สนี้</span>
+                <span className="text-[#e8e1cf]">{t("ความคืบหน้าของคุณในคอร์สนี้", "Your Progress in This Course")}</span>
                 <span className="text-[#2fbf71]">
-                  {completedLessonIds.size}/{lessons.length} บทเรียน ({progressPercent}%)
+                  {completedLessonIds.size}/{lessons.length} {t("บทเรียน", "lessons")} ({progressPercent}%)
                 </span>
               </div>
               <div className="h-2.5 w-full overflow-hidden rounded-full border border-[#2f2d45] bg-[#141220]">
@@ -313,8 +322,8 @@ function CourseDetailContent() {
                 <Icon name="play" className="h-4 w-4" />
                 <span>
                   {userEnrollment
-                    ? "เรียนต่อจากที่ค้างไว้"
-                    : "เริ่มเรียนบทที่ 1 ทันที"}
+                    ? t("เรียนต่อจากที่ค้างไว้", "Continue Learning")
+                    : t("เริ่มเรียนบทที่ 1 ทันที", "Start Lesson 1")}
                 </span>
               </button>
             )}
@@ -324,7 +333,7 @@ function CourseDetailContent() {
               className="inline-flex items-center gap-2 rounded-xl border border-[#9b5de5] bg-[#5a2d91] px-4 py-3 text-xs sm:text-sm font-bold text-[#ffe27a] hover:bg-[#6d3fc0] transition-colors whitespace-nowrap"
             >
               <Icon name="gamepad" className="h-4 w-4" />
-              <span>ผจญภัยในโหมดดันเจี้ยน</span>
+              <span>{t("ผจญภัยในโหมดดันเจี้ยน", "Adventure in Dungeon Mode")}</span>
             </Link>
 
             {!session && (
@@ -332,7 +341,7 @@ function CourseDetailContent() {
                 href={`/login?redirect=${encodeURIComponent(`/courses/${course.id}`)}`}
                 className="rounded-xl border border-[#3d395a] bg-[#1c1b2b] px-4 py-3 text-xs font-bold text-[#f4efe6] hover:border-[#f6c945] hover:bg-[#252238] transition-colors whitespace-nowrap"
               >
-                เข้าสู่ระบบเพื่อบันทึกความคืบหน้า
+                {t("เข้าสู่ระบบเพื่อบันทึกความคืบหน้า", "Sign In to Save Progress")}
               </Link>
             )}
           </div>
@@ -350,7 +359,7 @@ function CourseDetailContent() {
             }`}
           >
             <Icon name="book" size={15} />
-            <span>สารบัญบทเรียนปกติ ({lessons.length})</span>
+            <span>{t(`สารบัญบทเรียนปกติ (${lessons.length})`, `Curriculum (${lessons.length})`)}</span>
           </button>
           <button
             type="button"
@@ -362,7 +371,7 @@ function CourseDetailContent() {
             }`}
           >
             <Icon name="gamepad" size={15} />
-            <span>แผนที่ผจญภัยดันเจี้ยน ({lessons.length} ชั้น)</span>
+            <span>{t(`แผนที่ผจญภัยดันเจี้ยน (${lessons.length} ชั้น)`, `Dungeon Map (${lessons.length} Floors)`)}</span>
           </button>
         </div>
 
@@ -370,12 +379,12 @@ function CourseDetailContent() {
           /* Lessons List (Curriculum View) */
           <div className="rounded-2xl border border-[#2f2d45] bg-[#141220] p-6 shadow-lg">
             <h2 className="text-base font-bold text-[#f4efe6] mb-4">
-              สารบัญบทเรียน ({lessons.length} บทเรียน)
+              {t(`สารบัญบทเรียน (${lessons.length} บทเรียน)`, `Lesson Syllabus (${lessons.length} lessons)`)}
             </h2>
 
             {lessons.length === 0 ? (
               <p className="text-xs text-[#9a93ad]">
-                ยังไม่มีบทเรียนที่เผยแพร่ในคอร์สนี้
+                {t("ยังไม่มีบทเรียนที่เผยแพร่ในคอร์สนี้", "No published lessons in this course yet")}
               </p>
             ) : (
               <div className="space-y-3">
@@ -402,7 +411,7 @@ function CourseDetailContent() {
                         </div>
 
                         {/* Monster Mini Sprite Preview */}
-                        <div className="p-1 rounded-lg bg-[#120f1c] border border-[#3d395a] shrink-0 hidden sm:flex items-center justify-center" title={`มอนสเตอร์ประจำบท: ${monster.name}`}>
+                        <div className="p-1 rounded-lg bg-[#120f1c] border border-[#3d395a] shrink-0 hidden sm:flex items-center justify-center" title={`${t("มอนสเตอร์ประจำบท:", "Lesson monster:")} ${monster.name}`}>
                           <PixelSpriteView sprite={monster.sprite} size={24} />
                         </div>
 
@@ -411,9 +420,9 @@ function CourseDetailContent() {
                             {lesson.title}
                           </h3>
                           <p className="text-[11px] text-[#9a93ad] flex flex-wrap items-center gap-1.5 mt-0.5">
-                            <span>ภาษา {lesson.programming_language.toUpperCase()}</span>
+                            <span>{t("ภาษา", "Language")} {lesson.programming_language.toUpperCase()}</span>
                             <span>•</span>
-                            <span>มอนสเตอร์: <span className="text-[#f6c945]">{monster.name}</span></span>
+                            <span>{t("มอนสเตอร์:", "Monster:")} <span className="text-[#f6c945]">{monster.name}</span></span>
                           </p>
                         </div>
                       </div>
@@ -422,10 +431,10 @@ function CourseDetailContent() {
                         <Link
                           href={`/courses/${course.id}/lessons/${lesson.id}?mode=dungeon`}
                           className="px-3 py-1.5 rounded-lg border border-[#9b5de5] bg-[#5a2d91] text-xs font-bold text-[#ffe27a] hover:bg-[#6d3fc0] flex items-center gap-1 transition-colors whitespace-nowrap"
-                          title="ลุยห้องดันเจี้ยนของบทนี้"
+                          title={t("ลุยห้องดันเจี้ยนของบทนี้", "Enter this lesson's dungeon room")}
                         >
                           <Icon name="gamepad" size={13} />
-                          <span>ลุยดันเจี้ยน</span>
+                          <span>{t("ลุยดันเจี้ยน", "Dungeon")}</span>
                         </Link>
                         <Link
                           href={`/courses/${course.id}/lessons/${lesson.id}`}
@@ -435,7 +444,7 @@ function CourseDetailContent() {
                               : "bg-[#2fbf71] text-[#0b0b14] hover:bg-[#34d37d]"
                           }`}
                         >
-                          {isDone ? "ทบทวนบทเรียน" : "เข้าเรียน →"}
+                          {isDone ? t("ทบทวนบทเรียน", "Review Lesson") : t("เข้าเรียน →", "Start →")}
                         </Link>
                       </div>
                     </div>
@@ -461,7 +470,10 @@ function CourseDetailContent() {
                   {dungeonNameForCourse(course.id)}
                 </h2>
                 <p className="text-xs text-[#9a93ad]">
-                  พิชิตมอนสเตอร์ในแต่ละชั้นเพื่อบันทึกผลการเรียนจบบทเรียนแบบสองทาง
+                  {t(
+                    "พิชิตมอนสเตอร์ในแต่ละชั้นเพื่อบันทึกผลการเรียนจบบทเรียนแบบสองทาง",
+                    "Defeat the monster on each floor to complete lessons in dual-sync mode"
+                  )}
                 </p>
               </div>
 
@@ -469,7 +481,7 @@ function CourseDetailContent() {
                 href={`/dungeon/${course.id}`}
                 className="retro-button px-4 py-2.5 rounded-xl bg-[#2fbf71] hover:bg-[#34d37d] text-[#0b0b14] text-xs font-black pixel-font flex items-center gap-1.5 shrink-0 transition-colors whitespace-nowrap"
               >
-                <span>ลุยทั้งคอร์สแบบต่อเนื่อง →</span>
+                <span>{t("ลุยทั้งคอร์สแบบต่อเนื่อง →", "Play Full Course Dungeon →")}</span>
               </Link>
             </div>
 
@@ -499,7 +511,7 @@ function CourseDetailContent() {
                       <div className="space-y-0.5">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="pixel-font text-[10px] text-[#ffe27a]">
-                            ชั้นที่ {idx + 1}
+                            {t(`ชั้นที่ ${idx + 1}`, `Floor ${idx + 1}`)}
                           </span>
                           {isBoss && (
                             <span className="pixel-font text-[9px] bg-[#5a2d91] text-[#ffe27a] px-1.5 py-0.2 rounded font-black">
@@ -508,11 +520,11 @@ function CourseDetailContent() {
                           )}
                           {isDone ? (
                             <span className="text-[10px] bg-[#2fbf71]/20 text-[#2fbf71] px-2 py-0.2 rounded font-bold border border-[#2fbf71]/40">
-                              ✓ พิชิตแล้ว
+                              {t("✓ พิชิตแล้ว", "✓ Cleared")}
                             </span>
                           ) : (
                             <span className="text-[10px] bg-[#ffe27a]/20 text-[#ffe27a] px-2 py-0.2 rounded font-bold border border-[#ffe27a]/40">
-                              พร้อมท้าทาย
+                              {t("พร้อมท้าทาย", "Ready")}
                             </span>
                           )}
                         </div>
@@ -522,7 +534,7 @@ function CourseDetailContent() {
                         </h3>
 
                         <p className="text-[11px] text-[#9a93ad]">
-                          มอนสเตอร์: <strong className="text-[#f6c945]">{monster.name}</strong> (HP {monster.maxHp}) · รางวัล: +{monster.xpReward} XP, +{monster.coinReward} G
+                          {t("มอนสเตอร์:", "Monster:")} <strong className="text-[#f6c945]">{monster.name}</strong> (HP {monster.maxHp}) · {t("รางวัล:", "Reward:")} +{monster.xpReward} XP, +{monster.coinReward} G
                         </p>
                       </div>
                     </div>
@@ -533,7 +545,7 @@ function CourseDetailContent() {
                         className="retro-button px-4 py-2 rounded-xl bg-[#9b5de5] hover:bg-[#b07af0] text-[#f4efe6] text-xs font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap"
                       >
                         <Icon name="gamepad" size={13} />
-                        <span>เข้าเล่นชั้นนี้</span>
+                        <span>{t("เข้าเล่นชั้นนี้", "Play Floor")}</span>
                       </Link>
                     </div>
                   </div>
@@ -548,11 +560,12 @@ function CourseDetailContent() {
 }
 
 export default function CourseDetailPage() {
+  const { t } = useUiLanguage();
   return (
     <Suspense
       fallback={
         <div className="min-h-screen bg-[#0d0b14] flex items-center justify-center text-sm font-bold text-[#9a93ad]">
-          กำลังโหลดรายละเอียดคอร์ส...
+          {t("กำลังโหลดรายละเอียดคอร์ส...", "Loading course details...")}
         </div>
       }
     >

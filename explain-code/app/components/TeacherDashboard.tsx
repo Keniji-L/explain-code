@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import {
@@ -11,6 +13,7 @@ import {
 import { copyTextToClipboard } from "../lib/clipboard";
 import { Icon } from "./Icons";
 import { BlockModelGrid } from "./BlockModelGrid";
+import { useUiLanguage } from "./LanguageProvider";
 
 export interface TeacherDashboardProps {
   teacherUsername: string;
@@ -62,6 +65,7 @@ export function TeacherDashboard({
   onRefresh,
   embedded = false,
 }: TeacherDashboardProps) {
+  const { uiLang, t } = useUiLanguage();
   const [selectedRoomCode, setSelectedRoomCode] = useState<string>(
     classrooms[0]?.roomCode || "ABC123"
   );
@@ -97,7 +101,10 @@ export function TeacherDashboard({
   );
   const [reviewNote, setReviewNote] = useState<string>(
     currentRoom?.pinnedReviewNote ||
-      "ให้ทบทวนช่อง Block Model ที่ค่าเฉลี่ยของห้องต่ำกว่า 50%"
+      t(
+        "ให้ทบทวนช่อง Block Model ที่ค่าเฉลี่ยของห้องต่ำกว่า 50%",
+        "Review Block Model cells where the class average is below 50%"
+      )
   );
   const [savedReviewBanner, setSavedReviewBanner] = useState<boolean>(false);
   const [isCreatingRoom, setIsCreatingRoom] = useState<boolean>(false);
@@ -120,7 +127,10 @@ export function TeacherDashboard({
       setReviewTopicId(currentRoom.pinnedReviewTopicId || 4);
       setReviewNote(
         currentRoom.pinnedReviewNote ||
-          "ให้ทบทวนช่อง Block Model ที่ค่าเฉลี่ยของห้องต่ำกว่า 50%"
+          t(
+            "ให้ทบทวนช่อง Block Model ที่ค่าเฉลี่ยของห้องต่ำกว่า 50%",
+            "Review Block Model cells where the class average is below 50%"
+          )
       );
     }
   }, [
@@ -218,7 +228,7 @@ export function TeacherDashboard({
         ? weakCells
             .map((c) => `${c.id} (${c.shortTitle}: ${avgCellScores[c.id]}%)`)
             .join(", ")
-        : "ไม่มีช่องที่ต่ำกว่าเกณฑ์";
+        : t("ไม่มีช่องที่ต่ำกว่าเกณฑ์", "No cells below threshold");
     const strongList =
       strongCells.length > 0
         ? strongCells
@@ -231,21 +241,42 @@ export function TeacherDashboard({
         const stuAvg = Math.round(
           Object.values(st.cellScores).reduce((a, b) => a + b, 0) / 12
         );
-        return `- ${st.nickname}: ผ่านแล้ว ${st.completedTopics.length}/7 เรื่อง | ความเข้าใจเฉลี่ย ${stuAvg}% | ${st.xp} XP`;
+        return t(
+          `- ${st.nickname}: ผ่านแล้ว ${st.completedTopics.length}/7 เรื่อง | ความเข้าใจเฉลี่ย ${stuAvg}% | ${st.xp} XP`,
+          `- ${st.nickname}: Completed ${st.completedTopics.length}/7 topics | Avg mastery ${stuAvg}% | ${st.xp} XP`
+        );
       })
       .join("\n");
 
     return [
-      `สรุปผลความเข้าใจการอ่านโค้ด (CODE COOL)`,
-      `ห้องเรียน: ${currentRoom.roomName} (รหัสห้อง: ${currentRoom.roomCode})`,
-      `จำนวนนักเรียน: ${roomStudents.length} คน | คะแนนความเข้าใจเฉลี่ยทั้งห้อง: ${overallRoomAvg}%`,
-      `ช่อง Block Model ที่ห้องเก่ง (80%+): ${strongList}`,
-      `ช่อง Block Model ที่ห้องควรทบทวน: ${weakList}`,
-      `เรื่องที่ครูปักหมุดให้ทบทวน: ${
-        TOPICS.find((t) => t.id === currentRoom.pinnedReviewTopicId)?.title ||
-        "ยังไม่ระบุ"
+      t(
+        `สรุปผลความเข้าใจการอ่านโค้ด (CODE COOL)`,
+        `Code Comprehension Summary (CODE COOL)`
+      ),
+      t(
+        `ห้องเรียน: ${currentRoom.roomName} (รหัสห้อง: ${currentRoom.roomCode})`,
+        `Classroom: ${currentRoom.roomName} (Room Code: ${currentRoom.roomCode})`
+      ),
+      t(
+        `จำนวนนักเรียน: ${roomStudents.length} คน | คะแนนความเข้าใจเฉลี่ยทั้งห้อง: ${overallRoomAvg}%`,
+        `Students: ${roomStudents.length} | Class Average Mastery: ${overallRoomAvg}%`
+      ),
+      t(
+        `ช่อง Block Model ที่ห้องเก่ง (80%+): ${strongList}`,
+        `Strong Block Model Cells (80%+): ${strongList}`
+      ),
+      t(
+        `ช่อง Block Model ที่ห้องควรทบทวน: ${weakList}`,
+        `Block Model Cells to Review: ${weakList}`
+      ),
+      `${t("เรื่องที่ครูปักหมุดให้ทบทวน:", "Pinned Review Topic:")} ${
+        TOPICS.find((topic) => topic.id === currentRoom.pinnedReviewTopicId)?.title ||
+        t("ยังไม่ระบุ", "Not specified")
       }`,
-      `รายชื่อนักเรียน (ชื่อเล่นสมมติ PDPA):`,
+      t(
+        `รายชื่อนักเรียน (ชื่อเล่นสมมติ PDPA):`,
+        `Student Roster (PDPA Pseudonyms):`
+      ),
       studentLines,
     ].join("\n");
   };
@@ -287,11 +318,11 @@ export function TeacherDashboard({
         <div className="bg-[#1c1b2b] border-b border-[#2f2d45] px-4 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-2 no-print">
           <div className="flex items-center gap-2">
             <span className="text-xs sm:text-sm font-extrabold text-[#f6c945]">
-              ห้องเรียน &amp; Block Model 12 ช่อง
+              {t("ห้องเรียน & Block Model 12 ช่อง", "Classrooms & 12-Cell Block Model")}
             </span>
             {isLoading && (
               <span className="px-2 py-0.5 rounded-full bg-[#281d08] border border-[#f6c945]/40 text-[#ffe27a] text-[11px] font-bold animate-pulse">
-                กำลังโหลด...
+                {t("กำลังโหลด...", "Loading...")}
               </span>
             )}
           </div>
@@ -301,7 +332,7 @@ export function TeacherDashboard({
               onClick={() => setShowFlowGuide((prev) => !prev)}
               className="rounded-xl border border-[#3d395a] bg-[#252238] hover:border-[#f6c945]/60 px-2.5 py-1.5 text-[11px] font-bold text-[#c4bdd6] cursor-pointer transition-colors"
             >
-              {showFlowGuide ? "ซ่อนคู่มือ" : "? คู่มือ 7 ขั้นตอน"}
+              {showFlowGuide ? t("ซ่อนคู่มือ", "Hide Guide") : t("? คู่มือ 7 ขั้นตอน", "? 7-Step Guide")}
             </button>
             {onRefresh && (
               <button
@@ -311,7 +342,7 @@ export function TeacherDashboard({
                 className="rounded-xl border border-[#3d395a] bg-[#252238] hover:border-[#f6c945]/60 px-3 py-1.5 text-[11px] font-extrabold text-[#f4efe6] flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
               >
                 <Icon name="chart" size={14} />
-                <span>รีเฟรช</span>
+                <span>{t("รีเฟรช", "Refresh")}</span>
               </button>
             )}
           </div>
@@ -328,17 +359,17 @@ export function TeacherDashboard({
                 className="h-8 w-8 rounded-lg object-contain border border-[#0f766e]/40 bg-[#0d0b14] shrink-0"
               />
               <span className="text-[20px] font-extrabold text-[#0b4f49]">
-                CODE COOL · ครู
+                {t("CODE COOL · ครู", "CODE COOL · Teacher")}
               </span>
               <span className="px-2.5 py-0.5 rounded-full bg-[#e3f1ee] text-[#0b4f49] text-[13px] font-bold">
-                ผู้สอน: {teacherUsername}
+                {t("ผู้สอน:", "Teacher:")} {teacherUsername}
               </span>
             </div>
 
             <div className="flex items-center gap-2.5">
               {isLoading && (
                 <span className="px-2.5 py-1 rounded-full bg-[#fbeacb] text-[#5c3704] text-[12px] font-bold animate-pulse">
-                  กำลังโหลดข้อมูล...
+                  {t("กำลังโหลดข้อมูล...", "Loading data...")}
                 </span>
               )}
               {onRefresh && (
@@ -347,10 +378,10 @@ export function TeacherDashboard({
                   onClick={() => void onRefresh()}
                   disabled={isLoading}
                   className="press-secondary px-3 py-1.5 rounded-xl text-[13px] font-extrabold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  title="รีเฟรชข้อมูลจากฐานข้อมูล"
+                  title={t("รีเฟรชข้อมูลจากฐานข้อมูล", "Refresh data from database")}
                 >
                   <Icon name="chart" size={16} />
-                  <span>รีเฟรช</span>
+                  <span>{t("รีเฟรช", "Refresh")}</span>
                 </button>
               )}
               <button
@@ -359,7 +390,7 @@ export function TeacherDashboard({
                 className="press-secondary px-3.5 py-2 rounded-xl text-[13px] font-extrabold flex items-center gap-1.5 cursor-pointer"
               >
                 <Icon name="user" size={18} />
-                <span>สลับไปดูหน้าฝั่งนักเรียน</span>
+                <span>{t("สลับไปดูหน้าฝั่งนักเรียน", "Switch to Student View")}</span>
               </button>
               <button
                 type="button"
@@ -367,7 +398,7 @@ export function TeacherDashboard({
                 className="press-secondary px-3.5 py-2 rounded-xl text-[13px] font-extrabold flex items-center gap-1.5 cursor-pointer"
               >
                 <Icon name="logout" size={18} />
-                <span>ออกจากระบบ</span>
+                <span>{t("ออกจากระบบ", "Logout")}</span>
               </button>
             </div>
           </div>
@@ -379,17 +410,20 @@ export function TeacherDashboard({
         {showFlowGuide && (
         <div className="bg-white border-2 border-[#cfe0dc] rounded-2xl p-4 no-print">
           <div className="text-[13px] font-extrabold text-[#0b4f49] mb-2">
-            โฟลฝั่งครู · จากสร้างห้องจนนำข้อมูลไปปรับการสอน (แสดงเฉพาะชื่อเล่นสมมติและคะแนนตาม PDPA 2562)
+            {t(
+              "โฟลฝั่งครู · จากสร้างห้องจนนำข้อมูลไปปรับการสอน (แสดงเฉพาะชื่อเล่นสมมติและคะแนนตาม PDPA 2562)",
+              "Teacher Workflow · From creating a room to adjusting instruction (only pseudonyms and scores shown per PDPA 2562)"
+            )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-[12px]">
             {[
-              { step: "1 · เข้าสู่ระบบ", sub: "บัญชีครู", active: false },
-              { step: "2 · สร้างห้อง", sub: "ตั้งชื่อ ได้รหัสห้อง", active: false },
-              { step: "3 · แจกรหัสห้อง", sub: "นักเรียนใช้ตอนสมัคร", active: false },
-              { step: "4 · ภาพรวมห้อง", sub: "ใครทำถึงไหน คะแนนเฉลี่ย", active: true },
-              { step: "5 · แผนที่ของห้อง", sub: "ช่อง Block Model ที่อ่อน", active: true },
-              { step: "6 · ดูรายคน", sub: "โปรไฟล์ ประวัติ ด้านเก่ง", active: true },
-              { step: "7 · ปรับการสอน", sub: "เลือกเรื่องให้ทบทวน", active: false },
+              { step: t("1 · เข้าสู่ระบบ", "1 · Sign In"), sub: t("บัญชีครู", "Teacher account"), active: false },
+              { step: t("2 · สร้างห้อง", "2 · Create Room"), sub: t("ตั้งชื่อ ได้รหัสห้อง", "Name & get code"), active: false },
+              { step: t("3 · แจกรหัสห้อง", "3 · Share Code"), sub: t("นักเรียนใช้ตอนสมัคร", "For student signup"), active: false },
+              { step: t("4 · ภาพรวมห้อง", "4 · Class Overview"), sub: t("ใครทำถึงไหน คะแนนเฉลี่ย", "Progress & avg"), active: true },
+              { step: t("5 · แผนที่ของห้อง", "5 · Class Grid"), sub: t("ช่อง Block Model ที่อ่อน", "Weak Block cells"), active: true },
+              { step: t("6 · ดูรายคน", "6 · Student Detail"), sub: t("โปรไฟล์ ประวัติ ด้านเก่ง", "Profile & strengths"), active: true },
+              { step: t("7 · ปรับการสอน", "7 · Adjust Teaching"), sub: t("เลือกเรื่องให้ทบทวน", "Pin review topic"), active: false },
             ].map((item) => (
               <div
                 key={item.step}
@@ -413,7 +447,7 @@ export function TeacherDashboard({
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <span className="text-[12px] font-extrabold text-[#0f766e]">
-                  ห้องเรียนปัจจุบัน
+                  {t("ห้องเรียนปัจจุบัน", "Current Classroom")}
                 </span>
                 <h2 className="text-[18px] sm:text-[20px] font-extrabold text-[#1b2a2f] mt-0.5">
                   {currentRoom?.roomName}
@@ -421,7 +455,9 @@ export function TeacherDashboard({
               </div>
 
               <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                <label className="text-[13px] font-bold text-[#475b60]">เปลี่ยนห้อง:</label>
+                <label className="text-[13px] font-bold text-[#475b60]">
+                  {t("เปลี่ยนห้อง:", "Switch Room:")}
+                </label>
                 <select
                   value={currentRoom?.roomCode || selectedRoomCode}
                   onChange={(e) => {
@@ -442,7 +478,7 @@ export function TeacherDashboard({
             <div className="p-4 rounded-xl bg-[#e3f1ee] border-2 border-[#0f766e] flex flex-wrap items-center justify-between gap-3">
               <div>
                 <div className="text-[12px] font-bold text-[#0b4f49]">
-                  รหัสเข้าห้องเรียน
+                  {t("รหัสเข้าห้องเรียน", "Classroom Join Code")}
                 </div>
                 <div className="font-code text-[24px] sm:text-[26px] font-extrabold text-[#0b4f49] tracking-wider">
                   {currentRoom?.roomCode}
@@ -456,10 +492,10 @@ export function TeacherDashboard({
                 <Icon name="clipboard" size={16} />
                 <span aria-live="polite">
                   {copiedCodeStatus === "copied"
-                    ? "คัดลอกแล้ว!"
+                    ? t("คัดลอกแล้ว!", "Copied!")
                     : copiedCodeStatus === "failed"
-                    ? "คัดลอกไม่สำเร็จ"
-                    : "คัดลอกรหัส"}
+                    ? t("คัดลอกไม่สำเร็จ", "Copy failed")
+                    : t("คัดลอกรหัส", "Copy Code")}
                 </span>
               </button>
             </div>
@@ -471,10 +507,10 @@ export function TeacherDashboard({
           >
             <div>
               <span className="text-[12px] font-extrabold text-[#0f766e]">
-                สร้างห้องเรียนใหม่
+                {t("สร้างห้องเรียนใหม่", "Create New Classroom")}
               </span>
               <h3 className="text-[15px] font-extrabold text-[#1b2a2f] mt-0.5">
-                รับรหัสห้อง 6 หลักอัตโนมัติ
+                {t("รับรหัสห้อง 6 หลักอัตโนมัติ", "Auto-generate a 6-character room code")}
               </h3>
             </div>
 
@@ -482,7 +518,7 @@ export function TeacherDashboard({
               type="text"
               value={newRoomName}
               onChange={(e) => setNewRoomName(e.target.value)}
-              placeholder="เช่น ม.5/2 วิทยาการคำนวณ"
+              placeholder={t("เช่น ม.5/2 วิทยาการคำนวณ", "e.g., Grade 11/2 Computing Science")}
               className="w-full px-3.5 py-2.5 rounded-xl bg-white border-2 border-[#b6c9c5] text-[15px] text-[#1b2a2f]"
             />
 
@@ -492,9 +528,9 @@ export function TeacherDashboard({
               className="press-teal w-full py-2.5 rounded-xl text-[15px] font-extrabold disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
             >
               {isCreatingRoom ? (
-                <span>กำลังสร้างห้องเรียน...</span>
+                <span>{t("กำลังสร้างห้องเรียน...", "Creating classroom...")}</span>
               ) : (
-                <span>+ สร้างห้องเรียนและรับรหัสห้อง</span>
+                <span>{t("+ สร้างห้องเรียนและรับรหัสห้อง", "+ Create Classroom & Get Code")}</span>
               )}
             </button>
           </form>
@@ -507,9 +543,11 @@ export function TeacherDashboard({
               <Icon name="users" size={24} />
             </div>
             <div>
-              <div className="text-[13px] font-bold text-[#475b60]">นักเรียนในห้องนี้</div>
+              <div className="text-[13px] font-bold text-[#475b60]">
+                {t("นักเรียนในห้องนี้", "Students in Room")}
+              </div>
               <div className="text-[24px] font-extrabold text-[#1b2a2f]">
-                {roomStudents.length} คน
+                {roomStudents.length} {t("คน", "students")}
               </div>
             </div>
           </div>
@@ -520,10 +558,10 @@ export function TeacherDashboard({
             </div>
             <div>
               <div className="text-[13px] font-bold text-[#475b60]">
-                คะแนนความเข้าใจเฉลี่ยทั้งห้อง
+                {t("คะแนนความเข้าใจเฉลี่ยทั้งห้อง", "Class Average Mastery")}
               </div>
               <div className="text-[24px] font-extrabold text-[#14532d]">
-                {overallRoomAvg}% ({getMasteryStatus(overallRoomAvg).shortLabel})
+                {overallRoomAvg}% ({getMasteryStatus(overallRoomAvg, uiLang).shortLabel})
               </div>
             </div>
           </div>
@@ -534,21 +572,23 @@ export function TeacherDashboard({
             </div>
             <div className="min-w-0">
               <div className="text-[13px] font-bold text-[#475b60]">
-                ช่อง Block Model ที่ห้องควรทบทวน
+                {t("ช่อง Block Model ที่ห้องควรทบทวน", "Block Model Cells to Review")}
               </div>
               <div className="text-[15px] font-extrabold text-[#7d1d10] leading-snug mt-0.5">
                 {weakCells.length > 0 ? (
                   <>
                     {weakCells
                       .slice(0, 3)
-                      .map((c) => `ช่อง ${c.id} (${avgCellScores[c.id]}%)`)
+                      .map((c) => `${t("ช่อง", "Cell")} ${c.id} (${avgCellScores[c.id]}%)`)
                       .join(", ")}
                     {weakCells.length > 3
-                      ? ` และอีก ${weakCells.length - 3} ช่อง`
+                      ? t(` และอีก ${weakCells.length - 3} ช่อง`, ` and ${weakCells.length - 3} more`)
                       : ""}
                   </>
                 ) : (
-                  <span className="text-[#14532d]">ผ่านเกณฑ์ทุกช่อง</span>
+                  <span className="text-[#14532d]">
+                    {t("ผ่านเกณฑ์ทุกช่อง", "All cells on track")}
+                  </span>
                 )}
               </div>
             </div>
@@ -559,7 +599,10 @@ export function TeacherDashboard({
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-[20px] font-extrabold text-[#1b2a2f]">
-              แผนที่ความเข้าใจ 12 ช่อง เฉลี่ยทั้งห้อง ({currentRoom?.roomName})
+              {t(
+                `แผนที่ความเข้าใจ 12 ช่อง เฉลี่ยทั้งห้อง (${currentRoom?.roomName})`,
+                `12-Cell Class Average Mastery Map (${currentRoom?.roomName})`
+              )}
             </h2>
             <div className="flex items-center gap-2 no-print">
               <button
@@ -570,10 +613,10 @@ export function TeacherDashboard({
                 <Icon name="clipboard" size={18} />
                 <span aria-live="polite">
                   {copiedSummaryStatus === "copied"
-                    ? "คัดลอกสรุปห้องเรียบร้อย!"
+                    ? t("คัดลอกสรุปห้องเรียบร้อย!", "Class summary copied!")
                     : copiedSummaryStatus === "failed"
-                    ? "ไม่สามารถคัดลอกอัตโนมัติได้"
-                    : "คัดลอกสรุปห้องไปปรับการสอน"}
+                    ? t("ไม่สามารถคัดลอกอัตโนมัติได้", "Could not copy automatically")
+                    : t("คัดลอกสรุปห้องไปปรับการสอน", "Copy Class Summary")}
                 </span>
               </button>
               <button
@@ -581,15 +624,21 @@ export function TeacherDashboard({
                 onClick={() => window.print()}
                 className="press-secondary px-4 py-2 rounded-xl text-[14px] font-extrabold cursor-pointer"
               >
-                พิมพ์สรุปห้อง
+                {t("พิมพ์สรุปห้อง", "Print Summary")}
               </button>
             </div>
           </div>
 
           <BlockModelGrid
             cellScores={avgCellScores}
-            title={`แผนที่ Block Model เฉลี่ยทั้งห้อง (${roomStudents.length} คน)`}
-            subtitle="ช่วยให้ครูเห็นทันทีว่าทั้งห้องเข้าใจช่องไหนดีแล้ว และช่องไหนที่ห้องยังอ่อนเพื่อนำไปปรับการสอน"
+            title={t(
+              `แผนที่ Block Model เฉลี่ยทั้งห้อง (${roomStudents.length} คน)`,
+              `Class Average Block Model Grid (${roomStudents.length} students)`
+            )}
+            subtitle={t(
+              "ช่วยให้ครูเห็นทันทีว่าทั้งห้องเข้าใจช่องไหนดีแล้ว และช่องไหนที่ห้องยังอ่อนเพื่อนำไปปรับการสอน",
+              "Helps teachers quickly spot which cells the class has mastered and which need further instruction"
+            )}
           />
 
           {/* สถิติข้อที่นักเรียนในห้องตอบผิดบ่อย (จาก classroom_question_stats view) */}
@@ -610,10 +659,16 @@ export function TeacherDashboard({
                   </div>
                   <div>
                     <h4 className="text-[16px] font-extrabold text-[#1b2a2f]">
-                      สถิติข้อที่นักเรียนในห้องตอบผิดบ่อย (จาก classroom_question_stats)
+                      {t(
+                        "สถิติข้อที่นักเรียนในห้องตอบผิดบ่อย (จาก classroom_question_stats)",
+                        "Frequently Missed Questions (from classroom_question_stats)"
+                      )}
                     </h4>
                     <p className="text-[13px] text-[#475b60]">
-                      วิเคราะห์จากประวัติการตอบคำถามจริงในห้องเพื่อนำไปเน้นย้ำในชั่วโมงสอน
+                      {t(
+                        "วิเคราะห์จากประวัติการตอบคำถามจริงในห้องเพื่อนำไปเน้นย้ำในชั่วโมงสอน",
+                        "Analyzed from actual class answer history to highlight during instruction"
+                      )}
                     </p>
                   </div>
                 </div>
@@ -630,19 +685,19 @@ export function TeacherDashboard({
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="px-2 py-0.5 rounded-md bg-[#7d1d10] text-white text-[11px] font-extrabold">
-                              ช่อง {stat.cell_id}
+                              {t("ช่อง", "Cell")} {stat.cell_id}
                             </span>
                             <span className="font-code text-[12px] font-bold text-[#1b2a2f] truncate">
-                              ข้อ: {stat.question_id}
+                              {t("ข้อ:", "Q:")} {stat.question_id}
                             </span>
                           </div>
                           <div className="text-[12px] text-[#475b60] mt-1">
-                            ตอบทั้งหมด {stat.answers} ครั้ง
+                            {t(`ตอบทั้งหมด ${stat.answers} ครั้ง`, `${stat.answers} total answers`)}
                           </div>
                         </div>
                         <div className="text-right shrink-0">
                           <span className="text-[17px] font-extrabold text-[#7d1d10]">
-                            ผิด {Math.round(stat.wrong_percent)}%
+                            {t("ผิด", "Wrong")} {Math.round(stat.wrong_percent)}%
                           </span>
                         </div>
                       </div>
@@ -659,10 +714,13 @@ export function TeacherDashboard({
             <div>
               <h3 className="text-[18px] font-extrabold text-[#1b2a2f] flex items-center gap-2">
                 <Icon name="users" size={20} className="text-[#0f766e]" />
-                <span>รายชื่อนักเรียนในห้อง &amp; โปรไฟล์รายบุคคล</span>
+                <span>{t("รายชื่อนักเรียนในห้อง & โปรไฟล์รายบุคคล", "Class Roster & Individual Profiles")}</span>
               </h3>
               <p className="text-[13px] font-semibold text-[#475b60]">
-                คลิกปุ่ม &ldquo;ดูรายคน&rdquo; เพื่อดูแผนที่ 12 ช่อง ประวัติการเล่น และด้านที่เก่งของนักเรียนแต่ละคน
+                {t(
+                  "คลิกปุ่ม “ดูรายคน” เพื่อดูแผนที่ 12 ช่อง ประวัติการเล่น และด้านที่เก่งของนักเรียนแต่ละคน",
+                  'Click "View Profile" to inspect each student\'s 12-cell map, activity history, and strengths'
+                )}
               </p>
             </div>
           </div>
@@ -673,7 +731,7 @@ export function TeacherDashboard({
               const stuAvg = Math.round(
                 Object.values(stu.cellScores).reduce((a, b) => a + b, 0) / 12
               );
-              const status = getMasteryStatus(stuAvg);
+              const status = getMasteryStatus(stuAvg, uiLang);
               const sortedCells = [...BLOCK_MODEL_CELLS].sort(
                 (a, b) => stu.cellScores[b.id] - stu.cellScores[a.id]
               );
@@ -702,34 +760,34 @@ export function TeacherDashboard({
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    {TOPICS.map((t) => {
-                      const done = stu.completedTopics.includes(t.id);
+                    {TOPICS.map((topic) => {
+                      const done = stu.completedTopics.includes(topic.id);
                       return (
                         <span
-                          key={t.id}
+                          key={topic.id}
                           className={`w-6 h-6 rounded-full text-[11px] font-extrabold flex items-center justify-center ${
                             done
-                              ? t.isBoss
+                              ? topic.isBoss
                                 ? "bg-[#6d3fc0] text-white"
                                 : "bg-[#0f766e] text-white"
                               : "bg-[#252238] text-[#9a93ad]"
                           }`}
                         >
-                          {t.id}
+                          {topic.id}
                         </span>
                       );
                     })}
                     <span className="text-[11px] font-bold text-[#9a93ad] ml-1">
-                      ({stu.completedTopics.length}/7 เรื่อง)
+                      ({stu.completedTopics.length}/7 {t("เรื่อง", "topics")})
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 gap-1 text-[12px] font-bold">
                     <div className="text-[#86efac]">
-                      เก่ง: ช่อง {topCell.id} ({topCell.shortTitle} {stu.cellScores[topCell.id]}%)
+                      {t("เก่ง:", "Strong:")} {t("ช่อง", "Cell")} {topCell.id} ({topCell.shortTitle} {stu.cellScores[topCell.id]}%)
                     </div>
                     <div className="text-[#fca5a5]">
-                      ทบทวน: ช่อง {bottomCell.id} ({bottomCell.shortTitle} {stu.cellScores[bottomCell.id]}%)
+                      {t("ทบทวน:", "Review:")} {t("ช่อง", "Cell")} {bottomCell.id} ({bottomCell.shortTitle} {stu.cellScores[bottomCell.id]}%)
                     </div>
                   </div>
 
@@ -739,7 +797,7 @@ export function TeacherDashboard({
                     className="w-full press-secondary px-3 py-2 rounded-xl text-[13px] font-extrabold inline-flex items-center justify-center gap-1.5 cursor-pointer no-print"
                   >
                     <Icon name="eye" size={16} />
-                    <span>ดูรายคน</span>
+                    <span>{t("ดูรายคน", "View Profile")}</span>
                   </button>
                 </div>
               );
@@ -751,12 +809,12 @@ export function TeacherDashboard({
             <table className="w-full min-w-[780px] text-left border-collapse">
               <thead>
                 <tr className="border-b-2 border-[#cfe0dc] text-[13px] font-extrabold text-[#0b4f49] bg-[#eef3f1]">
-                  <th className="p-3 rounded-tl-xl whitespace-nowrap">ชื่อเล่นสมมติ</th>
-                  <th className="p-3 whitespace-nowrap">ความคืบหน้า (7 เรื่อง)</th>
-                  <th className="p-3 whitespace-nowrap">คะแนนเฉลี่ย</th>
-                  <th className="p-3">ด้านที่เก่ง</th>
-                  <th className="p-3">ด้านที่ควรทบทวน</th>
-                  <th className="p-3 rounded-tr-xl text-right no-print whitespace-nowrap">ดูรายคน</th>
+                  <th className="p-3 rounded-tl-xl whitespace-nowrap">{t("ชื่อเล่นสมมติ", "Pseudonym")}</th>
+                  <th className="p-3 whitespace-nowrap">{t("ความคืบหน้า (7 เรื่อง)", "Progress (7 Topics)")}</th>
+                  <th className="p-3 whitespace-nowrap">{t("คะแนนเฉลี่ย", "Avg Score")}</th>
+                  <th className="p-3">{t("ด้านที่เก่ง", "Strength")}</th>
+                  <th className="p-3">{t("ด้านที่ควรทบทวน", "Needs Review")}</th>
+                  <th className="p-3 rounded-tr-xl text-right no-print whitespace-nowrap">{t("ดูรายคน", "Profile")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#cfe0dc] text-[14px]">
@@ -764,7 +822,7 @@ export function TeacherDashboard({
                   const stuAvg = Math.round(
                     Object.values(stu.cellScores).reduce((a, b) => a + b, 0) / 12
                   );
-                  const status = getMasteryStatus(stuAvg);
+                  const status = getMasteryStatus(stuAvg, uiLang);
                   const sortedCells = [...BLOCK_MODEL_CELLS].sort(
                     (a, b) => stu.cellScores[b.id] - stu.cellScores[a.id]
                   );
@@ -783,21 +841,21 @@ export function TeacherDashboard({
                       </td>
                       <td className="p-3 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
-                          {TOPICS.map((t) => {
-                            const done = stu.completedTopics.includes(t.id);
+                          {TOPICS.map((topic) => {
+                            const done = stu.completedTopics.includes(topic.id);
                             return (
                               <span
-                                key={t.id}
-                                title={t.title}
+                                key={topic.id}
+                                title={topic.title}
                                 className={`w-6 h-6 rounded-full text-[12px] font-extrabold flex items-center justify-center shrink-0 ${
                                   done
-                                    ? t.isBoss
+                                    ? topic.isBoss
                                       ? "bg-[#6d3fc0] text-white"
                                       : "bg-[#0f766e] text-white"
                                     : "bg-[#d8e3e0] text-[#475b60]"
                                 }`}
                               >
-                                {t.id}
+                                {topic.id}
                               </span>
                             );
                           })}
@@ -814,10 +872,10 @@ export function TeacherDashboard({
                         </span>
                       </td>
                       <td className="p-3 text-[13px] font-bold text-[#14532d]">
-                        ช่อง {topCell.id} ({topCell.shortTitle} {stu.cellScores[topCell.id]}%)
+                        {t("ช่อง", "Cell")} {topCell.id} ({topCell.shortTitle} {stu.cellScores[topCell.id]}%)
                       </td>
                       <td className="p-3 text-[13px] font-bold text-[#7d1d10]">
-                        ช่อง {bottomCell.id} ({bottomCell.shortTitle}{" "}
+                        {t("ช่อง", "Cell")} {bottomCell.id} ({bottomCell.shortTitle}{" "}
                         {stu.cellScores[bottomCell.id]}%)
                       </td>
                       <td className="p-3 text-right no-print whitespace-nowrap">
@@ -827,7 +885,7 @@ export function TeacherDashboard({
                           className="press-secondary px-3 py-1.5 rounded-xl text-[13px] font-extrabold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                         >
                           <Icon name="eye" size={16} />
-                          <span>ดูรายคน</span>
+                          <span>{t("ดูรายคน", "View Profile")}</span>
                         </button>
                       </td>
                     </tr>
@@ -859,7 +917,10 @@ export function TeacherDashboard({
                 onClick={() => setInspectingStudent(null)}
                 role="dialog"
                 aria-modal="true"
-                aria-label={`โปรไฟล์รายบุคคลของ ${inspectingStudent.nickname}`}
+                aria-label={t(
+                  `โปรไฟล์รายบุคคลของ ${inspectingStudent.nickname}`,
+                  `Individual Profile of ${inspectingStudent.nickname}`
+                )}
               >
                 <div
                   className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[#eef3f1] border-2 border-[#0f766e] p-4 sm:p-6 flex flex-col gap-4 shadow-2xl"
@@ -868,15 +929,16 @@ export function TeacherDashboard({
                   <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#cfe0dc] pb-3">
                     <div>
                       <span className="px-2.5 py-0.5 rounded-full bg-[#0b4f49] text-white text-[11px] font-extrabold">
-                        โปรไฟล์รายคน
+                        {t("โปรไฟล์รายคน", "Individual Profile")}
                       </span>
                       <h4 className="text-[18px] sm:text-[20px] font-extrabold text-[#1b2a2f] mt-1.5">
-                        นักเรียน: {inspectingStudent.nickname}
+                        {t("นักเรียน:", "Student:")} {inspectingStudent.nickname}
                       </h4>
                       <p className="text-[12px] sm:text-[13px] font-semibold text-[#475b60] mt-0.5">
-                        สะสม {inspectingStudent.xp} XP · ผ่านแล้ว{" "}
-                        {inspectingStudent.completedTopics.length}/7 เรื่อง ·
-                        เฉลี่ย {stuAvg}%
+                        {t(
+                          `สะสม ${inspectingStudent.xp} XP · ผ่านแล้ว ${inspectingStudent.completedTopics.length}/7 เรื่อง · เฉลี่ย ${stuAvg}%`,
+                          `Earned ${inspectingStudent.xp} XP · Completed ${inspectingStudent.completedTopics.length}/7 topics · Avg ${stuAvg}%`
+                        )}
                       </p>
                     </div>
                     <button
@@ -885,26 +947,32 @@ export function TeacherDashboard({
                       className="press-secondary px-3 py-1.5 rounded-xl text-[13px] font-extrabold flex items-center gap-1.5 cursor-pointer shrink-0"
                     >
                       <Icon name="close" size={16} />
-                      <span>ปิด</span>
+                      <span>{t("ปิด", "Close")}</span>
                     </button>
                   </div>
 
                   {/* สรุปจุดแข็งและจุดที่ควรทบทวน */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[13px]">
                     <div className="rounded-xl bg-[#d8efdc] border border-[#0f766e]/30 px-3.5 py-2.5 font-bold text-[#14532d]">
-                      🌟 ด้านที่เก่ง: ช่อง {stuTop.id} ({stuTop.shortTitle}{" "}
+                      🌟 {t("ด้านที่เก่ง:", "Strength:")} {t("ช่อง", "Cell")} {stuTop.id} ({stuTop.shortTitle}{" "}
                       {inspectingStudent.cellScores[stuTop.id]}%)
                     </div>
                     <div className="rounded-xl bg-[#f8d9d4] border border-[#7d1d10]/30 px-3.5 py-2.5 font-bold text-[#7d1d10]">
-                      💡 ควรทบทวน: ช่อง {stuWeak.id} ({stuWeak.shortTitle}{" "}
+                      💡 {t("ควรทบทวน:", "Needs Review:")} {t("ช่อง", "Cell")} {stuWeak.id} ({stuWeak.shortTitle}{" "}
                       {inspectingStudent.cellScores[stuWeak.id]}%)
                     </div>
                   </div>
 
                   <BlockModelGrid
                     cellScores={inspectingStudent.cellScores}
-                    title={`แผนที่ Block Model 12 ช่องของ "${inspectingStudent.nickname}"`}
-                    subtitle="คะแนนความเข้าใจรายช่องจากประวัติการตอบคำถาม"
+                    title={t(
+                      `แผนที่ Block Model 12 ช่องของ "${inspectingStudent.nickname}"`,
+                      `12-Cell Block Model Map for "${inspectingStudent.nickname}"`
+                    )}
+                    subtitle={t(
+                      "คะแนนความเข้าใจรายช่องจากประวัติการตอบคำถาม",
+                      "Per-cell mastery scores from question attempt history"
+                    )}
                     showLegend={false}
                   />
                 </div>
@@ -917,26 +985,29 @@ export function TeacherDashboard({
         <div className="bg-white border-2 border-[#cfe0dc] rounded-2xl p-5 flex flex-col gap-4 no-print">
           <div>
             <span className="text-[13px] font-extrabold text-[#0f766e]">
-              ปักหมุดบทเรียนให้ทบทวนประจำห้อง
+              {t("ปักหมุดบทเรียนให้ทบทวนประจำห้อง", "Pin Classroom Review Lesson")}
             </span>
             <h3 className="text-[18px] font-extrabold text-[#1b2a2f] mt-0.5">
-              เลือกเรื่องให้ทบทวนประจำห้อง (จะไปแสดงที่หน้าเส้นทางเควสต์ของนักเรียนในห้องทันที)
+              {t(
+                "เลือกเรื่องให้ทบทวนประจำห้อง (จะไปแสดงที่หน้าเส้นทางเควสต์ของนักเรียนในห้องทันที)",
+                "Select a topic for class review (immediately shown on students' quest path)"
+              )}
             </h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
             <div className="md:col-span-5 flex flex-col gap-1.5">
               <label className="text-[13px] font-bold text-[#0b4f49]">
-                เลือกเรื่องที่ต้องการให้นักเรียนทบทวน:
+                {t("เลือกเรื่องที่ต้องการให้นักเรียนทบทวน:", "Select topic for students to review:")}
               </label>
               <select
                 value={reviewTopicId}
                 onChange={(e) => setReviewTopicId(Number(e.target.value))}
                 className="px-3.5 py-2.5 rounded-xl bg-[#eef3f1] border-2 border-[#b6c9c5] text-[14px] font-extrabold text-[#1b2a2f]"
               >
-                {TOPICS.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.title}
+                {TOPICS.map((topic) => (
+                  <option key={topic.id} value={topic.id}>
+                    {topic.title}
                   </option>
                 ))}
               </select>
@@ -944,13 +1015,16 @@ export function TeacherDashboard({
 
             <div className="md:col-span-5 flex flex-col gap-1.5">
               <label className="text-[13px] font-bold text-[#0b4f49]">
-                ข้อความคำแนะนำจากครูถึงนักเรียนในห้อง:
+                {t("ข้อความคำแนะนำจากครูถึงนักเรียนในห้อง:", "Teacher note to students:")}
               </label>
               <input
                 type="text"
                 value={reviewNote}
                 onChange={(e) => setReviewNote(e.target.value)}
-                placeholder="เช่น ทบทวนเรื่องการส่งค่า return และเงื่อนไขลูป..."
+                placeholder={t(
+                  "เช่น ทบทวนเรื่องการส่งค่า return และเงื่อนไขลูป...",
+                  "e.g., Review return values and loop conditions..."
+                )}
                 className="px-3.5 py-2.5 rounded-xl bg-white border-2 border-[#b6c9c5] text-[14px] text-[#1b2a2f]"
               />
             </div>
@@ -962,7 +1036,7 @@ export function TeacherDashboard({
                 disabled={isSavingReview}
                 className="press-teal w-full py-2.5 rounded-xl text-[14px] font-extrabold cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isSavingReview ? "กำลังบันทึก..." : "บันทึกการสอน"}
+                {isSavingReview ? t("กำลังบันทึก...", "Saving...") : t("บันทึกการสอน", "Save Review")}
               </button>
             </div>
           </div>
@@ -971,7 +1045,10 @@ export function TeacherDashboard({
             <div className="p-3 rounded-xl bg-[#d8efdc] border border-[#86efac] text-[#14532d] text-[14px] font-extrabold flex items-center gap-2">
               <Icon name="check" size={18} />
               <span>
-                อัปเดตเรื่องให้ทบทวนไปยังห้อง {currentRoom?.roomName} เรียบร้อยแล้ว!
+                {t(
+                  `อัปเดตเรื่องให้ทบทวนไปยังห้อง ${currentRoom?.roomName} เรียบร้อยแล้ว!`,
+                  `Updated review topic for ${currentRoom?.roomName}!`
+                )}
               </span>
             </div>
           )}

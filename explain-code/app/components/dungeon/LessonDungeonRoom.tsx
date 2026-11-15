@@ -364,7 +364,7 @@ export function LessonDungeonRoom({
             type="button"
             onClick={handleToggleSound}
             className="p-1.5 rounded-lg bg-[#252238] hover:bg-[#322c4a] text-[#f4efe6] text-xs cursor-pointer transition-colors"
-            title={soundEnabled ? "ปิดเสียง" : "เปิดเสียง"}
+            title={soundEnabled ? t("ปิดเสียง", "Mute") : t("เปิดเสียง", "Unmute")}
           >
             <Icon name={soundEnabled ? "volume-2" : "volume-x"} size={14} />
           </button>

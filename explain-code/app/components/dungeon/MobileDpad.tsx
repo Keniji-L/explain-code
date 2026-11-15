@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef } from "react";
 import { Icon } from "../Icons";
+import { useUiLanguage } from "../LanguageProvider";
 
 interface MobileDpadProps {
   onMove: (dx: number, dy: number) => void;
@@ -10,6 +11,7 @@ interface MobileDpadProps {
 }
 
 export function MobileDpad({ onMove, onAction, disabled = false }: MobileDpadProps) {
+  const { t } = useUiLanguage();
   const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopHold = useCallback(() => {
@@ -58,7 +60,7 @@ export function MobileDpad({ onMove, onAction, disabled = false }: MobileDpadPro
           onPointerLeave={stopHold}
           onPointerCancel={stopHold}
           className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-t-xl bg-[#252238] active:bg-[#5a2d91] border-2 border-[#4a4766] flex items-center justify-center text-base sm:text-lg text-[#f4efe6] shadow-sm select-none active:scale-95 transition-transform"
-          aria-label="เดินขึ้น"
+          aria-label={t("เดินขึ้น", "Move Up")}
         >
           ▲
         </button>
@@ -72,7 +74,7 @@ export function MobileDpad({ onMove, onAction, disabled = false }: MobileDpadPro
           onPointerLeave={stopHold}
           onPointerCancel={stopHold}
           className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-b-xl bg-[#252238] active:bg-[#5a2d91] border-2 border-[#4a4766] flex items-center justify-center text-base sm:text-lg text-[#f4efe6] shadow-sm select-none active:scale-95 transition-transform"
-          aria-label="เดินลง"
+          aria-label={t("เดินลง", "Move Down")}
         >
           ▼
         </button>
@@ -86,7 +88,7 @@ export function MobileDpad({ onMove, onAction, disabled = false }: MobileDpadPro
           onPointerLeave={stopHold}
           onPointerCancel={stopHold}
           className="absolute top-1/2 -translate-y-1/2 left-0 w-10 h-10 sm:w-12 sm:h-12 rounded-l-xl bg-[#252238] active:bg-[#5a2d91] border-2 border-[#4a4766] flex items-center justify-center text-base sm:text-lg text-[#f4efe6] shadow-sm select-none active:scale-95 transition-transform"
-          aria-label="เดินซ้าย"
+          aria-label={t("เดินซ้าย", "Move Left")}
         >
           ◀
         </button>
@@ -100,7 +102,7 @@ export function MobileDpad({ onMove, onAction, disabled = false }: MobileDpadPro
           onPointerLeave={stopHold}
           onPointerCancel={stopHold}
           className="absolute top-1/2 -translate-y-1/2 right-0 w-10 h-10 sm:w-12 sm:h-12 rounded-r-xl bg-[#252238] active:bg-[#5a2d91] border-2 border-[#4a4766] flex items-center justify-center text-base sm:text-lg text-[#f4efe6] shadow-sm select-none active:scale-95 transition-transform"
-          aria-label="เดินขวา"
+          aria-label={t("เดินขวา", "Move Right")}
         >
           ▶
         </button>
@@ -118,12 +120,14 @@ export function MobileDpad({ onMove, onAction, disabled = false }: MobileDpadPro
           disabled={disabled}
           onPointerDown={handleActionPress}
           className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f6c945] active:bg-[#ffe27a] border-4 border-[#120f1c] shadow-[0_4px_0_#120f1c] active:translate-y-1 active:shadow-none flex flex-col items-center justify-center text-[#120f1c] cursor-pointer select-none transition-all"
-          aria-label="ปุ่มกระทำ โต้ตอบ หรือโจมตี"
+          aria-label={t("ปุ่มกระทำ โต้ตอบ หรือโจมตี", "Action: Interact or Attack")}
         >
           <Icon name="sword" size={16} />
           <span className="pixel-font text-[9px] sm:text-[10px] font-black uppercase mt-0.5">ACT</span>
         </button>
-        <span className="text-[10px] text-[#9a93ad] font-bold">โต้ตอบ / คุย</span>
+        <span className="text-[10px] text-[#9a93ad] font-bold">
+          {t("โต้ตอบ / คุย", "Interact / Talk")}
+        </span>
       </div>
     </div>
   );

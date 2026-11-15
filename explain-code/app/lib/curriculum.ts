@@ -1705,7 +1705,10 @@ export const AI_USAGE_LOGS: AiUsageLogItem[] = [
  * - กลาง 50–79% (#fbeacb / #5c3704)
  * - ควรทบทวน ต่ำกว่า 50% (#f8d9d4 / #7d1d10)
  */
-export function getMasteryStatus(score: number): {
+export function getMasteryStatus(
+  score: number,
+  lang: "th" | "en" = "th"
+): {
   level: "good" | "mid" | "low";
   label: string;
   shortLabel: string;
@@ -1716,8 +1719,8 @@ export function getMasteryStatus(score: number): {
   if (score >= 80) {
     return {
       level: "good",
-      label: "เก่ง 80% ขึ้นไป",
-      shortLabel: "เก่ง",
+      label: lang === "en" ? "Mastered 80%+" : "เก่ง 80% ขึ้นไป",
+      shortLabel: lang === "en" ? "Mastered" : "เก่ง",
       bgHex: "#d8efdc",
       inkHex: "#14532d",
       className: "bg-[#d8efdc] text-[#14532d] border-[#86efac]",
@@ -1726,8 +1729,8 @@ export function getMasteryStatus(score: number): {
   if (score >= 50) {
     return {
       level: "mid",
-      label: "กลาง 50–79%",
-      shortLabel: "กลาง",
+      label: lang === "en" ? "Developing 50–79%" : "กลาง 50–79%",
+      shortLabel: lang === "en" ? "Developing" : "กลาง",
       bgHex: "#fbeacb",
       inkHex: "#5c3704",
       className: "bg-[#fbeacb] text-[#5c3704] border-[#fcd34d]",
@@ -1735,8 +1738,8 @@ export function getMasteryStatus(score: number): {
   }
   return {
     level: "low",
-    label: "ควรทบทวน ต่ำกว่า 50%",
-    shortLabel: "ควรทบทวน",
+    label: lang === "en" ? "Needs Review < 50%" : "ควรทบทวน ต่ำกว่า 50%",
+    shortLabel: lang === "en" ? "Review" : "ควรทบทวน",
     bgHex: "#f8d9d4",
     inkHex: "#7d1d10",
     className: "bg-[#f8d9d4] text-[#7d1d10] border-[#fca5a5]",

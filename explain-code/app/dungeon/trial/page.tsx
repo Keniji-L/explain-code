@@ -13,11 +13,13 @@ import { BattleOverlay } from "../../components/dungeon/BattleOverlay";
 import { MobileDpad } from "../../components/dungeon/MobileDpad";
 import { PauseModal, GameOverModal, VictoryModal } from "../../components/dungeon/GameModals";
 import { dungeonSound } from "../../lib/dungeon/sound";
+import { useUiLanguage } from "../../components/LanguageProvider";
 
 const TRIAL_SEED = 12345678;
 
 export default function DungeonTrialPage() {
   const router = useRouter();
+  const { t } = useUiLanguage();
 
   // Avatar preference
   const [avatarKey, setAvatarKey] = useState<AvatarKey>(DEFAULT_AVATAR);
@@ -130,8 +132,8 @@ export default function DungeonTrialPage() {
         avatar={avatar}
         floorIndex={0}
         totalFloors={1}
-        dungeonTitle="ห้องฝึกซ้อมจำลอง"
-        roomTitle="โหมดทดลองเล่น (Guest Trial)"
+        dungeonTitle={t("ห้องฝึกซ้อมจำลอง", "Training Simulation Room")}
+        roomTitle={t("โหมดทดลองเล่น (Guest Trial)", "Guest Trial Mode")}
         hearts={hearts}
         maxHearts={maxHearts}
         coins={coins}
@@ -219,8 +221,8 @@ export default function DungeonTrialPage() {
       {/* Victory Modal */}
       <VictoryModal
         isOpen={isVictory}
-        dungeonTitle="ห้องทดลองเล่น"
-        courseTitle="โหมดทดลองเล่นสำหรับผู้เยี่ยมชม"
+        dungeonTitle={t("ห้องทดลองเล่น", "Trial Dungeon")}
+        courseTitle={t("โหมดทดลองเล่นสำหรับผู้เยี่ยมชม", "Guest Trial Mode")}
         totalCoins={coins}
         totalXp={xp}
         onExit={() => router.push("/courses")}

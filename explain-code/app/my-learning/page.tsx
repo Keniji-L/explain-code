@@ -9,6 +9,7 @@ import {
   ClientAuthSession,
 } from "../components/SiteHeader";
 import { Icon } from "../components/Icons";
+import { useUiLanguage } from "../components/LanguageProvider";
 import { Course, Enrollment, Lesson, LessonProgress } from "../lib/supabase";
 import {
   loadLocalCourses,
@@ -26,6 +27,7 @@ import { LANGUAGE_TRACKS } from "../lib/language-tracks";
 
 export default function MyLearningPage() {
   const router = useRouter();
+  const { uiLang, t } = useUiLanguage();
   const [session, setSession] = useState<ClientAuthSession | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -116,7 +118,7 @@ export default function MyLearningPage() {
   if (!session) {
     return (
       <div className="min-h-screen bg-[#0d0b14] p-8 text-center text-sm text-[#9a93ad]">
-        กำลังตรวจสอบสิทธิ์การใช้งาน...
+        {t("กำลังตรวจสอบสิทธิ์การใช้งาน...", "Checking authorization...")}
       </div>
     );
   }
@@ -143,13 +145,19 @@ export default function MyLearningPage() {
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#3d395a] bg-[#1c1b2b] px-3 py-1 text-xs font-bold text-[#f6c945]">
               <Icon name="award" className="h-3.5 w-3.5" />
-              แดชบอร์ดการเรียนรู้ของ {session.displayName || session.username}
+              {t(
+                `แดชบอร์ดการเรียนรู้ของ ${session.displayName || session.username}`,
+                `${session.displayName || session.username}'s Learning Dashboard`
+              )}
             </span>
             <h1 className="mt-2 text-2xl sm:text-3xl font-bold text-[#f4efe6]">
-              การเรียนของฉัน (My Learning)
+              {t("การเรียนของฉัน (My Learning)", "My Learning")}
             </h1>
             <p className="mt-1 text-sm text-[#9a93ad]">
-              ติดตามความคืบหน้าของแต่ละคอร์ส ประวัติบทเรียนที่เรียนจบ และกดเรียนต่อจากจุดที่ค้างไว้ได้ทันที
+              {t(
+                "ติดตามความคืบหน้าของแต่ละคอร์ส ประวัติบทเรียนที่เรียนจบ และกดเรียนต่อจากจุดที่ค้างไว้ได้ทันที",
+                "Track your progress across courses, completed lessons, and resume right where you left off."
+              )}
             </p>
           </div>
 
@@ -158,13 +166,13 @@ export default function MyLearningPage() {
               href="/courses"
               className="rounded-xl bg-[#2fbf71] px-4 py-2.5 text-xs font-extrabold text-[#0b0b14] shadow-md hover:bg-[#34d37d] transition-colors whitespace-nowrap"
             >
-              + สำรวจคอร์สเรียนเพิ่ม
+              {t("+ สำรวจคอร์สเรียนเพิ่ม", "+ Explore More Courses")}
             </Link>
             <Link
               href="/my-history"
               className="rounded-xl border border-[#3d395a] bg-[#1c1b2b] px-4 py-2.5 text-xs font-bold text-[#f4efe6] hover:border-[#f6c945] hover:bg-[#252238] transition-colors whitespace-nowrap"
             >
-              ประวัติการอธิบายโค้ด
+              {t("ประวัติการอธิบายโค้ด", "Explanation History")}
             </Link>
           </div>
         </div>
@@ -175,13 +183,18 @@ export default function MyLearningPage() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-extrabold text-[#ffe27a] flex items-center gap-2">
                 <Icon name="gamepad" className="h-5 w-5 text-[#9b5de5]" />
-                <span>ความคืบหน้าดันเจี้ยนการเรียนรู้ (เซฟเกมล่าสุด)</span>
+                <span>
+                  {t(
+                    "ความคืบหน้าดันเจี้ยนการเรียนรู้ (เซฟเกมล่าสุด)",
+                    "Learning Dungeon Progress (Latest Saves)"
+                  )}
+                </span>
               </h2>
               <Link
                 href="/courses"
                 className="text-xs font-bold text-[#9a93ad] hover:text-[#ffe27a] transition-colors"
               >
-                ไปหน้าดันเจี้ยนทั้งหมด →
+                {t("ไปหน้าดันเจี้ยนทั้งหมด →", "All Dungeons →")}
               </Link>
             </div>
 
@@ -193,12 +206,15 @@ export default function MyLearningPage() {
                 const pct = calculateDungeonSaveProgressPercent(save);
                 const savedTimeText = (() => {
                   try {
-                    return new Date(save.savedAt).toLocaleString("th-TH", {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    });
+                    return new Date(save.savedAt).toLocaleString(
+                      uiLang === "en" ? "en-US" : "th-TH",
+                      {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      }
+                    );
                   } catch {
-                    return "เมื่อสักครู่";
+                    return t("เมื่อสักครู่", "Just now");
                   }
                 })();
 
@@ -213,17 +229,20 @@ export default function MyLearningPage() {
                           {trackMeta.name}
                         </span>
                         <span className="text-[11px] font-semibold text-[#9a93ad]">
-                          💾 เซฟล่าสุด: {savedTimeText}
+                          💾 {t("เซฟล่าสุด:", "Last saved:")} {savedTimeText}
                         </span>
                       </div>
 
                       <h3 className="text-base font-extrabold text-[#f4efe6]">
-                        ถึงด่านที่ {save.currentFloorNumber}/{save.totalFloors} ·{" "}
-                        {save.currentTopicTitle}
+                        {t(
+                          `ถึงด่านที่ ${save.currentFloorNumber}/${save.totalFloors}`,
+                          `Floor ${save.currentFloorNumber}/${save.totalFloors}`
+                        )}{" "}
+                        · {save.currentTopicTitle}
                       </h3>
                       <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-[#c4bdd6]">
                         <span className="rounded-md border border-[#9b5de5]/60 bg-[#25193b] px-2 py-0.5 text-[11px] font-bold text-[#ffe27a]">
-                          ⚔️ เฟสคำถามที่{" "}
+                          ⚔️ {t("เฟสคำถามที่", "Phase")}{" "}
                           {save.currentPhaseNumber ||
                             (save.arenaSnapshot?.battlePhaseIndex ?? 0) + 1}
                           /
@@ -232,14 +251,18 @@ export default function MyLearningPage() {
                             3}
                         </span>
                         <span>
-                          พิชิตแล้ว {save.completedTopicIds.length} จาก{" "}
-                          {save.totalFloors} ด่าน · สะสม {save.xp} XP
+                          {t(
+                            `พิชิตแล้ว ${save.completedTopicIds.length} จาก ${save.totalFloors} ด่าน · สะสม ${save.xp} XP`,
+                            `Cleared ${save.completedTopicIds.length} of ${save.totalFloors} floors · ${save.xp} XP`
+                          )}
                         </span>
                       </div>
 
                       <div className="mt-3">
                         <div className="flex items-center justify-between text-[11px] font-bold mb-1">
-                          <span className="text-[#c4bdd6]">ความคืบหน้า</span>
+                          <span className="text-[#c4bdd6]">
+                            {t("ความคืบหน้า", "Progress")}
+                          </span>
                           <span className="text-[#2fbf71]">{pct}%</span>
                         </div>
                         <div className="h-2 w-full overflow-hidden rounded-full border border-[#2f2d45] bg-[#0d0b14]">
@@ -253,7 +276,7 @@ export default function MyLearningPage() {
                       {save.history && save.history.length > 0 && (
                         <div className="mt-3 border-t border-[#2f2d45] pt-2.5 space-y-1">
                           <p className="text-[11px] font-bold text-[#9a93ad]">
-                            ประวัติการเล่นล่าสุด:
+                            {t("ประวัติการเล่นล่าสุด:", "Recent runs:")}
                           </p>
                           {save.history.slice(0, 3).map((h, i) => (
                             <div
@@ -281,7 +304,9 @@ export default function MyLearningPage() {
                       className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#f6c945] px-4 py-2.5 text-xs font-extrabold text-[#120f1c] shadow-md hover:bg-[#ffe27a] transition-colors"
                     >
                       <Icon name="play" className="h-4 w-4" filled />
-                      <span>เล่นต่อจากที่เซฟไว้ →</span>
+                      <span>
+                        {t("เล่นต่อจากที่เซฟไว้ →", "Resume Saved Run →")}
+                      </span>
                     </Link>
                   </div>
                 );
@@ -296,16 +321,22 @@ export default function MyLearningPage() {
               <Icon name="book" className="h-6 w-6" />
             </div>
             <h2 className="mt-4 text-base font-bold text-[#f4efe6]">
-              คุณยังไม่ได้เข้าร่วมคอร์สเรียนใดๆ
+              {t(
+                "คุณยังไม่ได้เข้าร่วมคอร์สเรียนใดๆ",
+                "You haven't joined any courses yet"
+              )}
             </h2>
             <p className="mt-1 text-xs text-[#9a93ad]">
-              เลือกคอร์สที่สนใจจากคลังคอร์สเปิด หรือกรอกรหัสห้องเรียนจากครูผู้สอนเพื่อเริ่มต้น
+              {t(
+                "เลือกคอร์สที่สนใจจากคลังคอร์สเปิด หรือกรอกรหัสห้องเรียนจากครูผู้สอนเพื่อเริ่มต้น",
+                "Browse open courses or enter a classroom code from your teacher to get started."
+              )}
             </p>
             <Link
               href="/courses"
               className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#2fbf71] px-5 py-2.5 text-xs font-extrabold text-[#0b0b14] hover:bg-[#34d37d] whitespace-nowrap"
             >
-              ดูคอร์สเรียนที่เปิดสอน →
+              {t("ดูคอร์สเรียนที่เปิดสอน →", "Browse Open Courses →")}
             </Link>
           </div>
         ) : (
@@ -346,10 +377,10 @@ export default function MyLearningPage() {
                     <div className="max-w-2xl">
                       <div className="flex flex-wrap items-center gap-2 mb-1.5">
                         <span className="rounded-md border border-[#3d395a] bg-[#1c1b2b] px-2.5 py-0.5 text-[11px] font-bold text-[#f6c945]">
-                          รหัส: {course.join_code}
+                          {t("รหัส:", "Code:")} {course.join_code}
                         </span>
                         <span className="text-xs text-[#9a93ad]">
-                          ผู้สอน: {course.teacher_name}
+                          {t("ผู้สอน:", "Instructor:")} {course.teacher_name}
                         </span>
                       </div>
                       <h2 className="text-lg font-bold text-[#f4efe6]">
@@ -366,7 +397,7 @@ export default function MyLearningPage() {
                         className="inline-flex items-center gap-1.5 rounded-xl border border-[#9b5de5] bg-[#5a2d91] px-4 py-3 text-xs font-bold text-[#ffe27a] hover:bg-[#6d3fc0] transition-colors whitespace-nowrap"
                       >
                         <Icon name="gamepad" className="h-4 w-4 shrink-0" />
-                        <span>เล่นโหมดดันเจี้ยน</span>
+                        <span>{t("เล่นโหมดดันเจี้ยน", "Play Dungeon Mode")}</span>
                       </Link>
 
                       {resumeLesson && (
@@ -376,7 +407,8 @@ export default function MyLearningPage() {
                         >
                           <Icon name="play" className="h-4 w-4 shrink-0" />
                           <span className="truncate">
-                            เรียนต่อจากที่ค้างไว้: {resumeLesson.title}
+                            {t("เรียนต่อจากที่ค้างไว้:", "Resume:")}{" "}
+                            {resumeLesson.title}
                           </span>
                         </Link>
                       )}
@@ -387,8 +419,10 @@ export default function MyLearningPage() {
                   <div className="mt-5">
                     <div className="flex items-center justify-between text-xs font-bold mb-1.5">
                       <span className="text-[#e8e1cf]">
-                        ความคืบหน้า: เรียนจบแล้ว {completedSet.size} จาก{" "}
-                        {cLessons.length} บทเรียน
+                        {t(
+                          `ความคืบหน้า: เรียนจบแล้ว ${completedSet.size} จาก ${cLessons.length} บทเรียน`,
+                          `Progress: ${completedSet.size} of ${cLessons.length} lessons completed`
+                        )}
                       </span>
                       <span className="text-[#2fbf71]">{pct}%</span>
                     </div>
@@ -403,7 +437,7 @@ export default function MyLearningPage() {
                   {/* Lesson History Table */}
                   <div className="mt-5 border-t border-[#2f2d45] pt-4">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-[#9a93ad] mb-2.5">
-                      ประวัติการเข้าเรียนรายบท
+                      {t("ประวัติการเข้าเรียนรายบท", "Lesson History")}
                     </h3>
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                       {cLessons.map((lesson) => {
@@ -422,14 +456,18 @@ export default function MyLearningPage() {
                               </p>
                               <p className="text-[10px] text-[#9a93ad]">
                                 {prog?.completed_at
-                                  ? `จบเมื่อ ${new Date(
+                                  ? `${t("จบเมื่อ", "Completed")} ${new Date(
                                       prog.completed_at
-                                    ).toLocaleDateString("th-TH")}`
+                                    ).toLocaleDateString(
+                                      uiLang === "en" ? "en-US" : "th-TH"
+                                    )}`
                                   : prog?.opened_at
-                                  ? `เปิดดูล่าสุด ${new Date(
+                                  ? `${t("เปิดดูล่าสุด", "Last opened")} ${new Date(
                                       prog.opened_at
-                                    ).toLocaleDateString("th-TH")}`
-                                  : "ยังไม่ได้เปิดเรียน"}
+                                    ).toLocaleDateString(
+                                      uiLang === "en" ? "en-US" : "th-TH"
+                                    )}`
+                                  : t("ยังไม่ได้เปิดเรียน", "Not started")}
                               </p>
                             </div>
                             <span
@@ -442,10 +480,10 @@ export default function MyLearningPage() {
                               }`}
                             >
                               {prog?.is_completed
-                                ? "เรียนจบ"
+                                ? t("เรียนจบ", "Completed")
                                 : prog
-                                ? "กำลังเรียน"
-                                : "รอเรียน"}
+                                ? t("กำลังเรียน", "In Progress")
+                                : t("รอเรียน", "Pending")}
                             </span>
                           </Link>
                         );

@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { SiteHeader, setClientSession } from "../components/SiteHeader";
 import { Icon } from "../components/Icons";
+import { useUiLanguage } from "../components/LanguageProvider";
 import {
   INITIAL_CLASSROOMS,
   INITIAL_STUDENTS,
@@ -16,6 +17,7 @@ import {
 function RegisterFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useUiLanguage();
   const redirectPath = searchParams.get("redirect") || "";
   const initialRole =
     searchParams.get("role") === "teacher" ? "teacher" : "student";
@@ -88,17 +90,32 @@ function RegisterFormContent() {
 
     const newErrors: Record<string, string> = {};
     if (!cleanNick) {
-      newErrors.nickname = "กรุณาตั้งชื่อเล่นสมมติของคุณ (ห้ามเว้นว่าง)";
+      newErrors.nickname = t(
+        "กรุณาตั้งชื่อเล่นสมมติของคุณ (ห้ามเว้นว่าง)",
+        "Please enter a nickname (required)"
+      );
     }
     if (!cleanPin) {
-      newErrors.pin = "กรุณาตั้งรหัส PIN ตัวเลข 4 หลัก (ห้ามเว้นว่าง)";
+      newErrors.pin = t(
+        "กรุณาตั้งรหัส PIN ตัวเลข 4 หลัก (ห้ามเว้นว่าง)",
+        "Please set a 4-digit numeric PIN (required)"
+      );
     } else if (cleanPin.length !== 4) {
-      newErrors.pin = `รหัส PIN ต้องมีครบ 4 หลัก (ตอนนี้กรอกไป ${cleanPin.length} หลัก)`;
+      newErrors.pin = t(
+        `รหัส PIN ต้องมีครบ 4 หลัก (ตอนนี้กรอกไป ${cleanPin.length} หลัก)`,
+        `PIN must be 4 digits (${cleanPin.length} entered so far)`
+      );
     }
     if (!cleanConfirmPin) {
-      newErrors.confirmPin = "กรุณายืนยันรหัส PIN 4 หลักอีกครั้ง (ห้ามเว้นว่าง)";
+      newErrors.confirmPin = t(
+        "กรุณายืนยันรหัส PIN 4 หลักอีกครั้ง (ห้ามเว้นว่าง)",
+        "Please confirm your 4-digit PIN (required)"
+      );
     } else if (cleanPin.length === 4 && cleanConfirmPin !== cleanPin) {
-      newErrors.confirmPin = "รหัส PIN ทั้งสองช่องไม่ตรงกัน กรุณาตรวจสอบอีกครั้ง";
+      newErrors.confirmPin = t(
+        "รหัส PIN ทั้งสองช่องไม่ตรงกัน กรุณาตรวจสอบอีกครั้ง",
+        "PINs do not match. Please check again."
+      );
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -107,7 +124,10 @@ function RegisterFormContent() {
         type: "error",
         text:
           !cleanNick && !cleanPin
-            ? "กรุณากรอกชื่อเล่นสมมติ และตั้งรหัส PIN 4 หลักให้ครบถ้วนก่อนสมัครสมาชิก"
+            ? t(
+                "กรุณากรอกชื่อเล่นสมมติ และตั้งรหัส PIN 4 หลักให้ครบถ้วนก่อนสมัครสมาชิก",
+                "Please enter a nickname and 4-digit PIN before registering"
+              )
             : newErrors.nickname || newErrors.pin || newErrors.confirmPin,
       });
       return;
@@ -119,7 +139,10 @@ function RegisterFormContent() {
         type: "error",
         text:
           pdpaResult.reason ||
-          "ตามหลัก PDPA 2562 กรุณาใช้ชื่อเล่นสมมติเท่านั้น ห้ามใช้ชื่อจริง อีเมล หรือเบอร์โทรศัพท์",
+          t(
+            "ตามหลัก PDPA 2562 กรุณาใช้ชื่อเล่นสมมติเท่านั้น ห้ามใช้ชื่อจริง อีเมล หรือเบอร์โทรศัพท์",
+            "Under PDPA, please use a nickname only — do not use your real name, email, or phone number."
+          ),
       });
       return;
     }
@@ -127,7 +150,10 @@ function RegisterFormContent() {
     if (!pdpaAccepted) {
       setMessage({
         type: "error",
-        text: "กรุณาติ๊กยืนยันการใช้ชื่อเล่นสมมติตามหลักการคุ้มครองข้อมูลส่วนบุคคล (PDPA)",
+        text: t(
+          "กรุณาติ๊กยืนยันการใช้ชื่อเล่นสมมติตามหลักการคุ้มครองข้อมูลส่วนบุคคล (PDPA)",
+          "Please check the PDPA acknowledgement box before registering."
+        ),
       });
       return;
     }
@@ -149,7 +175,12 @@ function RegisterFormContent() {
       if (!res.ok) {
         setMessage({
           type: "error",
-          text: data.error || "ไม่สามารถสมัครสมาชิกได้ กรุณาตรวจสอบข้อมูลอีกครั้ง",
+          text:
+            data.error ||
+            t(
+              "ไม่สามารถสมัครสมาชิกได้ กรุณาตรวจสอบข้อมูลอีกครั้ง",
+              "Unable to register. Please check your information."
+            ),
         });
         return;
       }
@@ -190,7 +221,10 @@ function RegisterFormContent() {
     } catch {
       setMessage({
         type: "error",
-        text: "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง",
+        text: t(
+          "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง",
+          "Unable to connect to the server. Please try again."
+        ),
       });
     } finally {
       setIsSubmitting(false);
@@ -209,17 +243,32 @@ function RegisterFormContent() {
 
     const newErrors: Record<string, string> = {};
     if (!cleanUser) {
-      newErrors.username = "กรุณาตั้งชื่อผู้ใช้ครู (ห้ามเว้นว่าง)";
+      newErrors.username = t(
+        "กรุณาตั้งชื่อผู้ใช้ครู (ห้ามเว้นว่าง)",
+        "Please enter a teacher username (required)"
+      );
     }
     if (!cleanPwd) {
-      newErrors.password = "กรุณาตั้งรหัสผ่านสำหรับบัญชีครู (ห้ามเว้นว่าง)";
+      newErrors.password = t(
+        "กรุณาตั้งรหัสผ่านสำหรับบัญชีครู (ห้ามเว้นว่าง)",
+        "Please set a password for the teacher account (required)"
+      );
     } else if (cleanPwd.length < 4) {
-      newErrors.password = "รหัสผ่านต้องมีความยาวอย่างน้อย 4 ตัวอักษร";
+      newErrors.password = t(
+        "รหัสผ่านต้องมีความยาวอย่างน้อย 4 ตัวอักษร",
+        "Password must be at least 4 characters"
+      );
     }
     if (!cleanConfirmPwd) {
-      newErrors.confirmPassword = "กรุณายืนยันรหัสผ่านอีกครั้ง (ห้ามเว้นว่าง)";
+      newErrors.confirmPassword = t(
+        "กรุณายืนยันรหัสผ่านอีกครั้ง (ห้ามเว้นว่าง)",
+        "Please confirm your password (required)"
+      );
     } else if (cleanPwd.length >= 4 && cleanConfirmPwd !== cleanPwd) {
-      newErrors.confirmPassword = "รหัสผ่านทั้งสองช่องไม่ตรงกัน กรุณาตรวจสอบอีกครั้ง";
+      newErrors.confirmPassword = t(
+        "รหัสผ่านทั้งสองช่องไม่ตรงกัน กรุณาตรวจสอบอีกครั้ง",
+        "Passwords do not match. Please check again."
+      );
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -228,7 +277,10 @@ function RegisterFormContent() {
         type: "error",
         text:
           !cleanUser && !cleanPwd
-            ? "กรุณากรอกชื่อผู้ใช้ครู และตั้งรหัสผ่าน (อย่างน้อย 4 ตัวอักษร) ให้ครบถ้วน"
+            ? t(
+                "กรุณากรอกชื่อผู้ใช้ครู และตั้งรหัสผ่าน (อย่างน้อย 4 ตัวอักษร) ให้ครบถ้วน",
+                "Please enter a teacher username and password (at least 4 characters)"
+              )
             : newErrors.username || newErrors.password || newErrors.confirmPassword,
       });
       return;
@@ -237,7 +289,10 @@ function RegisterFormContent() {
     if (/@/.test(cleanUser)) {
       setMessage({
         type: "error",
-        text: "ตามหลัก PDPA พ.ศ. 2562 กรุณาตั้งชื่อผู้ใช้ (Username) แทนการใช้อีเมลส่วนตัว",
+        text: t(
+          "ตามหลัก PDPA พ.ศ. 2562 กรุณาตั้งชื่อผู้ใช้ (Username) แทนการใช้อีเมลส่วนตัว",
+          "Under PDPA, please use a Username instead of a personal email address."
+        ),
       });
       return;
     }
@@ -245,7 +300,10 @@ function RegisterFormContent() {
     if (!pdpaAccepted) {
       setMessage({
         type: "error",
-        text: "กรุณาติ๊กรับทราบหลักการคุ้มครองข้อมูลส่วนบุคคล (PDPA) ก่อนสมัครสมาชิก",
+        text: t(
+          "กรุณาติ๊กรับทราบหลักการคุ้มครองข้อมูลส่วนบุคคล (PDPA) ก่อนสมัครสมาชิก",
+          "Please check the PDPA acknowledgement box before registering."
+        ),
       });
       return;
     }
@@ -267,7 +325,9 @@ function RegisterFormContent() {
       if (!res.ok) {
         setMessage({
           type: "error",
-          text: data.error || "ไม่สามารถสมัครบัญชีครูได้",
+          text:
+            data.error ||
+            t("ไม่สามารถสมัครบัญชีครูได้", "Unable to register teacher account"),
         });
         return;
       }
@@ -324,7 +384,10 @@ function RegisterFormContent() {
     } catch {
       setMessage({
         type: "error",
-        text: "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง",
+        text: t(
+          "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง",
+          "Unable to connect to the server. Please try again."
+        ),
       });
     } finally {
       setIsSubmitting(false);
@@ -346,13 +409,15 @@ function RegisterFormContent() {
             className="inline-flex items-center gap-2 rounded-xl border-2 border-[#f6c945]/70 bg-[#1c1b2b] px-4 py-2 text-xs sm:text-sm font-extrabold text-[#ffe27a] shadow-sm hover:border-[#f6c945] hover:bg-[#281d08] transition-colors"
           >
             <Icon name="home" className="h-4 w-4 text-[#f6c945]" />
-            <span>← กลับไปหน้าแรก</span>
+            <span>{t("← กลับไปหน้าแรก", "← Back to Home")}</span>
           </Link>
           <Link
             href={loginHref}
             className="inline-flex items-center gap-1.5 rounded-xl border border-[#3d395a] bg-[#1c1b2b] px-4 py-2 text-xs sm:text-sm font-extrabold text-[#f4efe6] hover:border-[#9b5de5] hover:bg-[#25193b] transition-colors"
           >
-            <span>มีบัญชีแล้ว? เข้าสู่ระบบ →</span>
+            <span>
+              {t("มีบัญชีแล้ว? เข้าสู่ระบบ →", "Already have an account? Sign In →")}
+            </span>
           </Link>
         </div>
 
@@ -369,18 +434,24 @@ function RegisterFormContent() {
             </div>
 
             <h1 className="mt-3 text-2xl font-extrabold text-[#f4efe6]">
-              สมัครสมาชิกใหม่
+              {t("สมัครสมาชิกใหม่", "Create New Account")}
             </h1>
             <p className="mt-1 text-sm text-[#9a93ad]">
-              ไม่ต้องใช้อีเมล ไม่เก็บชื่อจริง หรือเบอร์โทรศัพท์ ปลอดภัยสำหรับผู้เรียนทุกคน
+              {t(
+                "ไม่ต้องใช้อีเมล ไม่เก็บชื่อจริง หรือเบอร์โทรศัพท์ ปลอดภัยสำหรับผู้เรียนทุกคน",
+                "No email, real name, or phone number required. Safe for all learners."
+              )}
             </p>
             {redirectPath && (
               <p className="mt-2 rounded-lg border border-[#f6c945]/40 bg-[#281d08] px-3 py-1.5 text-xs font-medium text-[#ffe27a]">
-                เมื่อสมัครสมาชิกสำเร็จ ระบบจะพาคุณกลับไปยังหน้า{" "}
+                {t(
+                  "เมื่อสมัครสมาชิกสำเร็จ ระบบจะพาคุณกลับไปยังหน้า ",
+                  "After registration, you will be redirected back to "
+                )}
                 <code className="font-mono font-bold text-[#f6c945]">
                   {redirectPath}
-                </code>{" "}
-                อัตโนมัติ
+                </code>
+                {t(" อัตโนมัติ", " automatically.")}
               </p>
             )}
           </div>
@@ -400,15 +471,15 @@ function RegisterFormContent() {
               <div className="flex-1 text-xs leading-relaxed">
                 <p className="font-extrabold text-sm mb-0.5">
                   {message.type === "error"
-                    ? "แจ้งเตือนการกรอกข้อมูล"
-                    : "ดำเนินการสำเร็จ"}
+                    ? t("แจ้งเตือนการกรอกข้อมูล", "Input Notice")
+                    : t("ดำเนินการสำเร็จ", "Success")}
                 </p>
                 <p className="font-bold opacity-95">{message.text}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setMessage(null)}
-                aria-label="ปิดกล่องแจ้งเตือน"
+                aria-label={t("ปิดกล่องแจ้งเตือน", "Close alert")}
                 className="rounded-lg px-2 py-1 text-xs font-extrabold opacity-75 hover:bg-black/25 hover:opacity-100 cursor-pointer"
               >
                 ✕
@@ -419,7 +490,10 @@ function RegisterFormContent() {
           <div>
             <div className="mb-5">
               <label className="block text-xs font-bold text-[#c4bdd6] mb-2">
-                เลือกบทบาทที่ต้องการสมัครสมาชิก:
+                {t(
+                  "เลือกบทบาทที่ต้องการสมัครสมาชิก:",
+                  "Select your account role:"
+                )}
               </label>
               <div className="grid grid-cols-2 gap-2.5 rounded-xl border border-[#2f2d45] bg-[#1c1b2b] p-1.5">
                 <button
@@ -436,7 +510,7 @@ function RegisterFormContent() {
                   }`}
                 >
                   <Icon name="user" className="h-4 w-4" />
-                  <span>นักเรียน (Student)</span>
+                  <span>{t("นักเรียน (Student)", "Student")}</span>
                 </button>
                 <button
                   type="button"
@@ -452,7 +526,7 @@ function RegisterFormContent() {
                   }`}
                 >
                   <Icon name="users" className="h-4 w-4" />
-                  <span>ครูผู้สอน (Teacher)</span>
+                  <span>{t("ครูผู้สอน (Teacher)", "Teacher")}</span>
                 </button>
               </div>
             </div>
@@ -466,7 +540,7 @@ function RegisterFormContent() {
                 {/* 1. ชื่อเล่นสมมติ */}
                 <div>
                   <label className="block text-xs font-bold text-[#c4bdd6] mb-1.5">
-                    1. ตั้งชื่อเล่นสมมติ
+                    {t("1. ตั้งชื่อเล่นสมมติ", "1. Choose a Nickname")}
                   </label>
                   <input
                     type="text"
@@ -475,7 +549,10 @@ function RegisterFormContent() {
                       setNickname(e.target.value);
                       clearFieldError("nickname");
                     }}
-                    placeholder="เช่น แมวส้ม_สายโค้ด"
+                    placeholder={t(
+                      "เช่น แมวส้ม_สายโค้ด",
+                      "e.g., OrangeCat_Coder"
+                    )}
                     className={`w-full rounded-xl border bg-[#1c1b2b] px-3.5 py-2.5 text-sm font-bold text-[#f4efe6] placeholder:font-normal placeholder:text-[#9a93ad]/60 focus:bg-[#252238] focus:outline-hidden ${
                       fieldErrors.nickname
                         ? "border-[#c0283a] bg-[#2d141c]/30 focus:border-[#c0283a]"
@@ -502,7 +579,10 @@ function RegisterFormContent() {
                     >
                       <span>
                         {nicknamePdpaCheck.valid
-                          ? "✓ ผ่านเกณฑ์ PDPA พ.ศ. 2562: ชื่อเล่นสมมติปลอดภัย ไม่มีข้อมูลระบุตัวตนจริง"
+                          ? t(
+                              "✓ ผ่านเกณฑ์ PDPA พ.ศ. 2562: ชื่อเล่นสมมติปลอดภัย ไม่มีข้อมูลระบุตัวตนจริง",
+                              "✓ PDPA Safe: Nickname contains no personally identifiable information"
+                            )
                           : `⚠️ ${nicknamePdpaCheck.reason}`}
                       </span>
                     </p>
@@ -513,7 +593,10 @@ function RegisterFormContent() {
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="block text-xs font-bold text-[#c4bdd6]">
-                      2. ตั้งรหัส PIN 4 หลัก (ตัวเลข 0–9)
+                      {t(
+                        "2. ตั้งรหัส PIN 4 หลัก (ตัวเลข 0–9)",
+                        "2. Set a 4-Digit PIN (digits 0–9)"
+                      )}
                     </label>
                     <div className="flex items-center gap-1.5">
                       {[0, 1, 2, 3].map((idx) => (
@@ -525,7 +608,7 @@ function RegisterFormContent() {
                         />
                       ))}
                       <span className="ml-1 text-[11px] font-bold text-[#9a93ad]">
-                        {pin.length}/4 หลัก
+                        {pin.length}/4 {t("หลัก", "digits")}
                       </span>
                     </div>
                   </div>
@@ -539,7 +622,7 @@ function RegisterFormContent() {
                         setPin(e.target.value.replace(/\D/g, "").slice(0, 4));
                         clearFieldError("pin");
                       }}
-                      placeholder="•••• (เช่น 1234)"
+                      placeholder={t("•••• (เช่น 1234)", "•••• (e.g., 1234)")}
                       className={`w-full rounded-xl border bg-[#1c1b2b] px-3.5 py-2.5 pr-16 text-sm font-bold tracking-widest text-[#f4efe6] placeholder:tracking-normal placeholder:font-normal placeholder:text-[#9a93ad]/60 focus:bg-[#252238] focus:outline-hidden ${
                         fieldErrors.pin
                           ? "border-[#c0283a] bg-[#2d141c]/30 focus:border-[#c0283a]"
@@ -551,7 +634,7 @@ function RegisterFormContent() {
                       onClick={() => setShowStudentPin(!showStudentPin)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md bg-[#252238] px-2 py-1 text-xs font-bold text-[#ffe27a] hover:bg-[#322c4a] cursor-pointer"
                     >
-                      {showStudentPin ? "ซ่อน" : "แสดง"}
+                      {showStudentPin ? t("ซ่อน", "Hide") : t("แสดง", "Show")}
                     </button>
                   </div>
                   {fieldErrors.pin && (
@@ -566,16 +649,19 @@ function RegisterFormContent() {
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="block text-xs font-bold text-[#c4bdd6]">
-                      3. ยืนยันรหัส PIN 4 หลักอีกครั้ง
+                      {t(
+                        "3. ยืนยันรหัส PIN 4 หลักอีกครั้ง",
+                        "3. Confirm your 4-Digit PIN"
+                      )}
                     </label>
                     {confirmPin.length > 0 && pin.length === 4 ? (
                       confirmPin === pin ? (
                         <span className="text-[11px] font-bold text-[#86efac]">
-                          ✓ รหัส PIN ตรงกัน
+                          {t("✓ รหัส PIN ตรงกัน", "✓ PINs match")}
                         </span>
                       ) : (
                         <span className="text-[11px] font-bold text-[#fca5a5]">
-                          ✕ รหัส PIN ยังไม่ตรงกัน
+                          {t("✕ รหัส PIN ยังไม่ตรงกัน", "✕ PINs do not match")}
                         </span>
                       )
                     ) : (
@@ -591,7 +677,7 @@ function RegisterFormContent() {
                           />
                         ))}
                         <span className="ml-1 text-[11px] font-bold text-[#9a93ad]">
-                          {confirmPin.length}/4 หลัก
+                          {confirmPin.length}/4 {t("หลัก", "digits")}
                         </span>
                       </div>
                     )}
@@ -608,7 +694,10 @@ function RegisterFormContent() {
                         );
                         clearFieldError("confirmPin");
                       }}
-                      placeholder="กรอกรหัส PIN 4 หลักอีกครั้ง"
+                      placeholder={t(
+                        "กรอกรหัส PIN 4 หลักอีกครั้ง",
+                        "Re-enter your 4-digit PIN"
+                      )}
                       className={`w-full rounded-xl border bg-[#1c1b2b] px-3.5 py-2.5 pr-16 text-sm font-bold tracking-widest text-[#f4efe6] placeholder:tracking-normal placeholder:font-normal placeholder:text-[#9a93ad]/60 focus:bg-[#252238] focus:outline-hidden ${
                         fieldErrors.confirmPin
                           ? "border-[#c0283a] bg-[#2d141c]/30 focus:border-[#c0283a]"
@@ -622,7 +711,7 @@ function RegisterFormContent() {
                       onClick={() => setShowStudentPin(!showStudentPin)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md bg-[#252238] px-2 py-1 text-xs font-bold text-[#ffe27a] hover:bg-[#322c4a] cursor-pointer"
                     >
-                      {showStudentPin ? "ซ่อน" : "แสดง"}
+                      {showStudentPin ? t("ซ่อน", "Hide") : t("แสดง", "Show")}
                     </button>
                   </div>
                   {fieldErrors.confirmPin && (
@@ -637,10 +726,16 @@ function RegisterFormContent() {
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="block text-xs font-bold text-[#c4bdd6]">
-                      4. รหัสห้องเรียนจากครู (ไม่บังคับ)
+                      {t(
+                        "4. รหัสห้องเรียนจากครู (ไม่บังคับ)",
+                        "4. Classroom Code from Teacher (Optional)"
+                      )}
                     </label>
                     <span className="text-[11px] font-semibold text-[#9a93ad]">
-                      เว้นว่างได้หากเรียนด้วยตัวเอง
+                      {t(
+                        "เว้นว่างได้หากเรียนด้วยตัวเอง",
+                        "Leave blank for self-study"
+                      )}
                     </span>
                   </div>
                   <input
@@ -649,7 +744,10 @@ function RegisterFormContent() {
                     onChange={(e) =>
                       setRoomCode(e.target.value.toUpperCase())
                     }
-                    placeholder="เว้นว่างได้ หรือกรอกรหัสห้องจากครู (เช่น ABC123)"
+                    placeholder={t(
+                      "เว้นว่างได้ หรือกรอกรหัสห้องจากครู (เช่น ABC123)",
+                      "Optional: enter teacher room code (e.g., ABC123)"
+                    )}
                     className="w-full rounded-xl border border-[#3d395a] bg-[#1c1b2b] px-3.5 py-2.5 text-sm font-mono font-extrabold uppercase text-[#ffe27a] placeholder:font-sans placeholder:font-normal placeholder:normal-case placeholder:text-[#9a93ad]/60 focus:border-[#f6c945] focus:bg-[#252238] focus:outline-hidden"
                   />
                 </div>
@@ -663,8 +761,14 @@ function RegisterFormContent() {
                     className="h-3.5 w-3.5 shrink-0 accent-[#2fbf71] rounded cursor-pointer"
                   />
                   <span>
-                    <strong className="text-[#c4bdd6]">รับทราบ</strong> ·
-                    ระบบเก็บเฉพาะชื่อเล่นสมมติและรหัส PIN (ไม่เก็บข้อมูลส่วนตัวจริง)
+                    <strong className="text-[#c4bdd6]">
+                      {t("รับทราบ", "Acknowledged")}
+                    </strong>{" "}
+                    ·{" "}
+                    {t(
+                      "ระบบเก็บเฉพาะชื่อเล่นสมมติและรหัส PIN (ไม่เก็บข้อมูลส่วนตัวจริง)",
+                      "Only your nickname and PIN are stored (no real personal data collected)"
+                    )}
                   </span>
                 </label>
 
@@ -674,8 +778,14 @@ function RegisterFormContent() {
                   className="retro-button w-full rounded-xl bg-[#2fbf71] py-3 text-sm font-extrabold text-[#0b0b14] shadow-md hover:bg-[#34d37d] disabled:opacity-60 transition-colors cursor-pointer"
                 >
                   {isSubmitting
-                    ? "กำลังสร้างบัญชีนักเรียน..."
-                    : "สมัครสมาชิกนักเรียนและเริ่มลุยเลย"}
+                    ? t(
+                        "กำลังสร้างบัญชีนักเรียน...",
+                        "Creating student account..."
+                      )
+                    : t(
+                        "สมัครสมาชิกนักเรียนและเริ่มลุยเลย",
+                        "Register Student & Start Learning"
+                      )}
                 </button>
               </form>
             ) : (
@@ -686,7 +796,10 @@ function RegisterFormContent() {
               >
                 <div>
                   <label className="block text-xs font-bold text-[#c4bdd6] mb-1.5">
-                    ตั้งชื่อผู้ใช้ครู (Username · ไม่ต้องใช้อีเมลส่วนตัว)
+                    {t(
+                      "ตั้งชื่อผู้ใช้ครู (Username · ไม่ต้องใช้อีเมลส่วนตัว)",
+                      "Teacher Username (No personal email required)"
+                    )}
                   </label>
                   <input
                     type="text"
@@ -695,7 +808,10 @@ function RegisterFormContent() {
                       setUsername(e.target.value);
                       clearFieldError("username");
                     }}
-                    placeholder="เช่น ครูสมศรี_คอมพิวเตอร์"
+                    placeholder={t(
+                      "เช่น ครูสมศรี_คอมพิวเตอร์",
+                      "e.g., TeacherSomsri_CS"
+                    )}
                     className={`w-full rounded-xl border bg-[#1c1b2b] px-3.5 py-2.5 text-sm font-bold text-[#f4efe6] placeholder:font-normal placeholder:text-[#9a93ad]/60 focus:bg-[#252238] focus:outline-hidden ${
                       fieldErrors.username
                         ? "border-[#c0283a] bg-[#2d141c]/30 focus:border-[#c0283a]"
@@ -712,13 +828,19 @@ function RegisterFormContent() {
 
                 <div>
                   <label className="block text-xs font-bold text-[#c4bdd6] mb-1.5">
-                    ชื่อที่แสดงในห้องเรียน (Display Name)
+                    {t(
+                      "ชื่อที่แสดงในห้องเรียน (Display Name)",
+                      "Classroom Display Name"
+                    )}
                   </label>
                   <input
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="เช่น ครูสมศรี (วิชาวิทยาการคำนวณ)"
+                    placeholder={t(
+                      "เช่น ครูสมศรี (วิชาวิทยาการคำนวณ)",
+                      "e.g., Teacher Somsri (Computer Science)"
+                    )}
                     className="w-full rounded-xl border border-[#3d395a] bg-[#1c1b2b] px-3.5 py-2.5 text-sm text-[#f4efe6] placeholder:text-[#9a93ad]/60 focus:border-[#f6c945] focus:bg-[#252238] focus:outline-hidden"
                   />
                 </div>
@@ -726,7 +848,10 @@ function RegisterFormContent() {
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="block text-xs font-bold text-[#c4bdd6]">
-                      ตั้งรหัสผ่าน (อย่างน้อย 4 ตัวอักษร · เข้ารหัส SHA-256)
+                      {t(
+                        "ตั้งรหัสผ่าน (อย่างน้อย 4 ตัวอักษร · เข้ารหัส SHA-256)",
+                        "Set Password (at least 4 characters · SHA-256 encrypted)"
+                      )}
                     </label>
                     <div className="flex items-center gap-1.5">
                       {[0, 1, 2, 3].map((idx) => (
@@ -740,7 +865,8 @@ function RegisterFormContent() {
                         />
                       ))}
                       <span className="ml-1 text-[11px] font-bold text-[#9a93ad]">
-                        {Math.min(password.length, 4)}/4 หลัก
+                        {Math.min(password.length, 4)}/4{" "}
+                        {t("หลัก", "chars")}
                       </span>
                     </div>
                   </div>
@@ -766,7 +892,9 @@ function RegisterFormContent() {
                       }
                       className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md bg-[#252238] px-2 py-1 text-xs font-bold text-[#ffe27a] hover:bg-[#322c4a] cursor-pointer"
                     >
-                      {showRegisterPassword ? "ซ่อน" : "แสดง"}
+                      {showRegisterPassword
+                        ? t("ซ่อน", "Hide")
+                        : t("แสดง", "Show")}
                     </button>
                   </div>
                   {fieldErrors.password && (
@@ -780,16 +908,19 @@ function RegisterFormContent() {
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="block text-xs font-bold text-[#c4bdd6]">
-                      ยืนยันรหัสผ่านอีกครั้ง
+                      {t("ยืนยันรหัสผ่านอีกครั้ง", "Confirm Password")}
                     </label>
                     {confirmPassword.length > 0 && password.length >= 4 && (
                       confirmPassword === password ? (
                         <span className="text-[11px] font-bold text-[#86efac]">
-                          ✓ รหัสผ่านตรงกัน
+                          {t("✓ รหัสผ่านตรงกัน", "✓ Passwords match")}
                         </span>
                       ) : (
                         <span className="text-[11px] font-bold text-[#fca5a5]">
-                          ✕ รหัสผ่านยังไม่ตรงกัน
+                          {t(
+                            "✕ รหัสผ่านยังไม่ตรงกัน",
+                            "✕ Passwords do not match"
+                          )}
                         </span>
                       )
                     )}
@@ -802,7 +933,10 @@ function RegisterFormContent() {
                         setConfirmPassword(e.target.value);
                         clearFieldError("confirmPassword");
                       }}
-                      placeholder="กรอกรหัสผ่านอีกครั้ง"
+                      placeholder={t(
+                        "กรอกรหัสผ่านอีกครั้ง",
+                        "Re-enter your password"
+                      )}
                       className={`w-full rounded-xl border bg-[#1c1b2b] px-3.5 py-2.5 pr-16 text-sm font-bold text-[#f4efe6] placeholder:font-normal placeholder:text-[#9a93ad]/60 focus:bg-[#252238] focus:outline-hidden ${
                         fieldErrors.confirmPassword
                           ? "border-[#c0283a] bg-[#2d141c]/30 focus:border-[#c0283a]"
@@ -819,7 +953,9 @@ function RegisterFormContent() {
                       }
                       className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md bg-[#252238] px-2 py-1 text-xs font-bold text-[#ffe27a] hover:bg-[#322c4a] cursor-pointer"
                     >
-                      {showRegisterPassword ? "ซ่อน" : "แสดง"}
+                      {showRegisterPassword
+                        ? t("ซ่อน", "Hide")
+                        : t("แสดง", "Show")}
                     </button>
                   </div>
                   {fieldErrors.confirmPassword && (
@@ -839,8 +975,14 @@ function RegisterFormContent() {
                     className="h-3.5 w-3.5 shrink-0 accent-[#2fbf71] rounded cursor-pointer"
                   />
                   <span>
-                    <strong className="text-[#c4bdd6]">รับทราบ</strong> ·
-                    ระบบเก็บเฉพาะชื่อเล่นสมมติและรหัส PIN (ไม่เก็บข้อมูลส่วนตัวจริง)
+                    <strong className="text-[#c4bdd6]">
+                      {t("รับทราบ", "Acknowledged")}
+                    </strong>{" "}
+                    ·{" "}
+                    {t(
+                      "ระบบเก็บเฉพาะชื่อเล่นสมมติและรหัส PIN (ไม่เก็บข้อมูลส่วนตัวจริง)",
+                      "Only your nickname/username and credentials are stored (no real personal data collected)"
+                    )}
                   </span>
                 </label>
 
@@ -850,8 +992,14 @@ function RegisterFormContent() {
                   className="retro-button w-full rounded-xl bg-[#2fbf71] py-3 text-sm font-extrabold text-[#0b0b14] shadow-md hover:bg-[#34d37d] disabled:opacity-60 transition-colors cursor-pointer"
                 >
                   {isSubmitting
-                    ? "กำลังสมัครบัญชีครู..."
-                    : "สมัครบัญชีครูผู้สอนและเปิดห้องเรียน"}
+                    ? t(
+                        "กำลังสมัครบัญชีครู...",
+                        "Creating teacher account..."
+                      )
+                    : t(
+                        "สมัครบัญชีครูผู้สอนและเปิดห้องเรียน",
+                        "Register Teacher & Open Classroom"
+                      )}
                 </button>
               </form>
             )}
@@ -859,12 +1007,12 @@ function RegisterFormContent() {
 
           <div className="mt-6 border-t border-[#2f2d45] pt-5 flex flex-col gap-3">
             <p className="text-center text-xs text-[#9a93ad]">
-              มีบัญชีอยู่แล้ว?{" "}
+              {t("มีบัญชีอยู่แล้ว?", "Already have an account?")}{" "}
               <Link
                 href={loginHref}
                 className="font-extrabold text-[#ffe27a] underline hover:text-white"
               >
-                ไปหน้าเข้าสู่ระบบ →
+                {t("ไปหน้าเข้าสู่ระบบ →", "Go to Sign In →")}
               </Link>
             </p>
             <Link
@@ -872,7 +1020,7 @@ function RegisterFormContent() {
               className="w-full inline-flex items-center justify-center gap-2 rounded-xl border-2 border-[#f6c945]/75 bg-[#1c1b2b] px-4 py-3 text-sm font-extrabold text-[#ffe27a] shadow-md hover:border-[#f6c945] hover:bg-[#281d08] transition-all"
             >
               <Icon name="home" className="h-4 w-4 text-[#f6c945]" />
-              <span>กลับไปหน้าแรก</span>
+              <span>{t("กลับไปหน้าแรก", "Back to Home")}</span>
             </Link>
           </div>
         </div>
@@ -881,15 +1029,18 @@ function RegisterFormContent() {
   );
 }
 
+function RegisterLoadingFallback() {
+  const { t } = useUiLanguage();
+  return (
+    <div className="min-h-screen bg-[#0d0b14] p-8 text-center text-sm text-[#9a93ad]">
+      {t("กำลังโหลดหน้าสมัครสมาชิก...", "Loading registration page...")}
+    </div>
+  );
+}
+
 export default function RegisterPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-[#0d0b14] p-8 text-center text-sm text-[#9a93ad]">
-          กำลังโหลดหน้าสมัครสมาชิก...
-        </div>
-      }
-    >
+    <Suspense fallback={<RegisterLoadingFallback />}>
       <RegisterFormContent />
     </Suspense>
   );

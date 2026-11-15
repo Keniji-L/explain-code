@@ -9,6 +9,7 @@ import {
   ClientAuthSession,
 } from "../components/SiteHeader";
 import { Icon } from "../components/Icons";
+import { useUiLanguage } from "../components/LanguageProvider";
 import { CodeExplanation } from "../lib/supabase";
 import {
   loadLocalExplanationsHistory,
@@ -24,6 +25,7 @@ import { LANGUAGE_TRACKS } from "../lib/language-tracks";
 
 export default function MyHistoryPage() {
   const router = useRouter();
+  const { uiLang, t } = useUiLanguage();
   const [session, setSession] = useState<ClientAuthSession | null>(null);
   const [items, setItems] = useState<CodeExplanation[]>([]);
   const [selectedItem, setSelectedItem] = useState<CodeExplanation | null>(null);
@@ -129,13 +131,16 @@ export default function MyHistoryPage() {
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#3d395a] bg-[#1c1b2b] px-3 py-1 text-xs font-bold text-[#f6c945]">
               <Icon name="clock" className="h-3.5 w-3.5" />
-              บันทึกส่วนตัวของคุณ
+              {t("บันทึกส่วนตัวของคุณ", "Your Personal Log")}
             </span>
             <h1 className="mt-2 text-2xl sm:text-3xl font-bold text-[#f4efe6]">
-              ประวัติการอธิบายโค้ดของฉัน
+              {t("ประวัติการอธิบายโค้ดของฉัน", "My Code Explanation History")}
             </h1>
             <p className="mt-1 text-sm text-[#9a93ad]">
-              ดูย้อนหลังและจัดการโค้ดทั้งหมดที่คุณเคยให้อธิบายไว้
+              {t(
+                "ดูย้อนหลังและจัดการโค้ดทั้งหมดที่คุณเคยให้อธิบายไว้",
+                "Review and manage all the code snippets you have explained"
+              )}
             </p>
           </div>
 
@@ -144,7 +149,7 @@ export default function MyHistoryPage() {
             className="inline-flex items-center gap-2 rounded-xl bg-[#2fbf71] px-4 py-2.5 text-xs font-extrabold text-[#0b0b14] shadow-md hover:bg-[#34d37d] transition-colors whitespace-nowrap"
           >
             <Icon name="sparkles" className="h-4 w-4" />
-            <span>+ อธิบายโค้ดใหม่</span>
+            <span>{t("+ อธิบายโค้ดใหม่", "+ Explain New Code")}</span>
           </Link>
         </div>
 
@@ -153,13 +158,18 @@ export default function MyHistoryPage() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-extrabold text-[#ffe27a] flex items-center gap-2">
                 <Icon name="gamepad" className="h-5 w-5 text-[#9b5de5]" />
-                <span>เกมดันเจี้ยนที่เล่นค้างไว้ (เซฟเกมล่าสุด)</span>
+                <span>
+                  {t(
+                    "เกมดันเจี้ยนที่เล่นค้างไว้ (เซฟเกมล่าสุด)",
+                    "In-Progress Dungeon Runs (Latest Saves)"
+                  )}
+                </span>
               </h2>
               <Link
                 href="/my-learning"
                 className="text-xs font-bold text-[#9a93ad] hover:text-[#ffe27a] transition-colors"
               >
-                ดูในการเรียนของฉัน →
+                {t("ดูในการเรียนของฉัน →", "View in My Learning →")}
               </Link>
             </div>
 
@@ -171,12 +181,15 @@ export default function MyHistoryPage() {
                 const pct = calculateDungeonSaveProgressPercent(save);
                 const savedTimeText = (() => {
                   try {
-                    return new Date(save.savedAt).toLocaleString("th-TH", {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    });
+                    return new Date(save.savedAt).toLocaleString(
+                      uiLang === "en" ? "en-US" : "th-TH",
+                      {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      }
+                    );
                   } catch {
-                    return "เมื่อสักครู่";
+                    return t("เมื่อสักครู่", "Just now");
                   }
                 })();
 
@@ -191,17 +204,20 @@ export default function MyHistoryPage() {
                           {trackMeta.name}
                         </span>
                         <span className="text-[11px] font-semibold text-[#9a93ad]">
-                          💾 เซฟล่าสุด: {savedTimeText}
+                          💾 {t("เซฟล่าสุด:", "Last saved:")} {savedTimeText}
                         </span>
                       </div>
 
                       <h3 className="text-base font-extrabold text-[#f4efe6]">
-                        ถึงด่านที่ {save.currentFloorNumber}/{save.totalFloors} ·{" "}
-                        {save.currentTopicTitle}
+                        {t(
+                          `ถึงด่านที่ ${save.currentFloorNumber}/${save.totalFloors}`,
+                          `Floor ${save.currentFloorNumber}/${save.totalFloors}`
+                        )}{" "}
+                        · {save.currentTopicTitle}
                       </h3>
                       <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-[#c4bdd6]">
                         <span className="rounded-md border border-[#9b5de5]/60 bg-[#25193b] px-2 py-0.5 text-[11px] font-bold text-[#ffe27a]">
-                          ⚔️ เฟสคำถามที่{" "}
+                          ⚔️ {t("เฟสคำถามที่", "Phase")}{" "}
                           {save.currentPhaseNumber ||
                             (save.arenaSnapshot?.battlePhaseIndex ?? 0) + 1}
                           /
@@ -210,14 +226,18 @@ export default function MyHistoryPage() {
                             3}
                         </span>
                         <span>
-                          พิชิตแล้ว {save.completedTopicIds.length} จาก{" "}
-                          {save.totalFloors} ด่าน · สะสม {save.xp} XP
+                          {t(
+                            `พิชิตแล้ว ${save.completedTopicIds.length} จาก ${save.totalFloors} ด่าน · สะสม ${save.xp} XP`,
+                            `Cleared ${save.completedTopicIds.length} of ${save.totalFloors} floors · ${save.xp} XP`
+                          )}
                         </span>
                       </div>
 
                       <div className="mt-3">
                         <div className="flex items-center justify-between text-[11px] font-bold mb-1">
-                          <span className="text-[#c4bdd6]">ความคืบหน้า</span>
+                          <span className="text-[#c4bdd6]">
+                            {t("ความคืบหน้า", "Progress")}
+                          </span>
                           <span className="text-[#2fbf71]">{pct}%</span>
                         </div>
                         <div className="h-2 w-full overflow-hidden rounded-full border border-[#2f2d45] bg-[#0d0b14]">
@@ -234,7 +254,9 @@ export default function MyHistoryPage() {
                       className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#f6c945] px-4 py-2.5 text-xs font-extrabold text-[#120f1c] shadow-md hover:bg-[#ffe27a] transition-colors"
                     >
                       <Icon name="play" className="h-4 w-4" filled />
-                      <span>เล่นต่อจากที่เซฟไว้ →</span>
+                      <span>
+                        {t("เล่นต่อจากที่เซฟไว้ →", "Resume Saved Run →")}
+                      </span>
                     </Link>
                   </div>
                 );
@@ -245,7 +267,10 @@ export default function MyHistoryPage() {
 
         {isLoading ? (
           <div className="rounded-2xl border border-[#2f2d45] bg-[#141220] p-10 text-center text-sm text-[#9a93ad] shadow-lg">
-            กำลังโหลดประวัติการอธิบายโค้ด...
+            {t(
+              "กำลังโหลดประวัติการอธิบายโค้ด...",
+              "Loading code explanation history..."
+            )}
           </div>
         ) : items.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[#3d395a] bg-[#141220] p-12 text-center shadow-lg">
@@ -253,16 +278,22 @@ export default function MyHistoryPage() {
               <Icon name="code" className="h-6 w-6" />
             </div>
             <h2 className="mt-4 text-base font-bold text-[#f4efe6]">
-              ยังไม่มีประวัติการอธิบายโค้ด
+              {t(
+                "ยังไม่มีประวัติการอธิบายโค้ด",
+                "No code explanation history yet"
+              )}
             </h2>
             <p className="mt-1 text-xs text-[#9a93ad]">
-              เมื่อคุณล็อกอินและใช้งานหน้า &ldquo;อธิบายโค้ด&rdquo; ระบบจะบันทึกโค้ดและคำอธิบายไว้ที่นี่อัตโนมัติ
+              {t(
+                "เมื่อคุณล็อกอินและใช้งานหน้า “อธิบายโค้ด” ระบบจะบันทึกโค้ดและคำอธิบายไว้ที่นี่อัตโนมัติ",
+                'When signed in, any code you explain on the "Explain Code" page is saved here automatically.'
+              )}
             </p>
             <Link
               href="/explain"
               className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#2fbf71] px-4 py-2.5 text-xs font-extrabold text-[#0b0b14] hover:bg-[#34d37d] whitespace-nowrap"
             >
-              ไปที่หน้าอธิบายโค้ด →
+              {t("ไปที่หน้าอธิบายโค้ด →", "Go to Explain Code →")}
             </Link>
           </div>
         ) : (
@@ -287,12 +318,15 @@ export default function MyHistoryPage() {
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="text-[11px] text-[#9a93ad]">
-                          {new Date(item.created_at).toLocaleString("th-TH", {
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {new Date(item.created_at).toLocaleString(
+                            uiLang === "en" ? "en-US" : "th-TH",
+                            {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }
+                          )}
                         </span>
                         <button
                           type="button"
@@ -301,7 +335,7 @@ export default function MyHistoryPage() {
                             handleDelete(item.id);
                           }}
                           className="rounded-lg p-1 text-[#fca5a5] hover:bg-[#2d141c] cursor-pointer"
-                          title="ลบรายการนี้"
+                          title={t("ลบรายการนี้", "Delete this item")}
                         >
                           <Icon name="trash" className="h-3.5 w-3.5" />
                         </button>
@@ -329,9 +363,9 @@ export default function MyHistoryPage() {
                         {selectedItem.language}
                       </span>
                       <p className="mt-1.5 text-xs text-[#9a93ad]">
-                        บันทึกเมื่อ{" "}
+                        {t("บันทึกเมื่อ", "Saved on")}{" "}
                         {new Date(selectedItem.created_at).toLocaleString(
-                          "th-TH"
+                          uiLang === "en" ? "en-US" : "th-TH"
                         )}
                       </p>
                     </div>
@@ -341,13 +375,13 @@ export default function MyHistoryPage() {
                       className="inline-flex items-center gap-1.5 rounded-xl border border-[#c0283a]/50 bg-[#2d141c] px-3 py-1.5 text-xs font-bold text-[#fca5a5] hover:bg-[#3d1a24] cursor-pointer whitespace-nowrap"
                     >
                       <Icon name="trash" className="h-3.5 w-3.5" />
-                      <span>ลบรายการนี้</span>
+                      <span>{t("ลบรายการนี้", "Delete Item")}</span>
                     </button>
                   </div>
 
                   <div>
                     <h3 className="text-xs font-bold uppercase tracking-wider text-[#9a93ad] mb-2">
-                      โค้ดต้นฉบับ
+                      {t("โค้ดต้นฉบับ", "Source Code")}
                     </h3>
                     <pre className="overflow-x-auto rounded-xl border border-[#2f2d45] bg-[#120f1c] p-4 font-mono text-xs leading-relaxed text-[#f4efe6]">
                       {selectedItem.code_snippet}
@@ -356,7 +390,7 @@ export default function MyHistoryPage() {
 
                   <div>
                     <h3 className="text-xs font-bold uppercase tracking-wider text-[#9a93ad] mb-1.5">
-                      สรุปภาพรวม
+                      {t("สรุปภาพรวม", "Overview Summary")}
                     </h3>
                     <p className="text-sm leading-relaxed text-[#e8e1cf]">
                       {selectedItem.summary}
@@ -367,7 +401,7 @@ export default function MyHistoryPage() {
                     selectedItem.line_by_line.length > 0 && (
                       <div>
                         <h3 className="text-xs font-bold uppercase tracking-wider text-[#9a93ad] mb-2">
-                          คำอธิบายทีละบรรทัด
+                          {t("คำอธิบายทีละบรรทัด", "Line-by-Line Explanation")}
                         </h3>
                         <div className="space-y-2.5">
                           {selectedItem.line_by_line.map((line, i) => (

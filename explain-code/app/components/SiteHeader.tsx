@@ -267,7 +267,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
             {/* Center: Desktop Navigation Pill Track (Stationary, no layout shift) */}
             <nav
               ref={navContainerRef}
-              aria-label="เมนูหลัก"
+              aria-label={t("เมนูหลัก", "Main menu")}
               className="relative hidden md:flex items-center justify-center gap-1 rounded-full bg-[#0d0b14]/85 p-1.5 border border-[#2f2d45] shadow-inner shrink-0"
             >
               {navItems.map((item) => {
@@ -474,7 +474,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
 
       {/* Mobile Bottom Icon Navigation Bar (แสดงเฉพาะบนโทรศัพท์/หน้าจอขนาดเล็ก md:hidden) */}
       <nav
-        aria-label="เมนูนำทางด้านล่างสำหรับมือถือ"
+        aria-label={t("เมนูนำทางด้านล่างสำหรับมือถือ", "Mobile bottom navigation")}
         className="fixed bottom-3 inset-x-3 z-50 md:hidden"
       >
         <div className="liquid-glass liquid-glass-scrolled mx-auto max-w-md rounded-2xl p-1.5 grid grid-cols-4 gap-1">

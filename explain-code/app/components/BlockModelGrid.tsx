@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from "react";
 import {
   BLOCK_MODEL_CELLS,
@@ -7,6 +9,7 @@ import {
   TOPICS,
 } from "../lib/curriculum";
 import { Icon } from "./Icons";
+import { useUiLanguage } from "./LanguageProvider";
 
 interface BlockModelGridProps {
   cellScores: Record<BlockCellId, number>;
@@ -16,17 +19,71 @@ interface BlockModelGridProps {
   showLegend?: boolean;
 }
 
-const LEVELS: { level: 1 | 2 | 3 | 4; label: string; desc: string }[] = [
-  { level: 1, label: "ระดับ 1 · คำสั่งเดี่ยว (Atom)", desc: "บรรทัดเดียว ตัวแปร เครื่องหมาย" },
-  { level: 2, label: "ระดับ 2 · บล็อกคำสั่ง (Block)", desc: "กลุ่มคำสั่ง if/else, ลูป for/while" },
-  { level: 3, label: "ระดับ 3 · ความสัมพันธ์ (Relation)", desc: "การเชื่อมตัวแปร พารามิเตอร์ return" },
-  { level: 4, label: "ระดับ 4 · ภาพรวมโปรแกรม (Macro)", desc: "โครงสร้างรวมและเป้าหมายทั้งโปรแกรม" },
+const LEVELS: {
+  level: 1 | 2 | 3 | 4;
+  labelTh: string;
+  labelEn: string;
+  descTh: string;
+  descEn: string;
+}[] = [
+  {
+    level: 1,
+    labelTh: "ระดับ 1 · คำสั่งเดี่ยว (Atom)",
+    labelEn: "Level 1 · Atom",
+    descTh: "บรรทัดเดียว ตัวแปร เครื่องหมาย",
+    descEn: "Single line, variables, operators",
+  },
+  {
+    level: 2,
+    labelTh: "ระดับ 2 · บล็อกคำสั่ง (Block)",
+    labelEn: "Level 2 · Block",
+    descTh: "กลุ่มคำสั่ง if/else, ลูป for/while",
+    descEn: "Control blocks: if/else, for/while loops",
+  },
+  {
+    level: 3,
+    labelTh: "ระดับ 3 · ความสัมพันธ์ (Relation)",
+    labelEn: "Level 3 · Relation",
+    descTh: "การเชื่อมตัวแปร พารามิเตอร์ return",
+    descEn: "Variable flow, parameters, return values",
+  },
+  {
+    level: 4,
+    labelTh: "ระดับ 4 · ภาพรวมโปรแกรม (Macro)",
+    labelEn: "Level 4 · Macro",
+    descTh: "โครงสร้างรวมและเป้าหมายทั้งโปรแกรม",
+    descEn: "Overall structure and program purpose",
+  },
 ];
 
-const DIMENSIONS: { dim: "T" | "E" | "F"; label: string; sub: string }[] = [
-  { dim: "T", label: "โครงสร้างโค้ด (Text Surface)", sub: "เขียนอย่างไรตามไวยากรณ์" },
-  { dim: "E", label: "การทำงานจริง (Execution)", sub: "ลำดับรันและค่าตัวแปร" },
-  { dim: "F", label: "หน้าที่และเป้าหมาย (Function)", sub: "มีไว้ทำไม แก้ปัญหาอะไร" },
+const DIMENSIONS: {
+  dim: "T" | "E" | "F";
+  labelTh: string;
+  labelEn: string;
+  subTh: string;
+  subEn: string;
+}[] = [
+  {
+    dim: "T",
+    labelTh: "โครงสร้างโค้ด (Text Surface)",
+    labelEn: "Text Surface (T)",
+    subTh: "เขียนอย่างไรตามไวยากรณ์",
+    subEn: "Syntax & code structure",
+  },
+  {
+    dim: "E",
+    labelTh: "การทำงานจริง (Execution)",
+    labelEn: "Execution (E)",
+    subTh: "ลำดับรันและค่าตัวแปร",
+    subEn: "Runtime order & variable values",
+  },
+  {
+    dim: "F",
+    labelTh: "หน้าที่และเป้าหมาย (Function)",
+    labelEn: "Function (F)",
+    subTh: "มีไว้ทำไม แก้ปัญหาอะไร",
+    subEn: "Purpose & problem solved",
+  },
 ];
 
 const MASTERY_DUNGEON_STYLES: Record<
@@ -55,12 +112,21 @@ const MASTERY_DUNGEON_STYLES: Record<
 
 export function BlockModelGrid({
   cellScores,
-  title = "แผนที่ความเข้าใจ 12 ช่อง (Block Model)",
-  subtitle = "แสดงความเข้าใจแยกตามระดับของโค้ด 4 ระดับ × มิติความเข้าใจ 3 ด้าน (มีข้อความกำกับสถานะทุกช่อง)",
+  title,
+  subtitle,
   onSelectTopic,
   showLegend = true,
 }: BlockModelGridProps) {
+  const { uiLang, t } = useUiLanguage();
   const [selectedCell, setSelectedCell] = useState<BlockCellMeta | null>(null);
+  const resolvedTitle =
+    title ?? t("แผนที่ความเข้าใจ 12 ช่อง (Block Model)", "12-Cell Block Model Map");
+  const resolvedSubtitle =
+    subtitle ??
+    t(
+      "แสดงความเข้าใจแยกตามระดับของโค้ด 4 ระดับ × มิติความเข้าใจ 3 ด้าน (มีข้อความกำกับสถานะทุกช่อง)",
+      "Shows code comprehension across 4 levels × 3 dimensions (with mastery status labels)"
+    );
 
   return (
     <div className="bg-[#141220] border-2 border-[#2f2d45] rounded-2xl p-5 flex flex-col gap-4 text-[#f4efe6]">
@@ -68,24 +134,24 @@ export function BlockModelGrid({
         <div>
           <h3 className="text-[16px] font-extrabold text-[#f4efe6] flex items-center gap-2">
             <Icon name="grid" size={20} className="text-[#f6c945]" />
-            <span>{title}</span>
+            <span>{resolvedTitle}</span>
           </h3>
-          <p className="text-[13px] font-semibold text-[#9a93ad] mt-0.5">{subtitle}</p>
+          <p className="text-[13px] font-semibold text-[#9a93ad] mt-0.5">{resolvedSubtitle}</p>
         </div>
 
         {showLegend && (
           <div className="flex flex-wrap items-center gap-2 text-[13px] font-semibold">
             <span className="px-2.5 py-1 rounded-lg bg-[#102a1e] text-[#86efac] border border-[#2fbf71]/50 flex items-center gap-1">
               <Icon name="check" size={16} />
-              <span>เก่ง 80% ขึ้นไป</span>
+              <span>{t("เก่ง 80% ขึ้นไป", "Mastered 80%+")}</span>
             </span>
             <span className="px-2.5 py-1 rounded-lg bg-[#281d08] text-[#ffe27a] border border-[#f6c945]/50 flex items-center gap-1">
               <Icon name="star" size={16} />
-              <span>กลาง 50–79%</span>
+              <span>{t("กลาง 50–79%", "Developing 50–79%")}</span>
             </span>
             <span className="px-2.5 py-1 rounded-lg bg-[#2d141c] text-[#fca5a5] border border-[#c0283a]/60 flex items-center gap-1">
               <Icon name="bulb" size={16} />
-              <span>ควรทบทวน ต่ำกว่า 50%</span>
+              <span>{t("ควรทบทวน ต่ำกว่า 50%", "Review < 50%")}</span>
             </span>
           </div>
         )}
@@ -99,15 +165,19 @@ export function BlockModelGrid({
             className="bg-[#1c1b2b] border border-[#2f2d45] rounded-xl p-3 flex flex-col gap-2"
           >
             <div>
-              <div className="text-[13px] font-extrabold text-[#f4efe6]">{lv.label}</div>
-              <div className="text-[11px] text-[#9a93ad]">{lv.desc}</div>
+              <div className="text-[13px] font-extrabold text-[#f4efe6]">
+                {t(lv.labelTh, lv.labelEn)}
+              </div>
+              <div className="text-[11px] text-[#9a93ad]">
+                {t(lv.descTh, lv.descEn)}
+              </div>
             </div>
             <div className="flex flex-col gap-1.5">
               {DIMENSIONS.map((d) => {
                 const cellId = `${d.dim}${lv.level}` as BlockCellId;
                 const meta = BLOCK_MODEL_CELLS.find((c) => c.id === cellId)!;
                 const score = cellScores[cellId] ?? 50;
-                const status = getMasteryStatus(score);
+                const status = getMasteryStatus(score, uiLang);
                 const dungeonStyle = MASTERY_DUNGEON_STYLES[status.level];
                 const isSelected = selectedCell?.id === cellId;
 
@@ -146,17 +216,23 @@ export function BlockModelGrid({
           <div className="grid grid-cols-12 gap-2.5">
             <div className="col-span-3 bg-[#1c1b2b] border border-[#2f2d45] rounded-xl p-2.5 flex flex-col justify-center">
               <span className="text-[13px] font-extrabold text-[#ffe27a]">
-                ระดับโค้ด \ มิติความเข้าใจ
+                {t("ระดับโค้ด \\ มิติความเข้าใจ", "Level \\ Dimension")}
               </span>
-              <span className="text-[12px] text-[#9a93ad]">คลิกที่ช่องเพื่อดูคำอธิบาย</span>
+              <span className="text-[12px] text-[#9a93ad]">
+                {t("คลิกที่ช่องเพื่อดูคำอธิบาย", "Click a cell for details")}
+              </span>
             </div>
             {DIMENSIONS.map((d) => (
               <div
                 key={d.dim}
                 className="col-span-3 bg-[#1c1b2b] border border-[#3d395a] rounded-xl p-2.5"
               >
-                <div className="text-[13px] font-extrabold text-[#f4efe6]">{d.label}</div>
-                <div className="text-[12px] text-[#9a93ad]">{d.sub}</div>
+                <div className="text-[13px] font-extrabold text-[#f4efe6]">
+                  {t(d.labelTh, d.labelEn)}
+                </div>
+                <div className="text-[12px] text-[#9a93ad]">
+                  {t(d.subTh, d.subEn)}
+                </div>
               </div>
             ))}
           </div>
@@ -165,15 +241,19 @@ export function BlockModelGrid({
           {LEVELS.map((lv) => (
             <div key={lv.level} className="grid grid-cols-12 gap-2.5 items-stretch">
               <div className="col-span-3 bg-[#1c1b2b] border border-[#2f2d45] rounded-xl p-3 flex flex-col justify-center">
-                <span className="text-[13px] font-extrabold text-[#f4efe6]">{lv.label}</span>
-                <span className="text-[12px] text-[#9a93ad] mt-0.5">{lv.desc}</span>
+                <span className="text-[13px] font-extrabold text-[#f4efe6]">
+                  {t(lv.labelTh, lv.labelEn)}
+                </span>
+                <span className="text-[12px] text-[#9a93ad] mt-0.5">
+                  {t(lv.descTh, lv.descEn)}
+                </span>
               </div>
 
               {DIMENSIONS.map((d) => {
                 const cellId = `${d.dim}${lv.level}` as BlockCellId;
                 const meta = BLOCK_MODEL_CELLS.find((c) => c.id === cellId)!;
                 const score = cellScores[cellId] ?? 50;
-                const status = getMasteryStatus(score);
+                const status = getMasteryStatus(score, uiLang);
                 const dungeonStyle = MASTERY_DUNGEON_STYLES[status.level];
                 const isSelected = selectedCell?.id === cellId;
 
@@ -188,7 +268,7 @@ export function BlockModelGrid({
                   >
                     <div className="flex items-center justify-between gap-1">
                       <span className="px-2 py-0.5 rounded-md bg-[#0d0b14]/80 border border-white/15 text-[#f4efe6] text-[12px] font-extrabold">
-                        ช่อง {cellId}
+                        {t("ช่อง", "Cell")} {cellId}
                       </span>
                       <span className="text-[15px] font-extrabold">{score}%</span>
                     </div>
@@ -226,7 +306,7 @@ export function BlockModelGrid({
           <div className="flex-1 min-w-[240px]">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full bg-[#5a2d91] border border-[#9b5de5] text-[#ffe27a] text-[13px] font-extrabold">
-                ช่อง {selectedCell.id}
+                {t("ช่อง", "Cell")} {selectedCell.id}
               </span>
               <span className="text-[15px] font-extrabold text-[#ffe27a]">
                 {selectedCell.shortTitle} ({selectedCell.levelName} · {selectedCell.dimensionName})
@@ -234,7 +314,7 @@ export function BlockModelGrid({
             </div>
             <p className="text-[14px] text-[#f4efe6] mt-1">{selectedCell.description}</p>
             <p className="text-[13px] font-semibold text-[#9a93ad] mt-1">
-              ตัวอย่างคำถาม: &ldquo;{selectedCell.exampleQuestion}&rdquo;
+              {t("ตัวอย่างคำถาม:", "Sample question:")} &ldquo;{selectedCell.exampleQuestion}&rdquo;
             </p>
           </div>
 
@@ -247,15 +327,15 @@ export function BlockModelGrid({
               >
                 <Icon name="play" size={18} />
                 <span>
-                  ฝึกช่องนี้ใน{" "}
-                  {TOPICS.find((t) => t.id === selectedCell.relatedTopicId)?.shortName}
+                  {t("ฝึกช่องนี้ใน", "Practice in")}{" "}
+                  {TOPICS.find((tp) => tp.id === selectedCell.relatedTopicId)?.shortName}
                 </span>
               </button>
             )}
             <button
               type="button"
               onClick={() => setSelectedCell(null)}
-              aria-label="ปิดรายละเอียดช่อง Block Model"
+              aria-label={t("ปิดรายละเอียดช่อง Block Model", "Close Block Model cell details")}
               className="press-secondary p-2 rounded-xl cursor-pointer"
             >
               <Icon name="close" size={18} />

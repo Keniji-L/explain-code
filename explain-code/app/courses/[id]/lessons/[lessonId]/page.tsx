@@ -448,7 +448,7 @@ function LessonViewContent() {
           <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#2f2d45] pb-4">
             <div>
               <span className="rounded-md border border-[#3d395a] bg-[#1c1b2b] px-2.5 py-1 text-xs font-bold text-[#f6c945]">
-                บทที่ {lesson.order_index}
+                {t(`บทที่ ${lesson.order_index}`, `Lesson ${lesson.order_index}`)}
               </span>
               <h1 className="mt-2 text-xl sm:text-2xl font-bold text-[#f4efe6]">
                 {lesson.title}
@@ -457,7 +457,7 @@ function LessonViewContent() {
 
             {isCompleted && (
               <span className="inline-flex items-center gap-1.5 rounded-xl border border-[#2fbf71]/40 bg-[#102a1e] px-3 py-1.5 text-xs font-bold text-[#86efac]">
-                ✓ เรียนจบบทเรียนนี้แล้ว
+                {t("✓ เรียนจบบทเรียนนี้แล้ว", "✓ Lesson Completed")}
               </span>
             )}
           </div>
@@ -472,7 +472,7 @@ function LessonViewContent() {
             <div className="rounded-2xl border border-[#3d395a] bg-[#120f1c] p-5 text-[#f4efe6]">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#f6c945]">
-                  ตัวอย่างโค้ด ({lesson.programming_language})
+                  {t("ตัวอย่างโค้ด", "Code Example")} ({lesson.programming_language})
                 </span>
                 <div className="flex items-center gap-2">
                   <button
@@ -481,7 +481,7 @@ function LessonViewContent() {
                     className="inline-flex items-center gap-1.5 rounded-lg bg-[#2fbf71] px-3 py-1.5 text-xs font-extrabold text-[#0b0b14] hover:bg-[#34d37d] transition-colors cursor-pointer whitespace-nowrap"
                   >
                     <Icon name="play" className="h-3.5 w-3.5" />
-                    <span>รันโค้ดตัวอย่าง</span>
+                    <span>{t("รันโค้ดตัวอย่าง", "Run Example")}</span>
                   </button>
                 </div>
               </div>
@@ -492,7 +492,7 @@ function LessonViewContent() {
               {runOutput && (
                 <div className="mt-4 rounded-xl border border-[#2f2d45] bg-[#0d0b14] p-3.5 font-mono text-xs text-[#ffe27a]">
                   <span className="block text-[10px] uppercase text-[#9a93ad] mb-1">
-                    ผลลัพธ์จากการรันจริง (Console Output):
+                    {t("ผลลัพธ์จากการรันจริง (Console Output):", "Console Output:")}
                   </span>
                   {runOutput}
                 </div>
@@ -510,7 +510,7 @@ function LessonViewContent() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-lg border border-[#3d395a] bg-[#141220] px-3.5 py-2 text-xs font-bold text-[#f6c945] hover:border-[#f6c945] hover:bg-[#252238] transition-colors whitespace-nowrap"
                 >
-                  🔗 เอกสารอ้างอิงเพิ่มเติม ↗
+                  {t("🔗 เอกสารอ้างอิงเพิ่มเติม ↗", "🔗 External Reference ↗")}
                 </a>
               )}
               {lesson.video_url && (
@@ -520,7 +520,7 @@ function LessonViewContent() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-lg border border-[#3d395a] bg-[#141220] px-3.5 py-2 text-xs font-bold text-[#f6c945] hover:border-[#f6c945] hover:bg-[#252238] transition-colors whitespace-nowrap"
                 >
-                  🎬 วิดีโอประกอบบทเรียน ↗
+                  {t("🎬 วิดีโอประกอบบทเรียน ↗", "🎬 Lesson Video ↗")}
                 </a>
               )}
             </div>
@@ -533,11 +533,16 @@ function LessonViewContent() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h2 className="text-base font-bold text-[#f4efe6] flex items-center gap-2">
                     <Icon name="award" className="h-4 w-4 text-[#f6c945]" />
-                    <span>แบบทดสอบท้ายบทเรียน ({lesson.quiz_questions.length} ข้อ)</span>
+                    <span>
+                      {t(
+                        `แบบทดสอบท้ายบทเรียน (${lesson.quiz_questions.length} ข้อ)`,
+                        `Lesson Quiz (${lesson.quiz_questions.length} questions)`
+                      )}
+                    </span>
                   </h2>
                   {quizScore !== null && (
                     <span className="rounded-lg border border-[#2fbf71]/40 bg-[#102a1e] px-3 py-1 text-xs font-bold text-[#86efac]">
-                      คะแนนล่าสุด: {quizScore}%
+                      {t("คะแนนล่าสุด:", "Latest Score:")} {quizScore}%
                     </span>
                   )}
                 </div>
@@ -548,7 +553,7 @@ function LessonViewContent() {
                     className="rounded-xl border border-[#2f2d45] bg-[#141220] p-4 space-y-2.5"
                   >
                     <p className="text-xs sm:text-sm font-bold text-[#f4efe6]">
-                      ข้อที่ {qIdx + 1}: {q.question}
+                      {t(`ข้อที่ ${qIdx + 1}:`, `Question ${qIdx + 1}:`)} {q.question}
                     </p>
                     <div className="space-y-1.5">
                       {q.options.map((opt, optIdx) => {
@@ -583,7 +588,7 @@ function LessonViewContent() {
                     </div>
                     {quizSubmitted && q.explanation && (
                       <p className="mt-2 rounded-lg border border-[#2f2d45] bg-[#1c1b2b] p-2.5 text-xs text-[#c4bdd6]">
-                        💡 <strong className="text-[#f6c945]">เฉลย:</strong> {q.explanation}
+                        💡 <strong className="text-[#f6c945]">{t("เฉลย:", "Explanation:")}</strong> {q.explanation}
                       </p>
                     )}
                   </div>
@@ -594,7 +599,7 @@ function LessonViewContent() {
                   onClick={handleSubmitQuiz}
                   className="rounded-xl bg-[#2fbf71] px-5 py-2.5 text-xs font-extrabold text-[#0b0b14] hover:bg-[#34d37d] transition-colors cursor-pointer"
                 >
-                  ตรวจคำตอบและบันทึกผลเรียนจบ
+                  {t("ตรวจคำตอบและบันทึกผลเรียนจบ", "Submit Quiz & Complete Lesson")}
                 </button>
               </div>
             )}
@@ -608,19 +613,22 @@ function LessonViewContent() {
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="pixel-font text-[10px] text-[#ffe27a] uppercase">
-                    DUNGEON CHALLENGE · ชั้นที่ {currentIdx + 1}
+                    {t(`DUNGEON CHALLENGE · ชั้นที่ ${currentIdx + 1}`, `DUNGEON CHALLENGE · FLOOR ${currentIdx + 1}`)}
                   </span>
                   {isCompleted && (
                     <span className="text-[10px] bg-[#2fbf71]/20 text-[#2fbf71] px-2 py-0.5 rounded border border-[#2fbf71]/40 font-bold">
-                      พิชิตแล้ว
+                      {t("พิชิตแล้ว", "Cleared")}
                     </span>
                   )}
                 </div>
                 <h3 className="text-sm font-bold text-[#f4efe6]">
-                  ท้าทายด้วยห้องดันเจี้ยน: {monsterDef.name}
+                  {t("ท้าทายด้วยห้องดันเจี้ยน:", "Challenge Dungeon Room:")} {monsterDef.name}
                 </h3>
                 <p className="text-[11px] text-[#9a93ad] mt-0.5">
-                  เดินสำรวจห้องพิกเซล ตอบคำถามทดสอบความเข้าใจเพื่อรับ +{monsterDef.xpReward} XP และ +{monsterDef.coinReward} G
+                  {t(
+                    `เดินสำรวจห้องพิกเซล ตอบคำถามทดสอบความเข้าใจเพื่อรับ +${monsterDef.xpReward} XP และ +${monsterDef.coinReward} G`,
+                    `Explore the pixel room and answer comprehension questions to earn +${monsterDef.xpReward} XP and +${monsterDef.coinReward} G`
+                  )}
                 </p>
               </div>
             </div>
@@ -631,7 +639,7 @@ function LessonViewContent() {
               className="px-4 py-2.5 rounded-xl bg-[#9b5de5] hover:bg-[#b07af0] text-[#f4efe6] text-xs font-bold shrink-0 cursor-pointer flex items-center gap-1.5 transition-colors whitespace-nowrap"
             >
               <Icon name="gamepad" size={14} />
-              <span>เข้าสู่ห้องดันเจี้ยน</span>
+              <span>{t("เข้าสู่ห้องดันเจี้ยน", "Enter Dungeon Room")}</span>
             </button>
           </div>
 
@@ -643,14 +651,14 @@ function LessonViewContent() {
                   href={`/courses/${course.id}/lessons/${prevLesson.id}`}
                   className="inline-block rounded-xl border border-[#3d395a] bg-[#1c1b2b] px-4 py-2.5 text-xs font-bold text-[#f4efe6] hover:border-[#f6c945] hover:bg-[#252238] transition-colors whitespace-nowrap"
                 >
-                  ← บทก่อนหน้า
+                  {t("← บทก่อนหน้า", "← Previous Lesson")}
                 </Link>
               ) : (
                 <Link
                   href={`/courses/${course.id}`}
                   className="inline-block rounded-xl border border-[#3d395a] bg-[#1c1b2b] px-4 py-2.5 text-xs font-bold text-[#f4efe6] hover:border-[#f6c945] hover:bg-[#252238] transition-colors whitespace-nowrap"
                 >
-                  ← สารบัญคอร์ส
+                  {t("← สารบัญคอร์ส", "← Course Syllabus")}
                 </Link>
               )}
             </div>
@@ -662,7 +670,7 @@ function LessonViewContent() {
                   onClick={() => handleMarkCompleted()}
                   className="rounded-xl border border-[#2fbf71]/50 bg-[#102a1e] px-4 py-2.5 text-xs font-bold text-[#86efac] hover:bg-[#1a3d2d] transition-colors cursor-pointer whitespace-nowrap"
                 >
-                  ✓ บันทึกว่าเรียนจบบทนี้แล้ว
+                  {t("✓ บันทึกว่าเรียนจบบทนี้แล้ว", "✓ Mark Lesson Completed")}
                 </button>
               )}
 
@@ -671,7 +679,7 @@ function LessonViewContent() {
                   href={`/courses/${course.id}/lessons/${nextLesson.id}`}
                   className="rounded-xl bg-[#2fbf71] px-5 py-2.5 text-xs font-extrabold text-[#0b0b14] hover:bg-[#34d37d] transition-colors whitespace-nowrap"
                 >
-                  บทเรียนถัดไป →
+                  {t("บทเรียนถัดไป →", "Next Lesson →")}
                 </Link>
               )}
             </div>
@@ -684,11 +692,12 @@ function LessonViewContent() {
 }
 
 export default function LessonViewPage() {
+  const { t } = useUiLanguage();
   return (
     <Suspense
       fallback={
         <div className="min-h-screen bg-[#0d0b14] flex items-center justify-center text-sm font-bold text-[#9a93ad]">
-          กำลังโหลดบทเรียน...
+          {t("กำลังโหลดบทเรียน...", "Loading lesson...")}
         </div>
       }
     >

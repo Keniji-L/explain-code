@@ -1062,7 +1062,7 @@ function CoursesContent() {
         `${currentTrackMeta.name} เรื่องที่ ${result.topicId}`,
       scorePercent: result.scorePercent,
       xpEarned: result.earnedXp,
-      timestamp: "เมื่อสักครู่",
+      timestamp: t("เมื่อสักครู่", "Just now"),
     };
 
     const nextHistory = [newHistoryItem, ...currentStudentSnapshot.history];
@@ -1649,16 +1649,20 @@ function CoursesContent() {
                   <div className="rounded-2xl border border-[#2fbf71]/50 bg-[#102a1e]/90 p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
                     <div className="flex flex-wrap items-center gap-2 text-[#e8e1cf]">
                       <span className="rounded-lg bg-[#2fbf71] px-2 py-0.5 text-[10px] font-black text-[#0b0b14]">
-                        💾 จุดเซฟล่าสุด
+                        💾 {t("จุดเซฟล่าสุด", "Latest Save")}
                       </span>
                       <span className="font-extrabold text-[#ffe27a]">
-                        ด่านที่ {savedDungeonRecord.currentFloorNumber}/
-                        {savedDungeonRecord.totalFloors} ·{" "}
-                        {savedDungeonRecord.currentTopicTitle}
+                        {t(
+                          `ด่านที่ ${savedDungeonRecord.currentFloorNumber}/${savedDungeonRecord.totalFloors}`,
+                          `Stage ${savedDungeonRecord.currentFloorNumber}/${savedDungeonRecord.totalFloors}`
+                        )}{" "}
+                        · {savedDungeonRecord.currentTopicTitle}
                       </span>
                       <span className="rounded-md border border-[#9b5de5]/60 bg-[#25193b] px-2 py-0.5 text-[11px] font-bold text-[#e9d5ff]">
-                        เฟสคำถามที่ {savedDungeonRecord.currentPhaseNumber || 1}/
-                        {savedDungeonRecord.totalPhases || 3}
+                        {t(
+                          `เฟสคำถามที่ ${savedDungeonRecord.currentPhaseNumber || 1}/${savedDungeonRecord.totalPhases || 3}`,
+                          `Phase ${savedDungeonRecord.currentPhaseNumber || 1}/${savedDungeonRecord.totalPhases || 3}`
+                        )}
                       </span>
                       <span className="rounded-md border border-[#2fbf71]/50 bg-[#0d0b14] px-2 py-0.5 text-[11px] font-extrabold text-[#2fbf71]">
                         {t("ความคืบหน้า", "Progress")}{" "}
@@ -2447,7 +2451,7 @@ function CoursesContent() {
                       topicTitle: `Custom: ${activeCustomDungeon.title}`,
                       scorePercent: result.scorePercent,
                       xpEarned: result.earnedXp,
-                      timestamp: "เมื่อสักครู่",
+                      timestamp: t("เมื่อสักครู่", "Just now"),
                     },
                     ...currentStudentSnapshot.history,
                   ],
@@ -2499,7 +2503,7 @@ function CoursesContent() {
                       topicTitle: `Custom Code: ${summary.spellName}`,
                       scorePercent: summary.integrityLeft,
                       xpEarned: summary.earnedXp,
-                      timestamp: "เมื่อสักครู่",
+                      timestamp: t("เมื่อสักครู่", "Just now"),
                     },
                     ...currentStudentSnapshot.history,
                   ],
@@ -2784,7 +2788,7 @@ function CoursesContent() {
                                 />
                                 <div className="min-w-0">
                                   <div className="text-xs font-extrabold truncate">
-                                    {unlocked ? sb.name : "??? (ความลับ)"}
+                                    {unlocked ? sb.name : t("??? (ความลับ)", "??? (Secret)")}
                                   </div>
                                   <div className="text-[11px] truncate text-[#9a93ad]">
                                     {sb.description}

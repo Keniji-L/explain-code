@@ -13,6 +13,7 @@ import {
 import { BlockCellId } from "../lib/curriculum";
 import { Icon } from "./Icons";
 import { dungeonSound } from "../lib/dungeon/sound";
+import { useUiLanguage } from "./LanguageProvider";
 
 interface DungeonRunScreenProps {
   onBackToPortal: () => void;
@@ -31,6 +32,7 @@ export function DungeonRunScreen({
   embedded = false,
   onRecordAttempt,
 }: DungeonRunScreenProps) {
+  const { t } = useUiLanguage();
   // Setup state for Ingestion
   const [selectedPresetId, setSelectedPresetId] = useState<string>("sum-positive");
   const [customCode, setCustomCode] = useState<string>(CODE_SPELL_PRESETS[0].code);
@@ -82,7 +84,7 @@ export function DungeonRunScreen({
     const plan = generateDungeonPlan(
       customCode,
       spellTitle,
-      "เข้าใจโค้ดนี้และเตรียมป้องกันบั๊ก",
+      t("เข้าใจโค้ดนี้และเตรียมป้องกันบั๊ก", "Understand this code and prevent bugs"),
       selectedPresetId
     );
     setRunState(plan);
@@ -325,7 +327,7 @@ export function DungeonRunScreen({
     if (!runState || !runState.currentRoomId || encounterSolved) return;
     const relic = runState.activeRelics.find((r) => r.id === "relic-rubber-duck");
     if (!relic || relic.usesLeft <= 0 || runState.focus < relic.focusCost) {
-      setRelicNotice("Focus ไม่พอ หรือใช้พลังหมดแล้ว");
+      setRelicNotice(t("Focus ไม่พอ หรือใช้พลังหมดแล้ว", "Not enough Focus or no uses left"));
       return;
     }
 
@@ -340,7 +342,12 @@ export function DungeonRunScreen({
     }
     setRevealedHint(true);
     dungeonSound.playCoin();
-    setRelicNotice("สารวัตรเป็ดตัดตัวเลือกที่ไม่ใช่ออกให้ 1 ข้อ และเปิดเผยคำใบ้สำคัญ!");
+    setRelicNotice(
+      t(
+        "สารวัตรเป็ดตัดตัวเลือกที่ไม่ใช่ออกให้ 1 ข้อ และเปิดเผยคำใบ้สำคัญ!",
+        "Inspector Duck eliminated 1 wrong option and revealed a key hint!"
+      )
+    );
 
     setRunState((prev) => {
       if (!prev) return null;
@@ -359,13 +366,18 @@ export function DungeonRunScreen({
     if (!runState || !runState.currentRoomId || encounterSolved) return;
     const relic = runState.activeRelics.find((r) => r.id === "relic-trace-lens");
     if (!relic || relic.usesLeft <= 0 || runState.focus < relic.focusCost) {
-      setRelicNotice("Focus ไม่พอ หรือใช้พลังหมดแล้ว");
+      setRelicNotice(t("Focus ไม่พอ หรือใช้พลังหมดแล้ว", "Not enough Focus or no uses left"));
       return;
     }
 
     setRevealedTrace(true);
     dungeonSound.playCoin();
-    setRelicNotice("แว่นส่องสถานะแรม ส่องเห็นการเปลี่ยนแปลงของตัวแปรในหน่วยความจำแล้ว!");
+    setRelicNotice(
+      t(
+        "แว่นส่องสถานะแรม ส่องเห็นการเปลี่ยนแปลงของตัวแปรในหน่วยความจำแล้ว!",
+        "RAM Trace Lens revealed variable changes in memory!"
+      )
+    );
 
     setRunState((prev) => {
       if (!prev) return null;
@@ -384,13 +396,18 @@ export function DungeonRunScreen({
     if (!runState || !runState.currentRoomId || encounterSolved) return;
     const relic = runState.activeRelics.find((r) => r.id === "relic-test-oracle");
     if (!relic || relic.usesLeft <= 0 || runState.focus < relic.focusCost) {
-      setRelicNotice("Focus ไม่พอ หรือใช้พลังหมดแล้ว");
+      setRelicNotice(t("Focus ไม่พอ หรือใช้พลังหมดแล้ว", "Not enough Focus or no uses left"));
       return;
     }
 
     setRevealedSimulation(true);
     dungeonSound.playCoin();
-    setRelicNotice("ผลึกทดสอบเวท รันจำลองโค้ดใน Sandbox และแสดงผลการทำงานจริงแล้ว!");
+    setRelicNotice(
+      t(
+        "ผลึกทดสอบเวท รันจำลองโค้ดใน Sandbox และแสดงผลการทำงานจริงแล้ว!",
+        "Test Oracle simulated the code in Sandbox and displayed the actual output!"
+      )
+    );
 
     setRunState((prev) => {
       if (!prev) return null;
@@ -437,10 +454,10 @@ export function DungeonRunScreen({
             />
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#f6c945] block">
-                ดันเจี้ยนการเรียนรู้ · Custom Code
+                {t("ดันเจี้ยนการเรียนรู้ · Custom Code", "Learning Dungeon · Custom Code")}
               </span>
               <h1 className="text-sm sm:text-base font-bold text-[#f4efe6] leading-tight">
-                สร้างดันเจี้ยนจากโค้ดของคุณ
+                {t("สร้างดันเจี้ยนจากโค้ดของคุณ", "Build a Dungeon from Your Code")}
               </h1>
             </div>
           </div>
@@ -483,7 +500,9 @@ export function DungeonRunScreen({
 
               {/* Spell Badge */}
               <div className="hidden lg:flex flex-col text-right">
-                <span className="text-[10px] uppercase text-[#9a93ad]">มนตร์ประจำรอบ</span>
+                <span className="text-[10px] uppercase text-[#9a93ad]">
+                  {t("มนตร์ประจำรอบ", "Active Spell")}
+                </span>
                 <span className="text-xs font-semibold text-[#ffe27a] max-w-[180px] truncate">
                   {runState.spellName}
                 </span>
@@ -496,10 +515,12 @@ export function DungeonRunScreen({
               type="button"
               onClick={handleToggleSound}
               className="px-2.5 py-1.5 rounded-lg border border-[#3d395a] bg-[#1c1b2b] hover:border-[#f6c945] hover:bg-[#252238] text-xs text-[#f4efe6] transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-              title="เปิด/ปิดเสียงเอฟเฟกต์ 8-bit"
+              title={t("เปิด/ปิดเสียงเอฟเฟกต์ 8-bit", "Toggle 8-bit sound effects")}
             >
               <Icon name={soundEnabled ? "volume-2" : "volume-x"} size={14} />
-              <span className="hidden sm:inline">{soundEnabled ? "เสียงเปิด" : "ปิดเสียง"}</span>
+              <span className="hidden sm:inline">
+                {soundEnabled ? t("เสียงเปิด", "Sound On") : t("ปิดเสียง", "Muted")}
+              </span>
             </button>
             {runState && (
               <button
@@ -507,7 +528,7 @@ export function DungeonRunScreen({
                 onClick={() => setRunState(null)}
                 className="px-3 py-1.5 rounded-lg border border-[#3d395a] bg-[#1c1b2b] hover:border-[#f6c945] hover:bg-[#252238] text-xs text-[#f4efe6] transition cursor-pointer whitespace-nowrap"
               >
-                เลือกมนตร์ใหม่
+                {t("เลือกมนตร์ใหม่", "New Spell")}
               </button>
             )}
             <button
@@ -515,7 +536,7 @@ export function DungeonRunScreen({
               onClick={onBackToPortal}
               className="px-3 py-1.5 rounded-lg bg-[#1c1b2b] hover:bg-[#252238] hover:border-[#f6c945] text-xs font-semibold text-[#f4efe6] transition border border-[#3d395a] cursor-pointer whitespace-nowrap"
             >
-              {embedded ? "กลับแผนที่" : "กลับหน้าหลัก"}
+              {embedded ? t("กลับแผนที่", "Back to Map") : t("กลับหน้าหลัก", "Back to Home")}
             </button>
           </div>
         </div>
@@ -526,7 +547,10 @@ export function DungeonRunScreen({
         <main className="flex-1 max-w-6xl mx-auto w-full p-4 md:p-6 flex flex-col justify-center">
           <div className="text-center max-w-xl mx-auto mb-5">
             <p className="text-xs sm:text-sm text-[#c4bdd6]">
-              เลือกตัวอย่างหรือวางโค้ดจาก AI เพื่อสร้างดันเจี้ยน 5 ชั้นพร้อมบอส
+              {t(
+                "เลือกตัวอย่างหรือวางโค้ดจาก AI เพื่อสร้างดันเจี้ยน 5 ชั้นพร้อมบอส",
+                "Choose a preset or paste AI-generated code to generate a 5-floor dungeon with a boss"
+              )}
             </p>
           </div>
 
@@ -535,7 +559,7 @@ export function DungeonRunScreen({
             <div className="lg:col-span-7 bg-[#141220] border border-[#2f2d45] rounded-2xl p-5 shadow-xl">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <h3 className="text-sm font-bold text-[#f4efe6]">
-                  เลือกมนตร์ต้นแบบ หรือวางโค้ดของคุณเอง
+                  {t("เลือกมนตร์ต้นแบบ หรือวางโค้ดของคุณเอง", "Select a Spell Preset or Paste Your Own Code")}
                 </h3>
                 <span className="text-xs text-[#9a93ad]">JavaScript / Pure Logic</span>
               </div>
@@ -564,7 +588,9 @@ export function DungeonRunScreen({
                         {preset.difficulty}
                       </span>
                       {selectedPresetId === preset.id && (
-                        <span className="text-[10px] text-[#f6c945] font-bold">เลือกอยู่</span>
+                        <span className="text-[10px] text-[#f6c945] font-bold">
+                          {t("เลือกอยู่", "Selected")}
+                        </span>
                       )}
                     </div>
                   </button>
@@ -582,11 +608,11 @@ export function DungeonRunScreen({
                   onChange={(e) => {
                     setCustomCode(e.target.value);
                     setSelectedPresetId("custom");
-                    setSpellTitle("มนตร์แต่งเอง (Custom Spell)");
+                    setSpellTitle(t("มนตร์แต่งเอง (Custom Spell)", "Custom Spell"));
                   }}
                   rows={9}
                   className="w-full bg-[#120f1c] border border-[#2f2d45] rounded-b-xl p-4 font-mono text-xs text-[#86efac] leading-relaxed focus:outline-none focus:border-[#f6c945] transition resize-none"
-                  placeholder="วางโค้ด JavaScript ที่นี่..."
+                  placeholder={t("วางโค้ด JavaScript ที่นี่...", "Paste JavaScript code here...")}
                 />
               </div>
             </div>
@@ -596,12 +622,17 @@ export function DungeonRunScreen({
               <div className="bg-[#141220] border border-[#2f2d45] rounded-2xl p-5 shadow-xl">
                 <h3 className="text-sm font-bold text-[#f4efe6] mb-3 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#2fbf71] animate-ping" />
-                  การวิเคราะห์โครงสร้างมนตร์อัตโนมัติ (AST Inspection)
+                  {t(
+                    "การวิเคราะห์โครงสร้างมนตร์อัตโนมัติ (AST Inspection)",
+                    "Automatic Spell Structure Analysis (AST Inspection)"
+                  )}
                 </h3>
 
                 <div className="space-y-3 text-xs">
                   <div className="bg-[#1c1b2b] p-3 rounded-xl border border-[#2f2d45]">
-                    <span className="text-[#9a93ad] block mb-1">ตัวแปรที่ตรวจพบ:</span>
+                    <span className="text-[#9a93ad] block mb-1">
+                      {t("ตัวแปรที่ตรวจพบ:", "Detected Variables:")}
+                    </span>
                     <div className="flex flex-wrap gap-1.5">
                       {codeAnalysis.variableNames.length > 0 ? (
                         codeAnalysis.variableNames.map((v) => (
@@ -613,32 +644,36 @@ export function DungeonRunScreen({
                           </span>
                         ))
                       ) : (
-                        <span className="text-[#9a93ad] italic">ไม่พบตัวแปร</span>
+                        <span className="text-[#9a93ad] italic">
+                          {t("ไม่พบตัวแปร", "No variables detected")}
+                        </span>
                       )}
                     </div>
                   </div>
 
                   <div className="bg-[#1c1b2b] p-3 rounded-xl border border-[#2f2d45]">
-                    <span className="text-[#9a93ad] block mb-1">แกนความคิดหลัก (Core Concepts):</span>
+                    <span className="text-[#9a93ad] block mb-1">
+                      {t("แกนความคิดหลัก (Core Concepts):", "Core Concepts:")}
+                    </span>
                     <div className="flex flex-wrap gap-1.5">
                       {codeAnalysis.hasLoop && (
                         <span className="bg-[#281d08] text-[#ffe27a] border border-[#f6c945]/40 px-2 py-0.5 rounded">
-                          ลูปและการวนซ้ำ
+                          {t("ลูปและการวนซ้ำ", "Loops & Iteration")}
                         </span>
                       )}
                       {codeAnalysis.hasAccumulator && (
                         <span className="bg-[#102a1e] text-[#86efac] border border-[#2fbf71]/40 px-2 py-0.5 rounded">
-                          รูปแบบสะสมค่า (Accumulator)
+                          {t("รูปแบบสะสมค่า (Accumulator)", "Accumulator Pattern")}
                         </span>
                       )}
                       {codeAnalysis.hasIf && (
                         <span className="bg-[#5a2d91]/30 text-[#c084fc] border border-[#9b5de5]/40 px-2 py-0.5 rounded">
-                          เงื่อนไขและการแตกกิ่ง
+                          {t("เงื่อนไขและการแตกกิ่ง", "Conditionals & Branching")}
                         </span>
                       )}
                       {codeAnalysis.hasArray && (
                         <span className="bg-[#102a1e] text-[#86efac] border border-[#2fbf71]/40 px-2 py-0.5 rounded">
-                          การเข้าถึงแอเรย์
+                          {t("การเข้าถึงแอเรย์", "Array Access")}
                         </span>
                       )}
                     </div>
@@ -646,7 +681,9 @@ export function DungeonRunScreen({
 
                   {codeAnalysis.risks.length > 0 && (
                     <div className="bg-[#2d141c] p-3 rounded-xl border border-[#c0283a]/50 text-[#fca5a5]">
-                      <span className="font-bold block mb-1">จุดเสี่ยงที่จะถูกทดสอบในดันเจี้ยน:</span>
+                      <span className="font-bold block mb-1">
+                        {t("จุดเสี่ยงที่จะถูกทดสอบในดันเจี้ยน:", "Risk Points Tested in Dungeon:")}
+                      </span>
                       <ul className="list-disc list-inside space-y-1 text-[11px] text-[#fca5a5]/90">
                         {codeAnalysis.risks.map((r, i) => (
                           <li key={i}>{r}</li>
@@ -668,7 +705,7 @@ export function DungeonRunScreen({
                     : "bg-[#1c1b2b] text-[#9a93ad] cursor-not-allowed border border-[#2f2d45]"
                 }`}
               >
-                เริ่มลุยดันเจี้ยนจากโค้ดของคุณ →
+                {t("เริ่มลุยดันเจี้ยนจากโค้ดของคุณ →", "Start Dungeon Run from Your Code →")}
               </button>
             </div>
           </div>
@@ -684,16 +721,21 @@ export function DungeonRunScreen({
                 Floor Map Navigation
               </span>
               <h2 className="text-2xl font-black text-[#f4efe6] mt-0.5">
-                เลือกเส้นทางเผชิญหน้าบนแผนที่ดันเจี้ยน
+                {t("เลือกเส้นทางเผชิญหน้าบนแผนที่ดันเจี้ยน", "Choose Your Path on the Dungeon Map")}
               </h2>
               <p className="text-xs text-[#9a93ad] mt-1">
-                คลิกที่ห้องที่มีสถานะ &ldquo;เข้าได้&rdquo; เพื่อเริ่มการท้าทาย
+                {t(
+                  "คลิกที่ห้องที่มีสถานะ “เข้าได้” เพื่อเริ่มการท้าทาย",
+                  'Click any room marked "Open" to begin the challenge'
+                )}
               </p>
             </div>
 
             <div className="bg-[#141220] border border-[#2f2d45] px-4 py-2.5 rounded-xl flex items-center gap-4 text-xs">
               <div>
-                <span className="text-[#9a93ad] block text-[10px]">ความคืบหน้า</span>
+                <span className="text-[#9a93ad] block text-[10px]">
+                  {t("ความคืบหน้า", "Progress")}
+                </span>
                 <span className="font-bold text-[#2fbf71]">
                   {Math.min(
                     5,
@@ -703,12 +745,14 @@ export function DungeonRunScreen({
                         .map((r) => r.floor)
                     ).size
                   )}{" "}
-                  / 5 ชั้น
+                  / 5 {t("ชั้น", "Floors")}
                 </span>
               </div>
               <div className="w-px h-6 bg-[#2f2d45]" />
               <div>
-                <span className="text-[#9a93ad] block text-[10px]">XP สะสมรอบนี้</span>
+                <span className="text-[#9a93ad] block text-[10px]">
+                  {t("XP สะสมรอบนี้", "Run XP")}
+                </span>
                 <span className="font-bold text-[#f6c945]">
                   {runState.answersLog.reduce((acc, a) => acc + a.xpEarned, 0)} XP
                 </span>
@@ -723,18 +767,18 @@ export function DungeonRunScreen({
 
             {runState.mapFloors.map((floorRoomIds, floorIdx) => {
               const floorLabels = [
-                "ชั้นที่ 1 · ประตูเบิกเนตร (Predict)",
-                "ชั้นที่ 2 · ทางแยกความเข้าใจ (Trace & Concept)",
-                "ชั้นที่ 3 · การทดสอบขอบเขต (Boundary & Transfer)",
-                "ชั้นที่ 4 · เตาหลอมมนตร์ (Refactor)",
-                "ชั้นที่ 5 · แกนกลางดันเจี้ยน (The Core Boss)",
+                t("ชั้นที่ 1 · ประตูเบิกเนตร (Predict)", "Floor 1 · Gate of Prediction (Predict)"),
+                t("ชั้นที่ 2 · ทางแยกความเข้าใจ (Trace & Concept)", "Floor 2 · Crossroads of Understanding (Trace & Concept)"),
+                t("ชั้นที่ 3 · การทดสอบขอบเขต (Boundary & Transfer)", "Floor 3 · Boundary Trials (Boundary & Transfer)"),
+                t("ชั้นที่ 4 · เตาหลอมมนตร์ (Refactor)", "Floor 4 · Spell Forge (Refactor)"),
+                t("ชั้นที่ 5 · แกนกลางดันเจี้ยน (The Core Boss)", "Floor 5 · The Core Boss"),
               ];
 
               return (
                 <div key={floorIdx} className="relative z-10">
                   <div className="text-[11px] font-bold uppercase tracking-wider text-[#9a93ad] mb-3 flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#f6c945]" />
-                    {floorLabels[floorIdx] || `ชั้นที่ ${floorIdx + 1}`}
+                    {floorLabels[floorIdx] || t(`ชั้นที่ ${floorIdx + 1}`, `Floor ${floorIdx + 1}`)}
                   </div>
 
                   <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8">
@@ -786,12 +830,12 @@ export function DungeonRunScreen({
                               {isCleared && (
                                 <span className="text-[10px] text-[#2fbf71] font-bold shrink-0 flex items-center gap-1">
                                   <Icon name="check" size={12} />
-                                  <span>ผ่านแล้ว</span>
+                                  <span>{t("ผ่านแล้ว", "Cleared")}</span>
                                 </span>
                               )}
                               {isAvailable && (
                                 <span className="text-[10px] bg-[#9b5de5] text-[#f4efe6] px-1.5 py-0.5 rounded font-bold shrink-0 animate-pulse">
-                                  เข้าได้
+                                  {t("เข้าได้", "Open")}
                                 </span>
                               )}
                             </div>
@@ -822,7 +866,10 @@ export function DungeonRunScreen({
                 </span>
                 <span className="text-[10px] text-[#9a93ad]">·</span>
                 <span className="text-xs text-[#c4bdd6]">
-                  เฟสที่ {runState.currentEncounterIndex + 1} จาก {currentRoom.encounters.length}
+                  {t(
+                    `เฟสที่ ${runState.currentEncounterIndex + 1} จาก ${currentRoom.encounters.length}`,
+                    `Phase ${runState.currentEncounterIndex + 1} of ${currentRoom.encounters.length}`
+                  )}
                 </span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-[#f4efe6] mt-1">
@@ -845,7 +892,10 @@ export function DungeonRunScreen({
                       if (relic.id === "relic-trace-lens") handleUseTraceLens();
                       if (relic.id === "relic-test-oracle") handleUseTestOracle();
                     }}
-                    title={`${relic.name} (ใช้ ${relic.focusCost} Focus) — ${relic.description}`}
+                    title={t(
+                      `${relic.name} (ใช้ ${relic.focusCost} Focus) — ${relic.description}`,
+                      `${relic.name} (Uses ${relic.focusCost} Focus) — ${relic.description}`
+                    )}
                     className={`px-3 py-2 rounded-xl text-xs font-semibold border flex items-center gap-2 transition whitespace-nowrap ${
                       canUse
                         ? "bg-[#1c1b2b] hover:bg-[#252238] border-[#3d395a] text-[#ffe27a] hover:border-[#f6c945] shadow-sm cursor-pointer"
@@ -863,7 +913,7 @@ export function DungeonRunScreen({
                       <span>{relic.name}</span>
                     </span>
                     <span className="text-[10px] bg-[#141220] border border-[#2f2d45] px-1.5 py-0.5 rounded text-[#c4bdd6] font-mono">
-                      {relic.usesLeft} ครั้ง ({relic.focusCost} MP)
+                      {relic.usesLeft} {t("ครั้ง", "uses")} ({relic.focusCost} MP)
                     </span>
                   </button>
                 );
@@ -879,7 +929,7 @@ export function DungeonRunScreen({
                 type="button"
                 onClick={() => setRelicNotice(null)}
                 className="text-[#f4efe6] hover:text-[#f6c945] font-bold ml-2 p-1 cursor-pointer"
-                title="ปิดการแจ้งเตือน"
+                title={t("ปิดการแจ้งเตือน", "Dismiss notice")}
               >
                 <Icon name="close" size={14} />
               </button>
@@ -891,7 +941,9 @@ export function DungeonRunScreen({
             {/* Left: Code Snippet & Memory State */}
             <div className="lg:col-span-6 bg-[#141220] border border-[#2f2d45] rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col">
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#9a93ad] mb-3">
-                <span className="font-mono text-[#f6c945] font-bold">คัมภีร์เวทมนตร์ (Code View)</span>
+                <span className="font-mono text-[#f6c945] font-bold">
+                  {t("คัมภีร์เวทมนตร์ (Code View)", "Spellbook (Code View)")}
+                </span>
               </div>
 
               {/* Code Box */}
@@ -926,14 +978,14 @@ export function DungeonRunScreen({
                 <div className="mt-4 bg-[#1c1b2b] border border-[#9b5de5]/40 rounded-xl p-3.5">
                   <span className="text-xs font-bold text-[#c084fc] flex items-center gap-1.5 mb-2">
                     <Icon name="eye" size={14} className="text-[#9b5de5]" />
-                    <span>ค่าตัวแปรใน RAM (Variable State Inspection)</span>
+                    <span>{t("ค่าตัวแปรใน RAM (Variable State Inspection)", "RAM Variable State Inspection")}</span>
                   </span>
                   <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                     {Object.entries(
                       currentEncounter.variableTrace || {
                         total: "0 -> 3",
                         i: "0",
-                        status: "กำลังวนรอบแรก",
+                        status: t("กำลังวนรอบแรก", "First iteration"),
                       }
                     ).map(([k, v]) => (
                       <div
@@ -953,7 +1005,7 @@ export function DungeonRunScreen({
                 <div className="mt-4 bg-[#281d08] border border-[#f6c945]/40 rounded-xl p-3.5 text-xs text-[#ffe27a]">
                   <span className="font-bold flex items-center gap-1.5 mb-1 text-[#f6c945]">
                     <Icon name="bulb" size={14} className="text-[#f6c945]" />
-                    <span>คำใบ้จากสารวัตรเป็ด:</span>
+                    <span>{t("คำใบ้จากสารวัตรเป็ด:", "Inspector Duck Hint:")}</span>
                   </span>
                   <p>{currentEncounter.hint}</p>
                 </div>
@@ -964,7 +1016,12 @@ export function DungeonRunScreen({
                 <div className="mt-4 bg-[#102a1e] border border-[#2fbf71]/40 rounded-xl p-3.5 text-xs text-[#86efac]">
                   <span className="font-bold flex items-center gap-1.5 mb-1 text-[#2fbf71]">
                     <Icon name="play" size={14} className="text-[#2fbf71]" />
-                    <span>ผลึกทดสอบเวท (Sandbox Simulation Result):</span>
+                    <span>
+                      {t(
+                        "ผลึกทดสอบเวท (Sandbox Simulation Result):",
+                        "Test Oracle (Sandbox Simulation Result):"
+                      )}
+                    </span>
                   </span>
                   <p className="font-mono bg-[#120f1c] p-2 rounded border border-[#2f2d45] text-[#86efac]">
                     {currentEncounter.testSimulation}
@@ -978,10 +1035,12 @@ export function DungeonRunScreen({
               <div>
                 <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[#9a93ad] mb-2">
                   <span className="px-2 py-0.5 rounded border border-[#3d395a] bg-[#1c1b2b] text-[#c084fc]">
-                    ภารกิจ: {currentEncounter.title}
+                    {t("ภารกิจ:", "Quest:")} {currentEncounter.title}
                   </span>
                   <span>·</span>
-                  <span className="text-[#f6c945]">รางวัล: +{currentEncounter.xpReward} XP</span>
+                  <span className="text-[#f6c945]">
+                    {t("รางวัล:", "Reward:")} +{currentEncounter.xpReward} XP
+                  </span>
                 </div>
 
                 <h3 className="text-base sm:text-lg font-bold text-[#f4efe6] mb-4 leading-snug">
@@ -1046,7 +1105,7 @@ export function DungeonRunScreen({
                           <span>{opt.label}</span>
                           {isAttemptedWrong && !encounterSolved && (
                             <span className="block text-[11px] text-[#fca5a5] mt-1 font-sans">
-                              (เลือกผิดแล้ว: {opt.feedback})
+                              ({t("เลือกผิดแล้ว:", "Wrong choice:")} {opt.feedback})
                             </span>
                           )}
                         </div>
@@ -1070,12 +1129,22 @@ export function DungeonRunScreen({
                       {lastAnswerFeedback.isCorrect ? (
                         <>
                           <Icon name="check" size={16} className="text-[#2fbf71]" />
-                          <span>โจมตีสำเร็จ! การคำนวณถูกต้อง (Critical Hit)</span>
+                          <span>
+                            {t(
+                              "โจมตีสำเร็จ! การคำนวณถูกต้อง (Critical Hit)",
+                              "Attack Hit! Calculation Correct (Critical Hit)"
+                            )}
+                          </span>
                         </>
                       ) : (
                         <>
                           <Icon name="alert" size={16} className="text-[#ff6b81]" />
-                          <span>โดนโจมตีสวนกลับ! คำนวณผิดพลาด (-{lastAnswerFeedback.damageTaken}% Integrity)</span>
+                          <span>
+                            {t(
+                              `โดนโจมตีสวนกลับ! คำนวณผิดพลาด (-${lastAnswerFeedback.damageTaken}% Integrity)`,
+                              `Counter-Attacked! Calculation Error (-${lastAnswerFeedback.damageTaken}% Integrity)`
+                            )}
+                          </span>
                         </>
                       )}
                     </div>
@@ -1089,7 +1158,7 @@ export function DungeonRunScreen({
                     onClick={handleProceedAfterAnswer}
                     className="w-full py-3.5 rounded-xl bg-[#c0283a] hover:bg-[#dc3548] text-white font-bold text-sm shadow-lg transition cursor-pointer"
                   >
-                    ดูผลการท้าทาย (Integrity หมดลง) -&gt;
+                    {t("ดูผลการท้าทาย (Integrity หมดลง) ->", "View Challenge Results (Integrity Depleted) ->")}
                   </button>
                 ) : encounterSolved ? (
                   <button
@@ -1098,10 +1167,10 @@ export function DungeonRunScreen({
                     className="w-full py-3.5 rounded-xl bg-[#2fbf71] hover:bg-[#34d37d] text-[#0b0b14] font-extrabold text-sm shadow-lg transition cursor-pointer"
                   >
                     {runState.currentEncounterIndex + 1 < currentRoom.encounters.length
-                      ? "เข้าสู่เฟสถัดไป ->"
+                      ? t("เข้าสู่เฟสถัดไป ->", "Next Phase ->")
                       : currentRoom.type === "boss"
-                      ? "ดูบทสรุปชัยชนะ ->"
-                      : "กลับสู่แผนที่ดันเจี้ยน ->"}
+                      ? t("ดูบทสรุปชัยชนะ ->", "View Victory Summary ->")
+                      : t("กลับสู่แผนที่ดันเจี้ยน ->", "Return to Dungeon Map ->")}
                   </button>
                 ) : (
                   <button
@@ -1114,7 +1183,7 @@ export function DungeonRunScreen({
                         : "bg-[#1c1b2b] text-[#9a93ad] cursor-not-allowed border border-[#2f2d45]"
                     }`}
                   >
-                    ร่ายมนตร์ / ส่งคำตอบ
+                    {t("ร่ายมนตร์ / ส่งคำตอบ", "Cast Spell / Submit Answer")}
                   </button>
                 )}
               </div>
@@ -1136,11 +1205,13 @@ export function DungeonRunScreen({
                   Dungeon Cleared
                 </span>
                 <h2 className="text-3xl sm:text-4xl font-extrabold text-[#f4efe6] mt-1 mb-2">
-                  คุณพิชิตเดอะ คอร์ สำเร็จ!
+                  {t("คุณพิชิตเดอะ คอร์ สำเร็จ!", "You Conquered The Core!")}
                 </h2>
                 <p className="text-sm text-[#9a93ad] max-w-xl mx-auto mb-6">
-                  คุณได้พิสูจน์แล้วว่าคุณไม่ได้แค่รันโค้ดตาม AI แต่เข้าใจโครงสร้าง การทำงาน
-                  การจัดการกรณีขอบเขต และสามารถซ่อมแซมโค้ดได้จริง
+                  {t(
+                    "คุณได้พิสูจน์แล้วว่าคุณไม่ได้แค่รันโค้ดตาม AI แต่เข้าใจโครงสร้าง การทำงาน การจัดการกรณีขอบเขต และสามารถซ่อมแซมโค้ดได้จริง",
+                    "You proved that you don't just run AI-generated code blindly—you understand its structure, execution, edge cases, and how to fix it."
+                  )}
                 </p>
               </>
             ) : (
@@ -1152,11 +1223,13 @@ export function DungeonRunScreen({
                   Program Integrity Depleted
                 </span>
                 <h2 className="text-3xl sm:text-4xl font-extrabold text-[#f4efe6] mt-1 mb-2">
-                  มนตร์เกิดข้อผิดพลาดรุนแรง
+                  {t("มนตร์เกิดข้อผิดพลาดรุนแรง", "Critical Spell Failure")}
                 </h2>
                 <p className="text-sm text-[#9a93ad] max-w-xl mx-auto mb-6">
-                  ความสมบูรณ์ของโปรแกรมหมดลงก่อนถึงแกนกลาง แต่การพ่ายแพ้ทำให้เห็นจุดที่ยังเข้าใจคลาดเคลื่อน
-                  สามารถทบทวนแนวคิดและกลับมาท้าทายใหม่ได้ทันที
+                  {t(
+                    "ความสมบูรณ์ของโปรแกรมหมดลงก่อนถึงแกนกลาง แต่การพ่ายแพ้ทำให้เห็นจุดที่ยังเข้าใจคลาดเคลื่อน สามารถทบทวนแนวคิดและกลับมาท้าทายใหม่ได้ทันที",
+                    "Program integrity ran out before reaching the core, but each defeat reveals misconceptions to review before challenging again."
+                  )}
                 </p>
               </>
             )}
@@ -1164,19 +1237,25 @@ export function DungeonRunScreen({
             {/* Assessment Evidence vs Game Score Breakdown */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8 text-left">
               <div className="bg-[#1c1b2b] p-4 rounded-2xl border border-[#2f2d45]">
-                <span className="text-xs text-[#9a93ad] block mb-1">XP ที่ได้รับรอบนี้</span>
+                <span className="text-xs text-[#9a93ad] block mb-1">
+                  {t("XP ที่ได้รับรอบนี้", "XP Earned This Run")}
+                </span>
                 <span className="text-2xl font-black text-[#f6c945] font-mono">
                   +{runState.answersLog.reduce((acc, a) => acc + a.xpEarned, 0)} XP
                 </span>
               </div>
               <div className="bg-[#1c1b2b] p-4 rounded-2xl border border-[#2f2d45]">
-                <span className="text-xs text-[#9a93ad] block mb-1">Program Integrity คงเหลือ</span>
+                <span className="text-xs text-[#9a93ad] block mb-1">
+                  {t("Program Integrity คงเหลือ", "Remaining Program Integrity")}
+                </span>
                 <span className="text-2xl font-black text-[#2fbf71] font-mono">
                   {runState.integrity}%
                 </span>
               </div>
               <div className="bg-[#1c1b2b] p-4 rounded-2xl border border-[#2f2d45]">
-                <span className="text-xs text-[#9a93ad] block mb-1">อัตราตอบถูกรอบแรก</span>
+                <span className="text-xs text-[#9a93ad] block mb-1">
+                  {t("อัตราตอบถูกรอบแรก", "First-Try Accuracy")}
+                </span>
                 <span className="text-2xl font-black text-[#c084fc] font-mono">
                   {Math.round(
                     (runState.answersLog.filter((a) => a.isCorrect).length /
@@ -1191,7 +1270,7 @@ export function DungeonRunScreen({
             {/* 4 Pillars Mastery Summary */}
             <div className="bg-[#1c1b2b] rounded-2xl p-5 border border-[#2f2d45] mb-8 text-left">
               <h4 className="text-xs font-bold uppercase tracking-wider text-[#c4bdd6] mb-3">
-                หลักฐานความเข้าใจ 4 มิติ (Learning Mastery Evidence)
+                {t("หลักฐานความเข้าใจ 4 มิติ (Learning Mastery Evidence)", "4-Pillar Learning Mastery Evidence")}
               </h4>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 {(["predict", "explain", "debug", "transfer"] as const).map((pillar) => {
@@ -1204,7 +1283,7 @@ export function DungeonRunScreen({
                       <div className="flex items-baseline justify-between">
                         <span className="font-bold text-[#f4efe6] text-base font-mono">{percent}%</span>
                         <span className="text-[10px] text-[#9a93ad]">
-                          {correct}/{relevant.length} ข้อ
+                          {correct}/{relevant.length} {t("ข้อ", "qs")}
                         </span>
                       </div>
                     </div>
@@ -1220,21 +1299,21 @@ export function DungeonRunScreen({
                 onClick={handleStartRun}
                 className="px-6 py-3 rounded-xl bg-[#2fbf71] hover:bg-[#34d37d] text-[#0b0b14] font-extrabold text-sm shadow-lg transition cursor-pointer whitespace-nowrap"
               >
-                เล่นรอบใหม่ด้วยมนตร์นี้อีกครั้ง
+                {t("เล่นรอบใหม่ด้วยมนตร์นี้อีกครั้ง", "Play Again with This Spell")}
               </button>
               <button
                 type="button"
                 onClick={() => setRunState(null)}
                 className="px-6 py-3 rounded-xl bg-[#1c1b2b] hover:bg-[#252238] hover:border-[#f6c945] text-[#f4efe6] font-semibold text-sm border border-[#3d395a] transition cursor-pointer whitespace-nowrap"
               >
-                เลือกหรือนำเข้ามนตร์บทอื่น
+                {t("เลือกหรือนำเข้ามนตร์บทอื่น", "Select or Import Another Spell")}
               </button>
               <button
                 type="button"
                 onClick={onBackToPortal}
                 className="px-6 py-3 rounded-xl bg-[#1c1b2b] hover:bg-[#252238] hover:border-[#f6c945] text-[#c4bdd6] font-semibold text-sm border border-[#3d395a] transition cursor-pointer whitespace-nowrap"
               >
-                {embedded ? "กลับแผนที่ดันเจี้ยน" : "กลับหน้าหลัก"}
+                {embedded ? t("กลับแผนที่ดันเจี้ยน", "Back to Dungeon Map") : t("กลับหน้าหลัก", "Back to Home")}
               </button>
             </div>
           </div>

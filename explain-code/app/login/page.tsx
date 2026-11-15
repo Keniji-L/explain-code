@@ -6,33 +6,43 @@ import Link from "next/link";
 import Image from "next/image";
 import { SiteHeader, setClientSession } from "../components/SiteHeader";
 import { Icon } from "../components/Icons";
+import { useUiLanguage } from "../components/LanguageProvider";
 
-const REDIRECT_PAGE_LABELS: Record<string, string> = {
-  "/": "หน้าแรก",
-  "/my-history": "ประวัติการเรียนรู้ของฉัน",
-  "/my-learning": "หน้าการเรียนรู้ของฉัน",
-  "/courses": "คอร์สเรียนทั้งหมด",
-  "/dungeon": "ดันเจี้ยนอ่านโค้ด",
-  "/explain": "ฝึกอธิบายโค้ด",
-  "/depths": "แบบฝึกหัดเจาะลึก",
-  "/teacher": "แดชบอร์ดครู",
-  "/ai-log": "บันทึกการใช้ AI",
+const REDIRECT_PAGE_LABELS: Record<string, { th: string; en: string }> = {
+  "/": { th: "หน้าแรก", en: "Home" },
+  "/my-history": { th: "ประวัติการเรียนรู้ของฉัน", en: "My History" },
+  "/my-learning": { th: "หน้าการเรียนรู้ของฉัน", en: "My Learning" },
+  "/courses": { th: "คอร์สเรียนทั้งหมด", en: "All Courses" },
+  "/dungeon": { th: "ดันเจี้ยนอ่านโค้ด", en: "Code Dungeon" },
+  "/explain": { th: "ฝึกอธิบายโค้ด", en: "Code Explainer" },
+  "/depths": { th: "แบบฝึกหัดเจาะลึก", en: "Deep Exercises" },
+  "/teacher": { th: "แดชบอร์ดครู", en: "Teacher Dashboard" },
+  "/ai-log": { th: "บันทึกการใช้ AI", en: "AI Usage Log" },
 };
 
-function getFriendlyRedirectLabel(path: string): string {
+function getFriendlyRedirectLabel(
+  path: string,
+  t: (th: string, en: string) => string
+): string {
   const cleanPath = path.split("?")[0];
   if (REDIRECT_PAGE_LABELS[cleanPath]) {
-    return REDIRECT_PAGE_LABELS[cleanPath];
+    return t(REDIRECT_PAGE_LABELS[cleanPath].th, REDIRECT_PAGE_LABELS[cleanPath].en);
   }
   const matchedPrefix = Object.keys(REDIRECT_PAGE_LABELS).find(
     (prefix) => prefix !== "/" && cleanPath.startsWith(`${prefix}/`)
   );
-  return matchedPrefix ? REDIRECT_PAGE_LABELS[matchedPrefix] : path;
+  return matchedPrefix
+    ? t(
+        REDIRECT_PAGE_LABELS[matchedPrefix].th,
+        REDIRECT_PAGE_LABELS[matchedPrefix].en
+      )
+    : path;
 }
 
 function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useUiLanguage();
   const redirectPath = searchParams.get("redirect") || "";
   const modeParam = searchParams.get("mode");
   const roleParam = searchParams.get("role");
@@ -91,11 +101,16 @@ function LoginFormContent() {
 
     const newErrors: Record<string, string> = {};
     if (!cleanId) {
-      newErrors.loginIdentifier =
-        "กรุณากรอกชื่อเล่นสมมติ (นักเรียน) หรือชื่อผู้ใช้ (ครู)";
+      newErrors.loginIdentifier = t(
+        "กรุณากรอกชื่อเล่นสมมติ (นักเรียน) หรือชื่อผู้ใช้ (ครู)",
+        "Please enter your nickname (Student) or username (Teacher)"
+      );
     }
     if (!cleanSecret) {
-      newErrors.loginSecret = "กรุณากรอกรหัส PIN 4 หลัก หรือรหัสผ่าน";
+      newErrors.loginSecret = t(
+        "กรุณากรอกรหัส PIN 4 หลัก หรือรหัสผ่าน",
+        "Please enter your 4-digit PIN or password"
+      );
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -104,7 +119,10 @@ function LoginFormContent() {
         type: "error",
         text:
           !cleanId && !cleanSecret
-            ? "กรุณากรอกชื่อผู้ใช้/ชื่อเล่นสมมติ และรหัสผ่าน/PIN ก่อนกดเข้าสู่ระบบ"
+            ? t(
+                "กรุณากรอกชื่อผู้ใช้/ชื่อเล่นสมมติ และรหัสผ่าน/PIN ก่อนกดเข้าสู่ระบบ",
+                "Please enter your username/nickname and password/PIN before signing in"
+              )
             : newErrors.loginIdentifier || newErrors.loginSecret,
       });
       return;
@@ -126,7 +144,12 @@ function LoginFormContent() {
       if (!res.ok) {
         setMessage({
           type: "error",
-          text: data.error || "ไม่พบบัญชีผู้ใช้ หรือรหัสผ่าน/PIN ไม่ถูกต้อง",
+          text:
+            data.error ||
+            t(
+              "ไม่พบบัญชีผู้ใช้ หรือรหัสผ่าน/PIN ไม่ถูกต้อง",
+              "Account not found or incorrect password/PIN"
+            ),
         });
         return;
       }
@@ -165,7 +188,10 @@ function LoginFormContent() {
     } catch {
       setMessage({
         type: "error",
-        text: "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง",
+        text: t(
+          "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง",
+          "Unable to connect to the server. Please try again."
+        ),
       });
     } finally {
       setIsSubmitting(false);
@@ -196,14 +222,16 @@ function LoginFormContent() {
             className="inline-flex items-center gap-2 rounded-xl border-2 border-[#f6c945]/70 bg-[#1c1b2b] px-4 py-2 text-xs sm:text-sm font-extrabold text-[#ffe27a] shadow-sm hover:border-[#f6c945] hover:bg-[#281d08] transition-colors"
           >
             <Icon name="home" className="h-4 w-4 text-[#f6c945]" />
-            <span>← กลับไปหน้าแรก</span>
+            <span>{t("← กลับไปหน้าแรก", "← Back to Home")}</span>
           </Link>
           <Link
             href={registerHref}
             className="inline-flex items-center gap-1.5 rounded-xl border border-[#2fbf71]/70 bg-[#102a1e] px-4 py-2 text-xs sm:text-sm font-extrabold text-[#86efac] hover:bg-[#153827] transition-colors"
           >
             <Icon name="user" className="h-4 w-4" />
-            <span>ยังไม่มีบัญชี? สมัครสมาชิก →</span>
+            <span>
+              {t("ยังไม่มีบัญชี? สมัครสมาชิก →", "No account yet? Register →")}
+            </span>
           </Link>
         </div>
 
@@ -220,18 +248,24 @@ function LoginFormContent() {
             </div>
 
             <h1 className="mt-3 text-2xl font-extrabold text-[#f4efe6]">
-              เข้าสู่ระบบ
+              {t("เข้าสู่ระบบ", "Sign In")}
             </h1>
             <p className="mt-1 text-sm text-[#9a93ad]">
-              กรอกชื่อเล่นหรือชื่อผู้ใช้ของคุณเพื่อเข้าสู่ระบบ (รองรับทั้งนักเรียนและครู)
+              {t(
+                "กรอกชื่อเล่นหรือชื่อผู้ใช้ของคุณเพื่อเข้าสู่ระบบ (รองรับทั้งนักเรียนและครู)",
+                "Enter your nickname or username to sign in (supports both Students and Teachers)"
+              )}
             </p>
             {redirectPath && (
               <p className="mt-2 rounded-lg border border-[#f6c945]/40 bg-[#281d08] px-3 py-1.5 text-xs font-medium text-[#ffe27a]">
-                หลังเข้าสู่ระบบสำเร็จ จะพาคุณไปยังหน้า{" "}
+                {t(
+                  "หลังเข้าสู่ระบบสำเร็จ จะพาคุณไปยังหน้า ",
+                  "After signing in, you will be redirected to "
+                )}
                 <span className="font-bold text-[#f6c945]">
-                  {getFriendlyRedirectLabel(redirectPath)}
-                </span>{" "}
-                โดยอัตโนมัติ
+                  {getFriendlyRedirectLabel(redirectPath, t)}
+                </span>
+                {t(" โดยอัตโนมัติ", " automatically.")}
               </p>
             )}
           </div>
@@ -251,15 +285,15 @@ function LoginFormContent() {
               <div className="flex-1 text-xs leading-relaxed">
                 <p className="font-extrabold text-sm mb-0.5">
                   {message.type === "error"
-                    ? "แจ้งเตือนการกรอกข้อมูล"
-                    : "ดำเนินการสำเร็จ"}
+                    ? t("แจ้งเตือนการกรอกข้อมูล", "Input Notice")
+                    : t("ดำเนินการสำเร็จ", "Success")}
                 </p>
                 <p className="font-bold opacity-95">{message.text}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setMessage(null)}
-                aria-label="ปิดกล่องแจ้งเตือน"
+                aria-label={t("ปิดกล่องแจ้งเตือน", "Close alert")}
                 className="rounded-lg px-2 py-1 text-xs font-extrabold opacity-75 hover:bg-black/25 hover:opacity-100 cursor-pointer"
               >
                 ✕
@@ -276,10 +310,13 @@ function LoginFormContent() {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-bold text-[#c4bdd6]">
-                    ชื่อเล่นสมมติ (นักเรียน) หรือ ชื่อผู้ใช้ (ครู)
+                    {t(
+                      "ชื่อเล่นสมมติ (นักเรียน) หรือ ชื่อผู้ใช้ (ครู)",
+                      "Nickname (Student) or Username (Teacher)"
+                    )}
                   </label>
                   <span className="text-[11px] font-semibold text-[#86efac]">
-                    ✓ ไม่ต้องใช้อีเมล
+                    {t("✓ ไม่ต้องใช้อีเมล", "✓ No email required")}
                   </span>
                 </div>
                 <input
@@ -289,7 +326,10 @@ function LoginFormContent() {
                     setLoginIdentifier(e.target.value);
                     clearFieldError("loginIdentifier");
                   }}
-                  placeholder="เช่น ต้นกล้า_สายโค้ด, แมวส้ม หรือ ครูสมชาย"
+                  placeholder={t(
+                    "เช่น ต้นกล้า_สายโค้ด, แมวส้ม หรือ ครูสมชาย",
+                    "e.g., Tonkla_Coder, OrangeCat, or TeacherSomchai"
+                  )}
                   className={`w-full rounded-xl border bg-[#1c1b2b] px-3.5 py-2.5 text-sm font-bold text-[#f4efe6] placeholder:font-normal placeholder:text-[#9a93ad]/60 focus:bg-[#252238] focus:outline-hidden ${
                     fieldErrors.loginIdentifier
                       ? "border-[#c0283a] bg-[#2d141c]/30 focus:border-[#c0283a]"
@@ -307,7 +347,10 @@ function LoginFormContent() {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-bold text-[#c4bdd6]">
-                    รหัส PIN 4 หลัก (นักเรียน) หรือ รหัสผ่าน (ครู)
+                    {t(
+                      "รหัส PIN 4 หลัก (นักเรียน) หรือ รหัสผ่าน (ครู)",
+                      "4-Digit PIN (Student) or Password (Teacher)"
+                    )}
                   </label>
                   <div className="flex items-center gap-1.5">
                     {[0, 1, 2, 3].map((idx) => (
@@ -321,7 +364,8 @@ function LoginFormContent() {
                       />
                     ))}
                     <span className="ml-1 text-[11px] font-bold text-[#9a93ad]">
-                      {Math.min(loginSecret.length, 4)}/4 หลัก
+                      {Math.min(loginSecret.length, 4)}/4{" "}
+                      {t("หลัก", "chars")}
                     </span>
                   </div>
                 </div>
@@ -333,7 +377,10 @@ function LoginFormContent() {
                       setLoginSecret(e.target.value);
                       clearFieldError("loginSecret");
                     }}
-                    placeholder="กรอกรหัส PIN 4 หลัก หรือรหัสผ่าน"
+                    placeholder={t(
+                      "กรอกรหัส PIN 4 หลัก หรือรหัสผ่าน",
+                      "Enter 4-digit PIN or password"
+                    )}
                     className={`w-full rounded-xl border bg-[#1c1b2b] px-3.5 py-2.5 pr-16 text-sm font-bold text-[#f4efe6] placeholder:font-normal placeholder:text-[#9a93ad]/60 focus:bg-[#252238] focus:outline-hidden ${
                       fieldErrors.loginSecret
                         ? "border-[#c0283a] bg-[#2d141c]/30 focus:border-[#c0283a]"
@@ -345,7 +392,9 @@ function LoginFormContent() {
                     onClick={() => setShowLoginSecret(!showLoginSecret)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md bg-[#252238] px-2 py-1 text-xs font-bold text-[#ffe27a] hover:bg-[#322c4a] cursor-pointer"
                   >
-                    {showLoginSecret ? "ซ่อน" : "แสดง"}
+                    {showLoginSecret
+                      ? t("ซ่อน", "Hide")
+                      : t("แสดง", "Show")}
                   </button>
                 </div>
                 {fieldErrors.loginSecret && (
@@ -363,7 +412,9 @@ function LoginFormContent() {
               >
                 <Icon name="play" className="h-4 w-4" filled />
                 <span>
-                  {isSubmitting ? "กำลังตรวจสอบสิทธิ์..." : "เข้าสู่ระบบ"}
+                  {isSubmitting
+                    ? t("กำลังตรวจสอบสิทธิ์...", "Verifying credentials...")
+                    : t("เข้าสู่ระบบ", "Sign In")}
                 </span>
               </button>
             </form>
@@ -371,12 +422,12 @@ function LoginFormContent() {
 
           <div className="mt-6 border-t border-[#2f2d45] pt-5 flex flex-col gap-3">
             <p className="text-center text-xs text-[#9a93ad]">
-              ยังไม่มีบัญชีใช่ไหม?{" "}
+              {t("ยังไม่มีบัญชีใช่ไหม?", "Don't have an account?")}{" "}
               <Link
                 href={registerHref}
                 className="font-extrabold text-[#86efac] underline hover:text-white"
               >
-                ไปหน้าสมัครสมาชิกใหม่ →
+                {t("ไปหน้าสมัครสมาชิกใหม่ →", "Go to Registration →")}
               </Link>
             </p>
             <Link
@@ -384,7 +435,7 @@ function LoginFormContent() {
               className="w-full inline-flex items-center justify-center gap-2 rounded-xl border-2 border-[#f6c945]/75 bg-[#1c1b2b] px-4 py-3 text-sm font-extrabold text-[#ffe27a] shadow-md hover:border-[#f6c945] hover:bg-[#281d08] transition-all"
             >
               <Icon name="home" className="h-4 w-4 text-[#f6c945]" />
-              <span>กลับไปหน้าแรก</span>
+              <span>{t("กลับไปหน้าแรก", "Back to Home")}</span>
             </Link>
           </div>
         </div>
@@ -393,15 +444,18 @@ function LoginFormContent() {
   );
 }
 
+function LoginLoadingFallback() {
+  const { t } = useUiLanguage();
+  return (
+    <div className="min-h-screen bg-[#0d0b14] p-8 text-center text-sm text-[#9a93ad]">
+      {t("กำลังโหลดหน้าเข้าสู่ระบบ...", "Loading sign in page...")}
+    </div>
+  );
+}
+
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-[#0d0b14] p-8 text-center text-sm text-[#9a93ad]">
-          กำลังโหลดหน้าเข้าสู่ระบบ...
-        </div>
-      }
-    >
+    <Suspense fallback={<LoginLoadingFallback />}>
       <LoginFormContent />
     </Suspense>
   );
