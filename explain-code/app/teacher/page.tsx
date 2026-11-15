@@ -38,6 +38,8 @@ import {
 import { LANGUAGE_TRACKS } from "../lib/language-tracks";
 import { TeacherDashboard } from "../components/TeacherDashboard";
 import {
+  BLOCK_MODEL_CELLS,
+  BlockCellId,
   ClassroomRecord,
   INITIAL_CLASSROOMS,
   INITIAL_STUDENTS,
@@ -135,6 +137,18 @@ export default function TeacherLMSDashboardPage() {
   const [quizOptionsText, setQuizOptionsText] = useState("");
   const [quizCorrectIdx, setQuizCorrectIdx] = useState(0);
   const [quizExplanation, setQuizExplanation] = useState("");
+
+  // AI Question Generator State (Lesson Quiz & Dungeon)
+  const [aiGenLoading, setAiGenLoading] = useState(false);
+  const [aiGenError, setAiGenError] = useState<string | null>(null);
+  const [aiTargetCellId, setAiTargetCellId] = useState<BlockCellId | "auto">("auto");
+  const [aiGenMeta, setAiGenMeta] = useState<{
+    model?: string;
+    targetCellLabel?: string;
+    misconceptionReason?: string;
+    targetedFromClassroomWeakness?: boolean;
+    weaknessAvgScore?: number | null;
+  } | null>(null);
 
   useEffect(() => {
     const syncTeacherState = () => {
@@ -348,10 +362,10 @@ export default function TeacherLMSDashboardPage() {
   }, [session]);
 
   useEffect(() => {
-    if (session && workspaceMode === "classrooms") {
+    if (session && (workspaceMode === "classrooms" || classroomCellAverages.length === 0)) {
       void fetchClassroomAnalytics();
     }
-  }, [session, workspaceMode, fetchClassroomAnalytics]);
+  }, [session, workspaceMode, classroomCellAverages.length, fetchClassroomAnalytics]);
 
   const handleCreateClassroom = async (
     roomName: string
@@ -654,6 +668,8 @@ export default function TeacherLMSDashboardPage() {
     setQuizOptionsText("");
     setQuizCorrectIdx(0);
     setQuizExplanation("");
+    setAiGenError(null);
+    setAiGenMeta(null);
   };
 
   const handleAddQuizItem = () => {
@@ -680,6 +696,117 @@ export default function TeacherLMSDashboardPage() {
     setQuizOptionsText("");
     setQuizCorrectIdx(0);
     setQuizExplanation("");
+  };
+
+  const handleGenerateAiQuestion = async (mode: "lesson" | "dungeon") => {
+    setAiGenLoading(true);
+    setAiGenError(null);
+    setAiGenMeta(null);
+
+    const weakestCells = [...classroomCellAverages]
+      .sort((a, b) => a.avg_score - b.avg_score)
+      .slice(0, 4)
+      .map((c) => ({ cellId: c.cell_id, avgScore: c.avg_score }));
+
+    const linkedLesson =
+      mode === "lesson"
+        ? editingLesson
+        : selectedCourseLessons.find((l) => l.id === dqFormLessonId) ||
+          selectedCourseLessons[0];
+
+    const codeSnippet =
+      mode === "lesson"
+        ? editingLesson?.code_example || ""
+        : dqFormCode.trim() || linkedLesson?.code_example || "";
+
+    const payload = {
+      mode,
+      courseTitle: selectedCourse?.title || "",
+      programmingLanguage: linkedLesson?.programming_language || "javascript",
+      lessonTitle: linkedLesson?.title || "",
+      lessonContent: linkedLesson?.content_md || "",
+      codeSnippet,
+      targetCellId: aiTargetCellId,
+      weakestCells,
+      difficulty: mode === "dungeon" ? dqFormDifficulty : "medium",
+      existingQuestions:
+        mode === "lesson"
+          ? (editingLesson?.quiz_questions || []).map((q) => q.question)
+          : dungeonQuestions.map((q) => q.question_text),
+    };
+
+    try {
+      const res = await fetch("/api/teacher/generate-question", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok || !data?.generated) {
+        setAiGenError(
+          data?.error || "ไม่สามารถสร้างคำถามด้วย AI ได้ในขณะนี้"
+        );
+        return;
+      }
+
+      const g = data.generated;
+      if (mode === "lesson") {
+        setQuizQuestionText(g.question || "");
+        setQuizOptionsText(
+          Array.isArray(g.choices)
+            ? g.choices
+                .map((c: string) => c.replace(/,/g, " /").trim())
+                .join(", ")
+            : ""
+        );
+        setQuizCorrectIdx(
+          typeof g.correctIndex === "number" ? g.correctIndex : 0
+        );
+        setQuizExplanation(g.explanation || "");
+      } else {
+        setDqFormQuestion(g.question || "");
+        if (!dqFormCode.trim() && g.codeSnippet) {
+          setDqFormCode(g.codeSnippet);
+        }
+        if (Array.isArray(g.choices) && g.choices.length >= 4) {
+          setDqFormChoices(g.choices.slice(0, 4));
+        }
+        setDqFormCorrectIndex(
+          typeof g.correctIndex === "number" ? g.correctIndex : 0
+        );
+        setDqFormExplanation(g.explanation || "");
+        if (
+          g.difficulty === "easy" ||
+          g.difficulty === "medium" ||
+          g.difficulty === "hard"
+        ) {
+          setDqFormDifficulty(g.difficulty);
+        }
+        if (
+          !dqFormIsBoss &&
+          (g.recommendedMonster === "slime" ||
+            g.recommendedMonster === "skeleton" ||
+            g.recommendedMonster === "goblin" ||
+            g.recommendedMonster === "boss")
+        ) {
+          setDqFormMonster(g.recommendedMonster);
+        }
+      }
+
+      setAiGenMeta({
+        model: data.model,
+        targetCellLabel: g.targetCellLabel,
+        misconceptionReason: g.misconceptionReason,
+        targetedFromClassroomWeakness: Boolean(
+          data.targetedFromClassroomWeakness
+        ),
+        weaknessAvgScore: data.weaknessAvgScore ?? null,
+      });
+    } catch {
+      setAiGenError("เกิดข้อผิดพลาดในการเชื่อมต่อ AI กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setAiGenLoading(false);
+    }
   };
 
   const handleSaveLesson = async (e: React.FormEvent) => {
@@ -2151,6 +2278,62 @@ export default function TeacherLMSDashboardPage() {
                 ))}
 
                 <div className="space-y-2 pt-2 border-t border-[#2f2d45]">
+                  {/* AI Question Generator Bar (Block Model + Misconception-Driven) */}
+                  <div className="rounded-xl border border-[#9b5de5]/40 bg-[#141220] p-3 space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-[11px] font-bold text-[#c4b5fd]">
+                        ✨ ให้ AI ช่วยสร้างคำถาม Quiz จากโค้ดบทเรียน (เจาะจุดอ่อน Block Model)
+                      </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <select
+                          value={aiTargetCellId}
+                          onChange={(e) =>
+                            setAiTargetCellId(e.target.value as BlockCellId | "auto")
+                          }
+                          aria-label="เลือกช่อง Block Model เป้าหมาย"
+                          className="rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-2.5 py-1 text-[11px] text-[#f4efe6] focus:border-[#9b5de5] focus:outline-hidden"
+                        >
+                          <option value="auto">
+                            อัตโนมัติ (อิงจุดอ่อนห้องเรียน)
+                          </option>
+                          {BLOCK_MODEL_CELLS.map((cell) => (
+                            <option key={cell.id} value={cell.id}>
+                              {cell.id} · {cell.shortTitle}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          disabled={aiGenLoading}
+                          onClick={() => void handleGenerateAiQuestion("lesson")}
+                          className="rounded-lg bg-[#9b5de5] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#8b4cd6] disabled:opacity-60 cursor-pointer"
+                        >
+                          {aiGenLoading ? "กำลังสร้างโจทย์..." : "✨ สร้างคำถามด้วย AI"}
+                        </button>
+                      </div>
+                    </div>
+                    {aiGenError && (
+                      <p className="text-[11px] text-[#fca5a5]">{aiGenError}</p>
+                    )}
+                    {aiGenMeta && (
+                      <div className="rounded-lg border border-[#2fbf71]/30 bg-[#102a1e]/60 px-2.5 py-1.5 text-[11px] text-[#cbd5e1] space-y-0.5">
+                        <div className="font-bold text-[#86efac]">
+                          เป้าหมาย: {aiGenMeta.targetCellLabel}
+                          {aiGenMeta.targetedFromClassroomWeakness &&
+                          aiGenMeta.weaknessAvgScore !== null
+                            ? ` (เลือกอัตโนมัติจากจุดอ่อนห้องเรียนเฉลี่ย ${aiGenMeta.weaknessAvgScore}%)`
+                            : ""}
+                          {aiGenMeta.model ? ` · โมเดล ${aiGenMeta.model}` : ""}
+                        </div>
+                        {aiGenMeta.misconceptionReason && (
+                          <div className="text-[#c4bdd6]">
+                            ตัวลวงดักความเข้าใจผิด: {aiGenMeta.misconceptionReason}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   <input
                     type="text"
                     value={quizQuestionText}
@@ -2178,6 +2361,13 @@ export default function TeacherLMSDashboardPage() {
                       className="rounded-lg border border-[#3d395a] bg-[#141220] px-3 py-1.5 text-xs text-[#f4efe6] placeholder:text-[#9a93ad]/60 focus:border-[#f6c945] focus:outline-hidden"
                     />
                   </div>
+                  <input
+                    type="text"
+                    value={quizExplanation}
+                    onChange={(e) => setQuizExplanation(e.target.value)}
+                    placeholder="คำอธิบายเฉลยสั้นๆ (ไม่บังคับ)"
+                    className="w-full rounded-lg border border-[#3d395a] bg-[#141220] px-3 py-1.5 text-xs text-[#f4efe6] placeholder:text-[#9a93ad]/60 focus:border-[#f6c945] focus:outline-hidden"
+                  />
                   <button
                     type="button"
                     onClick={handleAddQuizItem}
@@ -2270,6 +2460,62 @@ export default function TeacherLMSDashboardPage() {
                     </option>
                   </select>
                 </div>
+              </div>
+
+              {/* AI Question Generator Bar for Dungeon */}
+              <div className="rounded-xl border border-[#9b5de5]/40 bg-[#1c1b2b] p-3 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-[11px] font-bold text-[#c4b5fd]">
+                    ✨ ให้ AI ช่วยสร้างคำถาม Dungeon จากโค้ดบทเรียน
+                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      value={aiTargetCellId}
+                      onChange={(e) =>
+                        setAiTargetCellId(e.target.value as BlockCellId | "auto")
+                      }
+                      aria-label="เลือกช่อง Block Model เป้าหมายสำหรับดันเจี้ยน"
+                      className="rounded-lg border border-[#3d395a] bg-[#141220] px-2.5 py-1 text-[11px] text-[#f4efe6] focus:border-[#9b5de5] focus:outline-hidden"
+                    >
+                      <option value="auto">
+                        อัตโนมัติ (อิงจุดอ่อนห้องเรียน)
+                      </option>
+                      {BLOCK_MODEL_CELLS.map((cell) => (
+                        <option key={cell.id} value={cell.id}>
+                          {cell.id} · {cell.shortTitle}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      disabled={aiGenLoading}
+                      onClick={() => void handleGenerateAiQuestion("dungeon")}
+                      className="rounded-lg bg-[#9b5de5] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#8b4cd6] disabled:opacity-60 cursor-pointer"
+                    >
+                      {aiGenLoading ? "กำลังสร้างโจทย์..." : "✨ สร้างโจทย์ดันเจี้ยนด้วย AI"}
+                    </button>
+                  </div>
+                </div>
+                {aiGenError && (
+                  <p className="text-[11px] text-[#fca5a5]">{aiGenError}</p>
+                )}
+                {aiGenMeta && (
+                  <div className="rounded-lg border border-[#2fbf71]/30 bg-[#102a1e]/60 px-2.5 py-1.5 text-[11px] text-[#cbd5e1] space-y-0.5">
+                    <div className="font-bold text-[#86efac]">
+                      เป้าหมาย: {aiGenMeta.targetCellLabel}
+                      {aiGenMeta.targetedFromClassroomWeakness &&
+                      aiGenMeta.weaknessAvgScore !== null
+                        ? ` (เลือกอัตโนมัติจากจุดอ่อนห้องเรียนเฉลี่ย ${aiGenMeta.weaknessAvgScore}%)`
+                        : ""}
+                      {aiGenMeta.model ? ` · โมเดล ${aiGenMeta.model}` : ""}
+                    </div>
+                    {aiGenMeta.misconceptionReason && (
+                      <div className="text-[#c4bdd6]">
+                        ตัวลวงดักความเข้าใจผิด: {aiGenMeta.misconceptionReason}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Question Text */}
