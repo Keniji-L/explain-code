@@ -157,11 +157,12 @@ export async function POST(req: NextRequest) {
         coins_awarded: coinsAwarded,
       });
 
-      // Fetch current run
+      // Fetch current run scoped to the authenticated user
       const { data: runData } = await db
         .from("dungeon_runs")
         .select("hearts_left, xp_earned, coins_earned, status")
         .eq("id", runId)
+        .eq("user_id", session.userId)
         .maybeSingle();
 
       if (runData) {
@@ -173,7 +174,7 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Update run
+        // Update run scoped to the authenticated user
         await db
           .from("dungeon_runs")
           .update({
@@ -183,7 +184,8 @@ export async function POST(req: NextRequest) {
             status: isGameOver ? "game_over" : runData.status,
             updated_at: new Date().toISOString(),
           })
-          .eq("id", runId);
+          .eq("id", runId)
+          .eq("user_id", session.userId);
 
         // Update player stats
         if (isCorrect && (xpAwarded > 0 || coinsAwarded > 0)) {

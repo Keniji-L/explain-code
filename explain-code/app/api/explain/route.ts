@@ -83,9 +83,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. ตรวจสอบสถานะการล็อกอิน (จาก Cookie Session หรือ client userId)
+    // 2. ตรวจสอบสถานะการล็อกอินจาก Cookie Session ที่ยืนยันแล้วเท่านั้น
     const serverSession = await getServerUserSession();
-    const effectiveUserId = serverSession?.userId || body.userId || null;
+    const effectiveUserId = serverSession?.userId || null;
     const isAuthenticated = Boolean(effectiveUserId);
 
     // 3. หากยังไม่ล็อกอิน (Guest) ให้ตรวจสอบโควตาใช้ฟรี 5 ครั้ง/วัน

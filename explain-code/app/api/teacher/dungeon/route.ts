@@ -9,8 +9,34 @@ function isValidUuid(id: unknown): id is string {
   return typeof id === "string" && UUID_REGEX.test(id.trim());
 }
 
+async function requireTeacherOrAdmin() {
+  const session = await getServerUserSession();
+  if (!session) {
+    return {
+      session: null,
+      errorResponse: NextResponse.json(
+        { error: "กรุณาเข้าสู่ระบบก่อนใช้งาน" },
+        { status: 401 }
+      ),
+    };
+  }
+  if (session.role !== "teacher" && session.role !== "admin") {
+    return {
+      session: null,
+      errorResponse: NextResponse.json(
+        { error: "ไม่มีสิทธิ์เข้าถึง: เฉพาะครูผู้สอนหรือแอดมินเท่านั้น" },
+        { status: 403 }
+      ),
+    };
+  }
+  return { session, errorResponse: null };
+}
+
 export async function GET(req: NextRequest) {
   try {
+    const { session, errorResponse } = await requireTeacherOrAdmin();
+    if (errorResponse || !session) return errorResponse!;
+
     const { searchParams } = new URL(req.url);
     const courseId = searchParams.get("courseId");
 
@@ -21,18 +47,24 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const session = await getServerUserSession();
-    if (!session || (session.role !== "teacher" && session.role !== "admin")) {
-      return NextResponse.json(
-        { error: "ไม่มีสิทธิ์เข้าถึง: เฉพาะครูผู้สอนหรือแอดมินเท่านั้น" },
-        { status: 403 }
-      );
-    }
-
     const admin = getSupabaseAdmin();
     const db = admin as any;
 
     if (isSupabaseConfigured() && db && isValidUuid(courseId)) {
+      if (session.role === "teacher") {
+        const { data: course } = await db
+          .from("courses")
+          .select("id, teacher_id")
+          .eq("id", courseId)
+          .maybeSingle();
+        if (course && course.teacher_id !== session.userId) {
+          return NextResponse.json(
+            { error: "ไม่มีสิทธิ์เข้าถึงข้อมูลดันเจี้ยนในคอร์สของผู้สอนคนอื่น" },
+            { status: 403 }
+          );
+        }
+      }
+
       // 1. Fetch questions for this course
       const { data: questions, error: qErr } = await db
         .from("dungeon_questions")
@@ -44,10 +76,18 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: qErr.message }, { status: 500 });
       }
 
-      // 2. Fetch error analytics from room_attempts
-      const { data: attempts } = await db
-        .from("room_attempts")
-        .select("question_id, is_correct");
+      // 2. Fetch error analytics from room_attempts scoped to this course's questions
+      const questionIds = Array.isArray(questions)
+        ? questions.map((q: { id?: string }) => q.id).filter(Boolean)
+        : [];
+      let attempts: Array<{ question_id: string; is_correct: boolean }> | null = [];
+      if (questionIds.length > 0) {
+        const { data: attemptRows } = await db
+          .from("room_attempts")
+          .select("question_id, is_correct")
+          .in("question_id", questionIds);
+        attempts = attemptRows;
+      }
 
       const statsMap: Record<
         string,
@@ -96,13 +136,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerUserSession();
-    if (!session || (session.role !== "teacher" && session.role !== "admin")) {
-      return NextResponse.json(
-        { error: "ไม่มีสิทธิ์เข้าถึง: เฉพาะครูผู้สอนหรือแอดมินเท่านั้น" },
-        { status: 403 }
-      );
-    }
+    const { session, errorResponse } = await requireTeacherOrAdmin();
+    if (errorResponse || !session) return errorResponse!;
 
     const body = await req.json();
     const {
@@ -131,6 +166,43 @@ export async function POST(req: NextRequest) {
     const db = admin as any;
 
     if (isSupabaseConfigured() && db && isValidUuid(courseId)) {
+      if (session.role === "teacher") {
+        const { data: course } = await db
+          .from("courses")
+          .select("id, teacher_id")
+          .eq("id", courseId)
+          .maybeSingle();
+        if (course && course.teacher_id !== session.userId) {
+          return NextResponse.json(
+            { error: "ไม่มีสิทธิ์เพิ่มหรือแก้ไขคำถามในคอร์สของผู้สอนคนอื่น" },
+            { status: 403 }
+          );
+        }
+        if (id && isValidUuid(id)) {
+          const { data: existingQ } = await db
+            .from("dungeon_questions")
+            .select("id, course_id, created_by")
+            .eq("id", id)
+            .maybeSingle();
+          if (existingQ) {
+            let ownsExisting = existingQ.created_by === session.userId;
+            if (!ownsExisting && existingQ.course_id) {
+              const { data: qCourse } = await db
+                .from("courses")
+                .select("teacher_id")
+                .eq("id", existingQ.course_id)
+                .maybeSingle();
+              ownsExisting = Boolean(qCourse && qCourse.teacher_id === session.userId);
+            }
+            if (!ownsExisting) {
+              return NextResponse.json(
+                { error: "ไม่มีสิทธิ์แก้ไขคำถามของผู้สอนคนอื่น" },
+                { status: 403 }
+              );
+            }
+          }
+        }
+      }
       const payload: any = {
         course_id: courseId,
         lesson_id: lessonId || null,
@@ -188,6 +260,9 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const { session, errorResponse } = await requireTeacherOrAdmin();
+    if (errorResponse || !session) return errorResponse!;
+
     const { searchParams } = new URL(req.url);
     const questionId = searchParams.get("questionId");
 
@@ -198,18 +273,35 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const session = await getServerUserSession();
-    if (!session || (session.role !== "teacher" && session.role !== "admin")) {
-      return NextResponse.json(
-        { error: "ไม่มีสิทธิ์เข้าถึง: เฉพาะครูผู้สอนหรือแอดมินเท่านั้น" },
-        { status: 403 }
-      );
-    }
-
     const admin = getSupabaseAdmin();
     const db = admin as any;
 
     if (isSupabaseConfigured() && db && isValidUuid(questionId)) {
+      if (session.role === "teacher") {
+        const { data: existingQ } = await db
+          .from("dungeon_questions")
+          .select("id, course_id, created_by")
+          .eq("id", questionId)
+          .maybeSingle();
+        if (existingQ) {
+          let ownsExisting = existingQ.created_by === session.userId;
+          if (!ownsExisting && existingQ.course_id) {
+            const { data: qCourse } = await db
+              .from("courses")
+              .select("teacher_id")
+              .eq("id", existingQ.course_id)
+              .maybeSingle();
+            ownsExisting = Boolean(qCourse && qCourse.teacher_id === session.userId);
+          }
+          if (!ownsExisting) {
+            return NextResponse.json(
+              { error: "ไม่มีสิทธิ์ลบคำถามของผู้สอนคนอื่น" },
+              { status: 403 }
+            );
+          }
+        }
+      }
+
       const { error } = await db
         .from("dungeon_questions")
         .delete()

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/app/lib/supabase";
+import { AppUserSession, getServerUserSession } from "@/app/lib/supabase/server";
 import { callGeminiGenerateJson } from "@/app/lib/gemini-client";
 
 const UUID_REGEX =
@@ -11,8 +12,10 @@ function isValidUuid(id: unknown): id is string {
 
 /**
  * Helper to record AI evaluation into Supabase ai_evaluations table
+ * Requires a verified user session and ownership of the target attempt.
  */
 async function recordEvaluation(
+  session: AppUserSession | null,
   attemptId: string | undefined,
   studentId: string | undefined,
   explanation: string,
@@ -20,9 +23,20 @@ async function recordEvaluation(
   passed: boolean,
   feedback: string
 ): Promise<{ savedToDb: boolean; attemptId: string | null }> {
-  if (!isSupabaseConfigured()) {
+  if (!session?.userId || !isSupabaseConfigured()) {
     return { savedToDb: false, attemptId: null };
   }
+
+  if (
+    studentId &&
+    studentId.trim() !== session.userId &&
+    session.role !== "admin"
+  ) {
+    return { savedToDb: false, attemptId: null };
+  }
+
+  const effectiveStudentId =
+    session.role === "admin" && studentId ? studentId.trim() : session.userId;
 
   const supabase = getSupabaseAdmin();
   if (!supabase) {
@@ -31,13 +45,28 @@ async function recordEvaluation(
 
   let targetAttemptId = attemptId;
 
-  // If attemptId not provided but studentId provided, look up the latest attempt
-  if (!targetAttemptId && studentId && isValidUuid(studentId)) {
+  if (targetAttemptId && isValidUuid(targetAttemptId)) {
+    const { data: existingAttempt } = await supabase
+      .from("attempts")
+      .select("id, student_id")
+      .eq("id", targetAttemptId)
+      .maybeSingle();
+    if (
+      !existingAttempt ||
+      (existingAttempt.student_id !== effectiveStudentId &&
+        session.role !== "admin")
+    ) {
+      return { savedToDb: false, attemptId: null };
+    }
+  }
+
+  // If attemptId not provided but effectiveStudentId is a UUID, look up the latest attempt
+  if (!targetAttemptId && effectiveStudentId && isValidUuid(effectiveStudentId)) {
     try {
       const { data: latest } = await supabase
         .from("attempts")
         .select("id")
-        .eq("student_id", studentId)
+        .eq("student_id", effectiveStudentId)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -88,6 +117,7 @@ export async function POST(req: NextRequest) {
   let clean = "";
   let attemptId: string | undefined;
   let studentId: string | undefined;
+  const serverSession = await getServerUserSession();
 
   try {
     const body = await req.json();
@@ -102,6 +132,7 @@ export async function POST(req: NextRequest) {
       const feedback =
         "คำอธิบายยังสั้นเกินไป ลองระบุว่าตัวแปรเปลี่ยนค่าอย่างไรและโค้ดส่วนนี้ทำหน้าที่อะไรเพิ่มอีกนิดนะครับ";
       const { savedToDb } = await recordEvaluation(
+        serverSession,
         attemptId,
         studentId,
         clean,
@@ -140,6 +171,7 @@ export async function POST(req: NextRequest) {
           : "จับประเด็นเริ่มต้นได้แล้ว ลองอธิบายเพิ่มว่าค่าตัวแปรเปลี่ยนเป็นเท่าไหร่เมื่อโค้ดรันแต่ละขั้น";
 
       const { savedToDb } = await recordEvaluation(
+        serverSession,
         attemptId,
         studentId,
         clean,
@@ -187,6 +219,7 @@ ${code}
       const fallbackPassed = true;
       const fallbackFeedback = "อธิบายลำดับการทำงานและหน้าที่ของโค้ดได้ชัดเจนดีมาก!";
       const { savedToDb } = await recordEvaluation(
+        serverSession,
         attemptId,
         studentId,
         clean,
@@ -214,6 +247,7 @@ ${code}
         : "ตรวจคำอธิบายด้วย AI หลังบ้านเรียบร้อย";
 
     const { savedToDb } = await recordEvaluation(
+      serverSession,
       attemptId,
       studentId,
       clean,
@@ -235,6 +269,7 @@ ${code}
     const catchPassed = true;
     const catchFeedback = "อธิบายแนวคิดของโค้ดได้ดี เข้าใจลำดับการทำงานของโปรแกรม!";
     const { savedToDb } = await recordEvaluation(
+      serverSession,
       attemptId,
       studentId,
       clean,

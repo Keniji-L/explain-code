@@ -6,7 +6,11 @@ import {
   TeacherApprovalStatus,
   UserRole,
 } from "@/app/lib/supabase";
-import { APP_SESSION_COOKIE, AppUserSession } from "@/app/lib/supabase/server";
+import {
+  APP_SESSION_COOKIE,
+  AppUserSession,
+  getServerUserSession,
+} from "@/app/lib/supabase/server";
 import { signSessionToken } from "@/app/lib/session-cookie";
 import {
   BlockCellId,
@@ -22,8 +26,13 @@ function sha256(input: string): string {
   return createHash("sha256").update(input.trim()).digest("hex");
 }
 
-const SERVER_PEPPER = process.env.SERVER_PEPPER || "_explain_code_pepper_2026";
-const TEACHER_INVITE_CODE = process.env.TEACHER_INVITE_CODE || "TEACHER2026";
+function getServerPepper(): string {
+  return process.env.SERVER_PEPPER || "_explain_code_pepper_2026";
+}
+
+function getTeacherInviteCode(): string {
+  return process.env.TEACHER_INVITE_CODE || "TEACHER2026";
+}
 
 async function withSessionCookie(
   res: NextResponse,
@@ -45,7 +54,7 @@ async function withSessionCookie(
 }
 
 function getPepperedPin(pin: string): string {
-  return `${pin.trim()}${SERVER_PEPPER}`;
+  return `${pin.trim()}${getServerPepper()}`;
 }
 
 function generateRoomCode(): string {
@@ -107,8 +116,7 @@ function getDefaultCellScores(): Record<BlockCellId, number> {
  */
 async function buildStudentRecord(
   supabase: any,
-  studentRow: any,
-  fallbackPinHash: string = ""
+  studentRow: any
 ): Promise<StudentRecord> {
   // ดึงรหัสห้องเรียน
   let resolvedRoomCode = (studentRow as any).room_code || "";
@@ -231,7 +239,7 @@ async function buildStudentRecord(
   return {
     id: studentRow.id,
     nickname: studentRow.nickname,
-    pinHash: studentRow.pin_hash || fallbackPinHash,
+    pinHash: "",
     role: "student",
     roomCode: resolvedRoomCode,
     xp,
@@ -241,6 +249,22 @@ async function buildStudentRecord(
     badges,
     history,
   };
+}
+
+async function teacherOwnsStudent(
+  supabase: NonNullable<ReturnType<typeof getSupabaseAdmin>>,
+  teacherId: string,
+  studentRow: { classroom_id?: string | null }
+): Promise<boolean> {
+  if (!isValidUuid(teacherId) || !studentRow?.classroom_id) {
+    return false;
+  }
+  const { data: room } = await supabase
+    .from("classrooms")
+    .select("id, teacher_id")
+    .eq("id", studentRow.classroom_id)
+    .maybeSingle();
+  return Boolean(room && room.teacher_id === teacherId);
 }
 
 /**
@@ -269,19 +293,36 @@ export async function POST(req: NextRequest) {
       return withSessionCookie(res, null);
     }
 
-    // อนุมัติบัญชีครูด้วยรหัสเชิญครู (Invite Code) หรือโดย Admin
+    // อนุมัติบัญชีครูด้วยรหัสเชิญครู (Invite Code) หรือโดย Admin (ต้องมี session ครู/แอดมินที่ยืนยันแล้วเท่านั้น)
     if (action === "approve-teacher") {
-      const cleanCode = String(inviteCode || "").trim();
-      const targetTeacherId = String(body.teacherId || body.userId || "").trim();
-      const targetUsername = String(body.username || "ครูผู้สอน").trim();
-      const targetDisplayName = String(body.displayName || targetUsername).trim();
+      const session = await getServerUserSession();
+      if (!session) {
+        return NextResponse.json(
+          { error: "กรุณาเข้าสู่ระบบก่อนดำเนินการอนุมัติบัญชีครู" },
+          { status: 401 }
+        );
+      }
 
-      if (cleanCode !== TEACHER_INVITE_CODE) {
+      if (session.role !== "teacher" && session.role !== "admin") {
+        return NextResponse.json(
+          { error: "ไม่มีสิทธิ์อนุมัติบัญชีครู: เฉพาะบัญชีครูผู้สอนหรือแอดมินเท่านั้น" },
+          { status: 403 }
+        );
+      }
+
+      const cleanCode = String(inviteCode || "").trim();
+      if (cleanCode !== getTeacherInviteCode()) {
         return NextResponse.json(
           { error: "รหัสเชิญครูไม่ถูกต้อง (รหัสเริ่มต้นสำหรับทดสอบคือ TEACHER2026)" },
           { status: 403 }
         );
       }
+
+      const requestedTeacherId = String(body.teacherId || body.userId || "").trim();
+      const targetTeacherId =
+        session.role === "admin" && requestedTeacherId
+          ? requestedTeacherId
+          : session.userId;
 
       if (isSupabaseConfigured() && targetTeacherId && isValidUuid(targetTeacherId)) {
         try {
@@ -301,11 +342,16 @@ export async function POST(req: NextRequest) {
         approved: true,
         teacherStatus: "approved",
       });
+
+      if (session.role === "admin" && targetTeacherId !== session.userId) {
+        return res;
+      }
+
       return withSessionCookie(res, {
-        userId: targetTeacherId || `tch-${targetUsername}`,
-        username: targetUsername,
-        displayName: targetDisplayName,
-        role: "teacher",
+        userId: session.userId,
+        username: session.username,
+        displayName: session.displayName || session.username,
+        role: session.role,
         teacherStatus: "approved",
       });
     }
@@ -401,11 +447,7 @@ export async function POST(req: NextRequest) {
                 );
               }
 
-              const studentRecord = await buildStudentRecord(
-                supabase,
-                studentRow,
-                secretHash
-              );
+              const studentRecord = await buildStudentRecord(supabase, studentRow);
 
               const res = NextResponse.json({
                 authenticated: true,
@@ -491,7 +533,10 @@ export async function POST(req: NextRequest) {
           authenticated: true,
           source: "local",
           role: "student",
-          student: matchedStudent,
+          student: {
+            ...matchedStudent,
+            pinHash: "",
+          },
         });
         return withSessionCookie(res, {
           userId: matchedStudent.id || `stu-${matchedStudent.nickname}`,
@@ -570,13 +615,12 @@ export async function POST(req: NextRequest) {
                 );
               }
 
-              const studentRecord = await buildStudentRecord(supabase, studentRow, pinHash);
+              const studentRecord = await buildStudentRecord(supabase, studentRow);
 
               const res = NextResponse.json({
                 authenticated: true,
                 source: "supabase",
                 role: "student",
-                pinHash,
                 student: studentRecord,
               });
               return withSessionCookie(res, {
@@ -612,8 +656,10 @@ export async function POST(req: NextRequest) {
           authenticated: true,
           source: "local",
           role: "student",
-          pinHash,
-          student: demoStudent,
+          student: {
+            ...demoStudent,
+            pinHash: "",
+          },
         });
         return withSessionCookie(fallbackRes, {
           userId: demoStudent.id || `stu-${demoStudent.nickname}`,
@@ -632,28 +678,95 @@ export async function POST(req: NextRequest) {
 
     // ==================== 1.5. ซิงค์ข้อมูลนักเรียนล่าสุดจาก Supabase (Role: student) ====================
     if (action === "sync-student" || action === "get-student") {
-      const studentId = body.studentId || body.userId;
-      const nick = body.nickname ? String(body.nickname).trim() : "";
+      const session = await getServerUserSession();
+      if (!session) {
+        return NextResponse.json(
+          { error: "กรุณาเข้าสู่ระบบก่อนดึงข้อมูลนักเรียน" },
+          { status: 401 }
+        );
+      }
+
+      if (
+        session.role !== "student" &&
+        session.role !== "teacher" &&
+        session.role !== "admin"
+      ) {
+        return NextResponse.json(
+          { error: "ไม่มีสิทธิ์เข้าถึงข้อมูลนักเรียน" },
+          { status: 403 }
+        );
+      }
+
+      const rawStudentId = body.studentId || body.userId;
+      const requestedStudentId =
+        typeof rawStudentId === "string" ? rawStudentId.trim() : "";
+      const requestedNick = body.nickname ? String(body.nickname).trim() : "";
+
+      if (session.role === "student") {
+        if (requestedStudentId && requestedStudentId !== session.userId) {
+          return NextResponse.json(
+            { error: "ไม่มีสิทธิ์เข้าถึงข้อมูลของนักเรียนคนอื่น" },
+            { status: 403 }
+          );
+        }
+        if (
+          requestedNick &&
+          requestedNick.toLowerCase() !== session.username.toLowerCase()
+        ) {
+          return NextResponse.json(
+            { error: "ไม่มีสิทธิ์เข้าถึงข้อมูลของนักเรียนคนอื่น" },
+            { status: 403 }
+          );
+        }
+      }
+
+      const targetStudentId =
+        session.role === "student" ? session.userId : requestedStudentId;
+      const targetNick =
+        session.role === "student"
+          ? !isValidUuid(session.userId)
+            ? session.username
+            : requestedNick
+          : requestedNick;
+
+      if (!targetStudentId && !targetNick) {
+        return NextResponse.json(
+          { error: "ต้องระบุ studentId หรือ nickname" },
+          { status: 400 }
+        );
+      }
 
       if (isSupabaseConfigured()) {
         try {
           const supabase = getSupabaseAdmin();
           if (supabase) {
-            let query = supabase.from("students").select("*");
-            if (studentId && isValidUuid(studentId)) {
-              query = query.eq("id", studentId);
-            } else if (nick) {
-              query = query.ilike("nickname", nick);
-            } else {
-              return NextResponse.json(
-                { error: "ต้องระบุ studentId หรือ nickname" },
-                { status: 400 }
-              );
-            }
+            const queryRes =
+              targetStudentId && isValidUuid(targetStudentId)
+                ? await supabase
+                    .from("students")
+                    .select("*")
+                    .eq("id", targetStudentId)
+                : targetNick
+                ? await supabase
+                    .from("students")
+                    .select("*")
+                    .ilike("nickname", targetNick)
+                : null;
+            const studentRows = queryRes?.data;
+            const stuError = queryRes?.error;
 
-            const { data: studentRows, error: stuError } = await query;
             if (!stuError && studentRows && studentRows.length > 0) {
-              const studentRecord = await buildStudentRecord(supabase, studentRows[0]);
+              const row = studentRows[0];
+              if (session.role === "teacher") {
+                const owns = await teacherOwnsStudent(supabase, session.userId, row);
+                if (!owns) {
+                  return NextResponse.json(
+                    { error: "ไม่มีสิทธิ์เข้าถึงข้อมูลนักเรียนในห้องเรียนอื่น" },
+                    { status: 403 }
+                  );
+                }
+              }
+              const studentRecord = await buildStudentRecord(supabase, row);
               return NextResponse.json({
                 authenticated: true,
                 source: "supabase",
@@ -661,10 +774,24 @@ export async function POST(req: NextRequest) {
                 student: studentRecord,
               });
             }
+
+            if (session.role === "teacher" && targetStudentId !== session.userId) {
+              return NextResponse.json(
+                { error: "ไม่มีสิทธิ์เข้าถึงข้อมูลนักเรียนนี้" },
+                { status: 403 }
+              );
+            }
           }
         } catch (e) {
           console.warn("sync-student error:", e);
         }
+      }
+
+      if (session.role === "teacher" && targetStudentId !== session.userId) {
+        return NextResponse.json(
+          { error: "ไม่มีสิทธิ์เข้าถึงข้อมูลนักเรียนนี้" },
+          { status: 403 }
+        );
       }
 
       return NextResponse.json({
@@ -924,7 +1051,7 @@ export async function POST(req: NextRequest) {
             const newStudent: StudentRecord = {
               id: studentId,
               nickname: nick,
-              pinHash,
+              pinHash: "",
               role: "student",
               roomCode: cleanRoom,
               xp: 0,
@@ -939,7 +1066,6 @@ export async function POST(req: NextRequest) {
               authenticated: true,
               source: "supabase",
               role: "student",
-              pinHash,
               student: newStudent,
             });
             return withSessionCookie(res, {
@@ -958,7 +1084,7 @@ export async function POST(req: NextRequest) {
       const fallbackStudent: StudentRecord = {
         id: `stu-${nick}`,
         nickname: nick,
-        pinHash,
+        pinHash: "",
         role: "student",
         roomCode: cleanRoom,
         xp: 0,
@@ -973,7 +1099,6 @@ export async function POST(req: NextRequest) {
         authenticated: true,
         source: "local",
         role: "student",
-        pinHash,
         student: fallbackStudent,
       });
       return withSessionCookie(fallbackRegRes, {
@@ -1343,9 +1468,59 @@ export async function POST(req: NextRequest) {
  */
 export async function GET(req: NextRequest) {
   try {
+    const session = await getServerUserSession();
+    if (!session) {
+      return NextResponse.json(
+        { error: "กรุณาเข้าสู่ระบบก่อนดึงข้อมูลนักเรียน" },
+        { status: 401 }
+      );
+    }
+
+    if (
+      session.role !== "student" &&
+      session.role !== "teacher" &&
+      session.role !== "admin"
+    ) {
+      return NextResponse.json(
+        { error: "ไม่มีสิทธิ์เข้าถึงข้อมูลนักเรียน" },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
-    const studentId = searchParams.get("studentId");
-    const nickname = searchParams.get("nickname");
+    const requestedStudentId = searchParams.get("studentId")?.trim() || "";
+    const requestedNickname = searchParams.get("nickname")?.trim() || "";
+
+    if (session.role === "student") {
+      if (requestedStudentId && requestedStudentId !== session.userId) {
+        return NextResponse.json(
+          { error: "ไม่มีสิทธิ์เข้าถึงข้อมูลของนักเรียนคนอื่น" },
+          { status: 403 }
+        );
+      }
+      if (
+        requestedNickname &&
+        requestedNickname.toLowerCase() !== session.username.toLowerCase()
+      ) {
+        return NextResponse.json(
+          { error: "ไม่มีสิทธิ์เข้าถึงข้อมูลของนักเรียนคนอื่น" },
+          { status: 403 }
+        );
+      }
+    }
+
+    const studentId =
+      session.role === "student"
+        ? requestedStudentId || session.userId
+        : requestedStudentId;
+    const nickname = requestedNickname;
+
+    if (!studentId && !nickname) {
+      return NextResponse.json(
+        { error: "ต้องระบุ studentId หรือ nickname" },
+        { status: 400 }
+      );
+    }
 
     if (!isSupabaseConfigured()) {
       return NextResponse.json({ success: true, source: "local" });
@@ -1359,27 +1534,45 @@ export async function GET(req: NextRequest) {
     let query = supabase.from("students").select("*");
     if (studentId) {
       if (!isValidUuid(studentId)) {
+        if (session.role === "teacher" && studentId !== session.userId) {
+          return NextResponse.json(
+            { error: "ไม่มีสิทธิ์เข้าถึงข้อมูลนักเรียนนี้" },
+            { status: 403 }
+          );
+        }
         return NextResponse.json({ success: true, source: "local" });
       }
       query = query.eq("id", studentId);
     } else if (nickname) {
-      query = query.ilike("nickname", nickname.trim());
-    } else {
-      return NextResponse.json(
-        { error: "ต้องระบุ studentId หรือ nickname" },
-        { status: 400 }
-      );
+      query = query.ilike("nickname", nickname);
     }
 
     const { data: studentRows, error: stuError } = await query;
     if (stuError || !studentRows || studentRows.length === 0) {
+      if (session.role === "teacher" && studentId !== session.userId) {
+        return NextResponse.json(
+          { error: "ไม่มีสิทธิ์เข้าถึงข้อมูลนักเรียนนี้" },
+          { status: 403 }
+        );
+      }
       return NextResponse.json(
         { error: "Student not found", source: "supabase" },
         { status: 404 }
       );
     }
 
-    const studentRecord = await buildStudentRecord(supabase, studentRows[0]);
+    const row = studentRows[0];
+    if (session.role === "teacher") {
+      const owns = await teacherOwnsStudent(supabase, session.userId, row);
+      if (!owns) {
+        return NextResponse.json(
+          { error: "ไม่มีสิทธิ์เข้าถึงข้อมูลนักเรียนในห้องเรียนอื่น" },
+          { status: 403 }
+        );
+      }
+    }
+
+    const studentRecord = await buildStudentRecord(supabase, row);
     return NextResponse.json({
       success: true,
       source: "supabase",

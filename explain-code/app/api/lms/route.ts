@@ -22,9 +22,55 @@ function generateJoinCode(): string {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const studentId = searchParams.get("studentId") || "";
-    const teacherId = searchParams.get("teacherId") || "";
+    const studentId = (searchParams.get("studentId") || "").trim();
+    const teacherId = (searchParams.get("teacherId") || "").trim();
     const session = await getServerUserSession();
+
+    if (teacherId) {
+      if (!session?.userId) {
+        return NextResponse.json(
+          { error: "กรุณาเข้าสู่ระบบก่อนดึงข้อมูลผู้สอน" },
+          { status: 401 }
+        );
+      }
+      if (session.role !== "teacher" && session.role !== "admin") {
+        return NextResponse.json(
+          { error: "ไม่มีสิทธิ์เข้าถึงข้อมูลผู้สอน" },
+          { status: 403 }
+        );
+      }
+      if (session.role === "teacher" && teacherId !== session.userId) {
+        return NextResponse.json(
+          { error: "ไม่มีสิทธิ์เข้าถึงข้อมูลของผู้สอนคนอื่น" },
+          { status: 403 }
+        );
+      }
+    }
+
+    if (studentId) {
+      if (!session?.userId) {
+        return NextResponse.json(
+          { error: "กรุณาเข้าสู่ระบบก่อนดึงข้อมูลความคืบหน้า" },
+          { status: 401 }
+        );
+      }
+      if (
+        session.role !== "student" &&
+        session.role !== "teacher" &&
+        session.role !== "admin"
+      ) {
+        return NextResponse.json(
+          { error: "ไม่มีสิทธิ์เข้าถึงข้อมูลความคืบหน้า" },
+          { status: 403 }
+        );
+      }
+      if (session.role === "student" && studentId !== session.userId) {
+        return NextResponse.json(
+          { error: "ไม่มีสิทธิ์เข้าถึงข้อมูลของนักเรียนคนอื่น" },
+          { status: 403 }
+        );
+      }
+    }
 
     if (!isSupabaseConfigured()) {
       return NextResponse.json({
@@ -53,6 +99,35 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    if (
+      studentId &&
+      session?.role === "teacher" &&
+      studentId !== session.userId
+    ) {
+      let ownsStudent = false;
+      if (UUID_REGEX.test(studentId) && UUID_REGEX.test(session.userId)) {
+        const { data: stu } = await supabase
+          .from("students")
+          .select("classroom_id")
+          .eq("id", studentId)
+          .maybeSingle();
+        if (stu?.classroom_id) {
+          const { data: room } = await supabase
+            .from("classrooms")
+            .select("teacher_id")
+            .eq("id", stu.classroom_id)
+            .maybeSingle();
+          ownsStudent = Boolean(room && room.teacher_id === session.userId);
+        }
+      }
+      if (!ownsStudent) {
+        return NextResponse.json(
+          { error: "ไม่มีสิทธิ์เข้าถึงข้อมูลของนักเรียนในห้องเรียนอื่น" },
+          { status: 403 }
+        );
+      }
+    }
+
     let coursesData: any[] | null = null;
     let lessonsData: any[] | null = null;
     let enrollmentsData: any[] = [];
@@ -77,26 +152,63 @@ export async function GET(req: NextRequest) {
         lessonsData = lRows;
       }
 
-      if (studentId && UUID_REGEX.test(studentId)) {
-        const { data: eRows } = await supabase
-          .from("enrollments")
-          .select("*")
-          .eq("student_id", studentId);
-        if (eRows) enrollmentsData = eRows;
+      if (studentId && UUID_REGEX.test(studentId) && session?.userId) {
+        const teacherCourseIds =
+          session.role === "teacher" && studentId !== session.userId
+            ? (coursesData || [])
+                .filter((c) => c.teacher_id === session.userId)
+                .map((c) => c.id)
+            : null;
 
-        const { data: pRows } = await supabase
-          .from("lesson_progress")
-          .select("*")
-          .eq("student_id", studentId);
-        if (pRows) progressData = pRows;
-      } else if (teacherId) {
-        const { data: eRows } = await supabase.from("enrollments").select("*");
-        if (eRows) enrollmentsData = eRows;
+        if (teacherCourseIds === null || teacherCourseIds.length > 0) {
+          let eQuery = supabase
+            .from("enrollments")
+            .select("*")
+            .eq("student_id", studentId);
+          let pQuery = supabase
+            .from("lesson_progress")
+            .select("*")
+            .eq("student_id", studentId);
 
-        const { data: pRows } = await supabase
-          .from("lesson_progress")
-          .select("*");
-        if (pRows) progressData = pRows;
+          if (teacherCourseIds) {
+            eQuery = eQuery.in("course_id", teacherCourseIds);
+            pQuery = pQuery.in("course_id", teacherCourseIds);
+          }
+
+          const [{ data: eRows }, { data: pRows }] = await Promise.all([
+            eQuery,
+            pQuery,
+          ]);
+          if (eRows) enrollmentsData = eRows;
+          if (pRows) progressData = pRows;
+        }
+      } else if (teacherId && session?.userId) {
+        if (session.role === "admin") {
+          const [{ data: eRows }, { data: pRows }] = await Promise.all([
+            supabase.from("enrollments").select("*"),
+            supabase.from("lesson_progress").select("*"),
+          ]);
+          if (eRows) enrollmentsData = eRows;
+          if (pRows) progressData = pRows;
+        } else {
+          const teacherCourseIds = (coursesData || [])
+            .filter((c) => c.teacher_id === session.userId)
+            .map((c) => c.id);
+          if (teacherCourseIds.length > 0) {
+            const [{ data: eRows }, { data: pRows }] = await Promise.all([
+              supabase
+                .from("enrollments")
+                .select("*")
+                .in("course_id", teacherCourseIds),
+              supabase
+                .from("lesson_progress")
+                .select("*")
+                .in("course_id", teacherCourseIds),
+            ]);
+            if (eRows) enrollmentsData = eRows;
+            if (pRows) progressData = pRows;
+          }
+        }
       }
 
       if (session?.userId) {
@@ -184,22 +296,54 @@ export async function POST(req: NextRequest) {
 
     // 1. สร้างหรืออัปเดตคอร์ส (เฉพาะครูที่อนุมัติแล้ว)
     if (action === "upsert-course") {
-      const course = body.course;
-      const actorRole = session?.role || body.role;
-      const actorStatus = session?.teacherStatus || body.teacherStatus || "approved";
+      if (!session?.userId) {
+        return NextResponse.json(
+          { error: "กรุณาเข้าสู่ระบบก่อนจัดการคอร์สเรียน" },
+          { status: 401 }
+        );
+      }
 
-      if (actorRole !== "teacher" && actorRole !== "admin") {
+      if (session.role !== "teacher" && session.role !== "admin") {
         return NextResponse.json(
           { error: "เฉพาะบัญชีครูผู้สอนเท่านั้นที่สามารถจัดการคอร์สได้" },
           { status: 403 }
         );
       }
 
-      if (actorRole === "teacher" && actorStatus !== "approved") {
+      if (
+        session.role === "teacher" &&
+        session.teacherStatus !== "approved"
+      ) {
         return NextResponse.json(
           { error: "บัญชีครูของคุณยังอยู่ในสถานะรออนุมัติ (pending) กรุณายืนยันรหัสเชิญครูก่อนสร้างคอร์ส" },
           { status: 403 }
         );
+      }
+
+      const course = body.course;
+      if (!course || typeof course !== "object") {
+        return NextResponse.json(
+          { error: "ข้อมูลคอร์สเรียนไม่ถูกต้อง" },
+          { status: 400 }
+        );
+      }
+
+      if (supabase && course.id && UUID_REGEX.test(String(course.id))) {
+        const { data: existingCourse } = await supabase
+          .from("courses")
+          .select("id, teacher_id")
+          .eq("id", String(course.id))
+          .maybeSingle();
+        if (
+          existingCourse &&
+          session.role === "teacher" &&
+          existingCourse.teacher_id !== session.userId
+        ) {
+          return NextResponse.json(
+            { error: "ไม่มีสิทธิ์แก้ไขคอร์สของผู้สอนคนอื่น" },
+            { status: 403 }
+          );
+        }
       }
 
       const nowIso = new Date().toISOString();
@@ -207,10 +351,17 @@ export async function POST(req: NextRequest) {
         course.visibility !== undefined
           ? course.visibility === "public"
           : Boolean(course.is_published);
+      const effectiveTeacherId =
+        session.role === "admin" && course.teacher_id
+          ? String(course.teacher_id)
+          : session.userId;
       const newCourse = {
         id: course.id || crypto.randomUUID(),
-        teacher_id: session?.userId || course.teacher_id,
-        teacher_name: session?.displayName || course.teacher_name || "ครูผู้สอน",
+        teacher_id: effectiveTeacherId,
+        teacher_name:
+          session.role === "admin" && course.teacher_name
+            ? String(course.teacher_name).trim()
+            : session.displayName || session.username || "ครูผู้สอน",
         title: String(course.title || "").trim(),
         description: String(course.description || "").trim(),
         join_code: String(course.join_code || generateJoinCode())
@@ -242,16 +393,49 @@ export async function POST(req: NextRequest) {
 
     // 2. ลบคอร์สของครู
     if (action === "delete-course") {
-      const { courseId, teacherId } = body;
-      const effectiveTeacherId = session?.userId || teacherId;
+      if (!session?.userId) {
+        return NextResponse.json(
+          { error: "กรุณาเข้าสู่ระบบก่อนลบคอร์สเรียน" },
+          { status: 401 }
+        );
+      }
 
-      if (supabase && UUID_REGEX.test(courseId) && UUID_REGEX.test(effectiveTeacherId)) {
-        try {
-          await supabase
+      if (session.role !== "teacher" && session.role !== "admin") {
+        return NextResponse.json(
+          { error: "เฉพาะบัญชีครูผู้สอนเท่านั้นที่สามารถลบคอร์สได้" },
+          { status: 403 }
+        );
+      }
+
+      const courseId = String(body.courseId || "").trim();
+      if (!courseId) {
+        return NextResponse.json(
+          { error: "ต้องระบุรหัสคอร์สที่ต้องการลบ" },
+          { status: 400 }
+        );
+      }
+
+      if (supabase && UUID_REGEX.test(courseId)) {
+        if (session.role === "teacher") {
+          const { data: existingCourse } = await supabase
             .from("courses")
-            .delete()
+            .select("id, teacher_id")
             .eq("id", courseId)
-            .eq("teacher_id", effectiveTeacherId);
+            .maybeSingle();
+          if (existingCourse && existingCourse.teacher_id !== session.userId) {
+            return NextResponse.json(
+              { error: "ไม่มีสิทธิ์ลบคอร์สของผู้สอนคนอื่น" },
+              { status: 403 }
+            );
+          }
+        }
+
+        try {
+          let delQuery = supabase.from("courses").delete().eq("id", courseId);
+          if (session.role === "teacher" && UUID_REGEX.test(session.userId)) {
+            delQuery = delQuery.eq("teacher_id", session.userId);
+          }
+          await delQuery;
         } catch (e) {
           console.warn("Supabase delete-course notice:", e);
         }
@@ -261,7 +445,74 @@ export async function POST(req: NextRequest) {
 
     // 3. สร้างหรืออัปเดตบทเรียน
     if (action === "upsert-lesson") {
+      if (!session?.userId) {
+        return NextResponse.json(
+          { error: "กรุณาเข้าสู่ระบบก่อนจัดการบทเรียน" },
+          { status: 401 }
+        );
+      }
+
+      if (session.role !== "teacher" && session.role !== "admin") {
+        return NextResponse.json(
+          { error: "เฉพาะบัญชีครูผู้สอนเท่านั้นที่สามารถจัดการบทเรียนได้" },
+          { status: 403 }
+        );
+      }
+
+      if (
+        session.role === "teacher" &&
+        session.teacherStatus !== "approved"
+      ) {
+        return NextResponse.json(
+          { error: "บัญชีครูของคุณยังอยู่ในสถานะรออนุมัติ (pending)" },
+          { status: 403 }
+        );
+      }
+
       const lesson = body.lesson;
+      if (!lesson || typeof lesson !== "object" || !lesson.course_id) {
+        return NextResponse.json(
+          { error: "ข้อมูลบทเรียนไม่ถูกต้อง" },
+          { status: 400 }
+        );
+      }
+
+      if (supabase && session.role === "teacher") {
+        if (UUID_REGEX.test(String(lesson.course_id))) {
+          const { data: targetCourse } = await supabase
+            .from("courses")
+            .select("id, teacher_id")
+            .eq("id", String(lesson.course_id))
+            .maybeSingle();
+          if (targetCourse && targetCourse.teacher_id !== session.userId) {
+            return NextResponse.json(
+              { error: "ไม่มีสิทธิ์เพิ่มหรือแก้ไขบทเรียนในคอร์สของผู้สอนคนอื่น" },
+              { status: 403 }
+            );
+          }
+        }
+        if (lesson.id && UUID_REGEX.test(String(lesson.id))) {
+          const { data: existingLesson } = await supabase
+            .from("lessons")
+            .select("id, course_id")
+            .eq("id", String(lesson.id))
+            .maybeSingle();
+          if (existingLesson?.course_id && UUID_REGEX.test(existingLesson.course_id)) {
+            const { data: existingCourse } = await supabase
+              .from("courses")
+              .select("id, teacher_id")
+              .eq("id", existingLesson.course_id)
+              .maybeSingle();
+            if (existingCourse && existingCourse.teacher_id !== session.userId) {
+              return NextResponse.json(
+                { error: "ไม่มีสิทธิ์แก้ไขบทเรียนในคอร์สของผู้สอนคนอื่น" },
+                { status: 403 }
+              );
+            }
+          }
+        }
+      }
+
       const nowIso = new Date().toISOString();
       const newLesson = {
         id: lesson.id || crypto.randomUUID(),
@@ -301,8 +552,50 @@ export async function POST(req: NextRequest) {
 
     // 4. ลบบทเรียน
     if (action === "delete-lesson") {
-      const { lessonId } = body;
+      if (!session?.userId) {
+        return NextResponse.json(
+          { error: "กรุณาเข้าสู่ระบบก่อนลบบทเรียน" },
+          { status: 401 }
+        );
+      }
+
+      if (session.role !== "teacher" && session.role !== "admin") {
+        return NextResponse.json(
+          { error: "เฉพาะบัญชีครูผู้สอนเท่านั้นที่สามารถลบบทเรียนได้" },
+          { status: 403 }
+        );
+      }
+
+      const lessonId = String(body.lessonId || "").trim();
+      if (!lessonId) {
+        return NextResponse.json(
+          { error: "ต้องระบุรหัสบทเรียนที่ต้องการลบ" },
+          { status: 400 }
+        );
+      }
+
       if (supabase && UUID_REGEX.test(lessonId)) {
+        if (session.role === "teacher") {
+          const { data: existingLesson } = await supabase
+            .from("lessons")
+            .select("id, course_id")
+            .eq("id", lessonId)
+            .maybeSingle();
+          if (existingLesson?.course_id && UUID_REGEX.test(existingLesson.course_id)) {
+            const { data: existingCourse } = await supabase
+              .from("courses")
+              .select("id, teacher_id")
+              .eq("id", existingLesson.course_id)
+              .maybeSingle();
+            if (existingCourse && existingCourse.teacher_id !== session.userId) {
+              return NextResponse.json(
+                { error: "ไม่มีสิทธิ์ลบบทเรียนในคอร์สของผู้สอนคนอื่น" },
+                { status: 403 }
+              );
+            }
+          }
+        }
+
         try {
           await supabase.from("lessons").delete().eq("id", lessonId);
         } catch (e) {
@@ -314,8 +607,31 @@ export async function POST(req: NextRequest) {
 
     // 5. นักเรียนเข้าร่วมคอร์ส (Enroll)
     if (action === "enroll") {
+      if (!session?.userId) {
+        return NextResponse.json(
+          { error: "กรุณาเข้าสู่ระบบก่อนลงทะเบียนเรียน" },
+          { status: 401 }
+        );
+      }
+
       const { courseId, studentId, lastAccessedLessonId } = body;
-      const effectiveStudentId = session?.userId || studentId;
+      const requestedStudentId =
+        typeof studentId === "string" ? studentId.trim() : "";
+      if (
+        requestedStudentId &&
+        requestedStudentId !== session.userId &&
+        session.role !== "admin"
+      ) {
+        return NextResponse.json(
+          { error: "ไม่มีสิทธิ์ลงทะเบียนเรียนแทนผู้ใช้อื่น" },
+          { status: 403 }
+        );
+      }
+
+      const effectiveStudentId =
+        session.role === "admin" && requestedStudentId
+          ? requestedStudentId
+          : session.userId;
       const nowIso = new Date().toISOString();
 
       const enrollment = {
@@ -359,6 +675,13 @@ export async function POST(req: NextRequest) {
 
     // 6. บันทึกความคืบหน้าบทเรียน (เปิดดูบทเรียน หรือ เรียนจบ)
     if (action === "update-progress") {
+      if (!session?.userId) {
+        return NextResponse.json(
+          { error: "กรุณาเข้าสู่ระบบก่อนบันทึกความคืบหน้าบทเรียน" },
+          { status: 401 }
+        );
+      }
+
       const {
         courseId,
         lessonId,
@@ -366,7 +689,23 @@ export async function POST(req: NextRequest) {
         isCompleted,
         quizScore,
       } = body;
-      const effectiveStudentId = session?.userId || studentId;
+      const requestedStudentId =
+        typeof studentId === "string" ? studentId.trim() : "";
+      if (
+        requestedStudentId &&
+        requestedStudentId !== session.userId &&
+        session.role !== "admin"
+      ) {
+        return NextResponse.json(
+          { error: "ไม่มีสิทธิ์บันทึกความคืบหน้าแทนผู้ใช้อื่น" },
+          { status: 403 }
+        );
+      }
+
+      const effectiveStudentId =
+        session.role === "admin" && requestedStudentId
+          ? requestedStudentId
+          : session.userId;
       const nowIso = new Date().toISOString();
 
       const progressRecord = {

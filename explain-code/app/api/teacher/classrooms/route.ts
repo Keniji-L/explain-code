@@ -1,23 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/app/lib/supabase";
-import { getServerUserSession } from "@/app/lib/supabase/server";
+import { AppUserSession, getServerUserSession } from "@/app/lib/supabase/server";
 import { BlockCellId } from "@/app/lib/curriculum";
 
-async function requireTeacherSession(): Promise<NextResponse | null> {
+async function requireTeacherSession(): Promise<{
+  session: AppUserSession | null;
+  errorResponse: NextResponse | null;
+}> {
   const session = await getServerUserSession();
   if (!session) {
-    return NextResponse.json(
-      { error: "กรุณาเข้าสู่ระบบก่อนใช้งาน" },
-      { status: 401 }
-    );
+    return {
+      session: null,
+      errorResponse: NextResponse.json(
+        { error: "กรุณาเข้าสู่ระบบก่อนใช้งาน" },
+        { status: 401 }
+      ),
+    };
   }
   if (session.role !== "teacher" && session.role !== "admin") {
-    return NextResponse.json(
-      { error: "ไม่มีสิทธิ์เข้าถึง: เฉพาะครูผู้สอนหรือแอดมินเท่านั้น" },
-      { status: 403 }
-    );
+    return {
+      session: null,
+      errorResponse: NextResponse.json(
+        { error: "ไม่มีสิทธิ์เข้าถึง: เฉพาะครูผู้สอนหรือแอดมินเท่านั้น" },
+        { status: 403 }
+      ),
+    };
   }
-  return null;
+  return { session, errorResponse: null };
 }
 
 const UUID_REGEX =
@@ -72,13 +81,37 @@ export interface UpdateClassroomBody {
  */
 export async function GET(req: NextRequest) {
   try {
-    const authError = await requireTeacherSession();
-    if (authError) return authError;
+    const { session, errorResponse } = await requireTeacherSession();
+    if (errorResponse || !session) return errorResponse!;
 
     const searchParams = req.nextUrl.searchParams;
-    const teacherId = searchParams.get("teacherId");
-    const teacherUsername = searchParams.get("teacherUsername");
+    const requestedTeacherId = searchParams.get("teacherId")?.trim() || "";
+    const requestedTeacherUsername =
+      searchParams.get("teacherUsername")?.trim() || "";
     const roomCode = searchParams.get("roomCode");
+
+    if (session.role === "teacher") {
+      if (requestedTeacherId && requestedTeacherId !== session.userId) {
+        return NextResponse.json(
+          { error: "ไม่มีสิทธิ์เข้าถึงห้องเรียนของครูผู้สอนคนอื่น" },
+          { status: 403 }
+        );
+      }
+      if (
+        requestedTeacherUsername &&
+        requestedTeacherUsername.toLowerCase() !== session.username.toLowerCase()
+      ) {
+        return NextResponse.json(
+          { error: "ไม่มีสิทธิ์เข้าถึงห้องเรียนของครูผู้สอนคนอื่น" },
+          { status: 403 }
+        );
+      }
+    }
+
+    const teacherId =
+      session.role === "admin" ? requestedTeacherId : session.userId;
+    const teacherUsername =
+      session.role === "admin" ? requestedTeacherUsername : session.username;
 
     if (!isSupabaseConfigured()) {
       return NextResponse.json({
@@ -125,6 +158,16 @@ export async function GET(req: NextRequest) {
         resolvedTeacherId = t.id;
         resolvedTeacherUsername = t.username;
       }
+    }
+
+    if (session.role === "teacher" && !resolvedTeacherId) {
+      return NextResponse.json({
+        classrooms: [],
+        students: [],
+        cellAverages: [],
+        questionStats: [],
+        source: "supabase",
+      });
     }
 
     // Query classrooms
@@ -404,12 +447,37 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
-    const authError = await requireTeacherSession();
-    if (authError) return authError;
+    const { session, errorResponse } = await requireTeacherSession();
+    if (errorResponse || !session) return errorResponse!;
 
     const body = (await req.json()) as CreateClassroomBody;
     const { roomName, teacherId, teacherUsername, pinnedTopicId, pinnedNote } =
       body;
+
+    if (session.role === "teacher") {
+      if (teacherId && teacherId.trim() !== session.userId) {
+        return NextResponse.json(
+          { error: "ไม่มีสิทธิ์สร้างห้องเรียนในนามของครูผู้สอนคนอื่น" },
+          { status: 403 }
+        );
+      }
+      if (
+        teacherUsername &&
+        teacherUsername.trim().toLowerCase() !== session.username.toLowerCase()
+      ) {
+        return NextResponse.json(
+          { error: "ไม่มีสิทธิ์สร้างห้องเรียนในนามของครูผู้สอนคนอื่น" },
+          { status: 403 }
+        );
+      }
+    }
+
+    const effectiveTeacherId =
+      session.role === "admin" && teacherId ? teacherId.trim() : session.userId;
+    const effectiveTeacherUsername =
+      session.role === "admin" && teacherUsername
+        ? teacherUsername.trim()
+        : session.username;
 
     if (!roomName || !roomName.trim()) {
       return NextResponse.json(
@@ -428,32 +496,19 @@ export async function POST(req: NextRequest) {
       const admin = getSupabaseAdmin();
       if (admin) {
         let resolvedTeacherId: string | null = null;
-        let resolvedUsername = teacherUsername || "ครูตัวอย่าง";
+        let resolvedUsername = effectiveTeacherUsername || "ครูผู้สอน";
 
-        if (teacherId && isValidUuid(teacherId)) {
-          resolvedTeacherId = teacherId;
-        } else if (teacherUsername && teacherUsername.trim()) {
+        if (effectiveTeacherId && isValidUuid(effectiveTeacherId)) {
+          resolvedTeacherId = effectiveTeacherId;
+        } else if (effectiveTeacherUsername && effectiveTeacherUsername.trim()) {
           const { data: t } = await admin
             .from("teachers")
             .select("id, username")
-            .eq("username", teacherUsername.trim())
+            .eq("username", effectiveTeacherUsername.trim())
             .maybeSingle();
           if (t) {
             resolvedTeacherId = t.id;
             resolvedUsername = t.username;
-          }
-        }
-
-        // If teacher is still unresolved, try finding any existing teacher row in database
-        if (!resolvedTeacherId) {
-          const { data: anyTeacher } = await admin
-            .from("teachers")
-            .select("id, username")
-            .limit(1)
-            .maybeSingle();
-          if (anyTeacher) {
-            resolvedTeacherId = anyTeacher.id;
-            resolvedUsername = anyTeacher.username;
           }
         }
 
@@ -540,8 +595,8 @@ export async function POST(req: NextRequest) {
  */
 export async function PATCH(req: NextRequest) {
   try {
-    const authError = await requireTeacherSession();
-    if (authError) return authError;
+    const { session, errorResponse } = await requireTeacherSession();
+    if (errorResponse || !session) return errorResponse!;
 
     const body = (await req.json()) as UpdateClassroomBody;
     const { roomCode, pinnedTopicId, pinnedNote } = body;
@@ -558,6 +613,20 @@ export async function PATCH(req: NextRequest) {
     if (isSupabaseConfigured()) {
       const admin = getSupabaseAdmin();
       if (admin) {
+        if (session.role === "teacher") {
+          const { data: existingRoom } = await admin
+            .from("classrooms")
+            .select("id, teacher_id")
+            .eq("room_code", cleanRoomCode)
+            .maybeSingle();
+          if (existingRoom && existingRoom.teacher_id !== session.userId) {
+            return NextResponse.json(
+              { error: "ไม่มีสิทธิ์แก้ไขห้องเรียนของครูผู้สอนคนอื่น" },
+              { status: 403 }
+            );
+          }
+        }
+
         const updatePayload: {
           pinned_topic_id?: number | null;
           pinned_note?: string;
@@ -570,10 +639,14 @@ export async function PATCH(req: NextRequest) {
           updatePayload.pinned_note = pinnedNote.trim();
         }
 
-        const { error: updateError } = await admin
+        let updateQuery = admin
           .from("classrooms")
           .update(updatePayload)
           .eq("room_code", cleanRoomCode);
+        if (session.role === "teacher" && isValidUuid(session.userId)) {
+          updateQuery = updateQuery.eq("teacher_id", session.userId);
+        }
+        const { error: updateError } = await updateQuery;
 
         if (updateError) {
           console.warn("Failed to update classroom in Supabase:", updateError);

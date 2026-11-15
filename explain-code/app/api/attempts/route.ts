@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/app/lib/supabase";
+import { getServerUserSession } from "@/app/lib/supabase/server";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -40,9 +41,17 @@ export interface CreateAttemptPayload {
  */
 export async function POST(req: NextRequest) {
   try {
+    const session = await getServerUserSession();
+    if (!session?.userId) {
+      return NextResponse.json(
+        { error: "กรุณาเข้าสู่ระบบก่อนบันทึกผลการฝึก" },
+        { status: 401 }
+      );
+    }
+
     const body = (await req.json()) as CreateAttemptPayload;
     const {
-      studentId,
+      studentId: requestedStudentId,
       topicId,
       scorePercent,
       earnedXp,
@@ -51,6 +60,25 @@ export async function POST(req: NextRequest) {
       extraBadgeIds,
       answers,
     } = body;
+
+    const cleanRequestedId =
+      typeof requestedStudentId === "string" ? requestedStudentId.trim() : "";
+
+    if (
+      cleanRequestedId &&
+      cleanRequestedId !== session.userId &&
+      session.role !== "admin"
+    ) {
+      return NextResponse.json(
+        { error: "ไม่มีสิทธิ์บันทึกผลการฝึกแทนผู้ใช้อื่น" },
+        { status: 403 }
+      );
+    }
+
+    const studentId =
+      session.role === "admin" && cleanRequestedId
+        ? cleanRequestedId
+        : session.userId;
 
     if (!studentId || topicId === undefined || scorePercent === undefined) {
       return NextResponse.json(
@@ -387,10 +415,43 @@ export async function POST(req: NextRequest) {
  */
 export async function GET(req: NextRequest) {
   try {
+    const session = await getServerUserSession();
+    if (!session?.userId) {
+      return NextResponse.json(
+        { error: "กรุณาเข้าสู่ระบบก่อนดูผลการฝึก" },
+        { status: 401 }
+      );
+    }
+
+    if (
+      session.role !== "student" &&
+      session.role !== "teacher" &&
+      session.role !== "admin"
+    ) {
+      return NextResponse.json(
+        { error: "ไม่มีสิทธิ์เข้าถึงผลการฝึก" },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
-    const studentId = searchParams.get("studentId");
+    const requestedStudentId = searchParams.get("studentId")?.trim() || "";
     const topicId = searchParams.get("topicId");
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10)));
+
+    if (
+      session.role === "student" &&
+      requestedStudentId &&
+      requestedStudentId !== session.userId
+    ) {
+      return NextResponse.json(
+        { error: "ไม่มีสิทธิ์เข้าถึงผลการฝึกของนักเรียนคนอื่น" },
+        { status: 403 }
+      );
+    }
+
+    const studentId =
+      session.role === "student" ? session.userId : requestedStudentId;
 
     if (!isSupabaseConfigured()) {
       return NextResponse.json({
@@ -407,6 +468,60 @@ export async function GET(req: NextRequest) {
         source: "local",
         attempts: [],
       });
+    }
+
+    let teacherScopedStudentIds: string[] | null = null;
+    if (session.role === "teacher") {
+      if (studentId && studentId !== session.userId) {
+        let ownsStudent = false;
+        if (isValidUuid(studentId) && isValidUuid(session.userId)) {
+          const { data: stu } = await supabase
+            .from("students")
+            .select("classroom_id")
+            .eq("id", studentId)
+            .maybeSingle();
+          if (stu?.classroom_id) {
+            const { data: room } = await supabase
+              .from("classrooms")
+              .select("teacher_id")
+              .eq("id", stu.classroom_id)
+              .maybeSingle();
+            ownsStudent = Boolean(room && room.teacher_id === session.userId);
+          }
+        }
+        if (!ownsStudent) {
+          return NextResponse.json(
+            { error: "ไม่มีสิทธิ์เข้าถึงผลการฝึกของนักเรียนในห้องเรียนอื่น" },
+            { status: 403 }
+          );
+        }
+      } else if (!studentId) {
+        if (isValidUuid(session.userId)) {
+          const { data: rooms } = await supabase
+            .from("classrooms")
+            .select("id")
+            .eq("teacher_id", session.userId);
+          const roomIds = (rooms || []).map((r: { id: string }) => r.id);
+          if (roomIds.length > 0) {
+            const { data: stuRows } = await supabase
+              .from("students")
+              .select("id")
+              .in("classroom_id", roomIds);
+            teacherScopedStudentIds = (stuRows || []).map((s: { id: string }) => s.id);
+          } else {
+            teacherScopedStudentIds = [];
+          }
+        } else {
+          teacherScopedStudentIds = [];
+        }
+
+        if (teacherScopedStudentIds.length === 0) {
+          return NextResponse.json({
+            success: true,
+            attempts: [],
+          });
+        }
+      }
     }
 
     if (studentId && !isValidUuid(studentId)) {
@@ -436,6 +551,8 @@ export async function GET(req: NextRequest) {
 
     if (studentId) {
       query = query.eq("student_id", studentId);
+    } else if (teacherScopedStudentIds) {
+      query = query.in("student_id", teacherScopedStudentIds);
     }
     if (topicId) {
       query = query.eq("topic_id", Number(topicId));
@@ -451,7 +568,11 @@ export async function GET(req: NextRequest) {
         .order("created_at", { ascending: false })
         .limit(limit);
 
-      if (studentId) basicQuery = basicQuery.eq("student_id", studentId);
+      if (studentId) {
+        basicQuery = basicQuery.eq("student_id", studentId);
+      } else if (teacherScopedStudentIds) {
+        basicQuery = basicQuery.in("student_id", teacherScopedStudentIds);
+      }
       if (topicId) basicQuery = basicQuery.eq("topic_id", Number(topicId));
 
       const basicRes = await basicQuery;

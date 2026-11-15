@@ -382,8 +382,8 @@ export default function ExplainCodeApp() {
       return;
     }
 
-    // ถ้ามาจากฐานข้อมูล Supabase โดยตรง
-    if (data.source === "supabase" && data.student) {
+    // ถ้าผ่านการยืนยันตัวตนจาก API (ทั้ง Supabase และบัญชีสาธิต local)
+    if (data.authenticated && data.student) {
       const sbStudent: StudentRecord = data.student;
       const merged = students.some((s) => s.nickname === sbStudent.nickname)
         ? students.map((s) =>
@@ -417,7 +417,7 @@ export default function ExplainCodeApp() {
       return;
     }
 
-    if (found.pinHash !== data.pinHash) {
+    if (!data.authenticated || (data.pinHash && found.pinHash !== data.pinHash)) {
       setAuthMessage({
         type: "error",
         text: "รหัส PIN 4 หลักไม่ถูกต้อง (บัญชีตัวอย่างใช้รหัส PIN: 1234)",
@@ -526,7 +526,7 @@ export default function ExplainCodeApp() {
     const newStu: StudentRecord = data.student || {
       id: "stu-" + Date.now(),
       nickname: nick,
-      pinHash: data.pinHash,
+      pinHash: "",
       role: "student",
       roomCode: code,
       xp: 20,
