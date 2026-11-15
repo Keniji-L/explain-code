@@ -1035,15 +1035,15 @@ export default function ExplainCodeApp() {
               <span>{t("แพลตฟอร์มอ่านโค้ด 6 ภาษา", "6-Language Code Platform")}</span>
             </span>
             <h1 className="mt-4 text-3xl sm:text-5xl font-extrabold tracking-tight text-[#f4efe6] leading-tight">
-              {t("เขียนโค้ดด้วย AI ได้ ", "AI Writes Code — ")}
+              {t("เขียนโค้ดได้แล้ว ", "You Can Write Code — ")}
               <span className="text-[#f6c945] underline decoration-[#9b5de5] underline-offset-8">
-                {t("ต้องอ่านและอธิบายได้ด้วย", "You Must Understand It")}
+                {t("แต่อธิบายโค้ดได้จริงไหม?", "Can You Explain It?")}
               </span>
             </h1>
             <p className="mt-4 text-sm sm:text-base text-[#9a93ad]">
               {t(
-                "ฝึกอ่านโค้ดผ่านดันเจี้ยน RPG หรือวางโค้ดให้ช่วยอธิบายทีละบรรทัด",
-                "Train code reading in 2D RPG dungeons or explain any snippet line by line."
+                'เปลี่ยนจาก "เขียนโค้ดได้แต่อธิบายไม่ถูก" เป็น "เข้าใจการทำงานทุกบรรทัด" ผ่านดันเจี้ยน RPG และตัวช่วยอธิบายโค้ด',
+                'Turn "I wrote it, can\'t explain it" into true line-by-line mastery via RPG dungeons & AI code breakdown.'
               )}
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
