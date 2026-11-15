@@ -207,6 +207,15 @@ export default function ExplainCodePage() {
 
   const handleCreateDungeon = async () => {
     if (!code.trim() || !result) return;
+    if (!session?.userId) {
+      setDungeonError(
+        t(
+          "กรุณาเข้าสู่ระบบก่อนสร้างและบันทึกดันเจี้ยนส่วนตัวของคุณ",
+          "Please sign in first to create and save your personal custom dungeon."
+        )
+      );
+      return;
+    }
     setDungeonError(null);
     setIsCreatingDungeon(true);
     try {
@@ -232,7 +241,7 @@ export default function ExplainCodePage() {
         return;
       }
 
-      saveCustomDungeon(data.dungeon);
+      saveCustomDungeon(data.dungeon, session.userId);
       router.push(
         `/courses?lang=${encodeURIComponent(data.dungeon.language)}&customDungeon=${encodeURIComponent(data.dungeon.id)}`
       );

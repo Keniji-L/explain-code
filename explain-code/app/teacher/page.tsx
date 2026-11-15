@@ -30,6 +30,12 @@ import { PixelSpriteView } from "../components/dungeon/PixelSpriteView";
 import { getMonsterDef, MonsterType } from "../lib/dungeon/monsters";
 import { hashString, dungeonNameForCourse } from "../lib/dungeon/seed";
 import { SAMPLE_DUNGEON_QUESTIONS } from "../lib/dungeon/questions";
+import {
+  DungeonSaveRecord,
+  calculateDungeonSaveProgressPercent,
+  loadUserDungeonSaves,
+} from "../lib/dungeon-save";
+import { LANGUAGE_TRACKS } from "../lib/language-tracks";
 
 export default function TeacherLMSDashboardPage() {
   const router = useRouter();
@@ -38,6 +44,7 @@ export default function TeacherLMSDashboardPage() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [progress, setProgress] = useState<LessonProgress[]>([]);
+  const [dungeonSaves, setDungeonSaves] = useState<DungeonSaveRecord[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<
     "lessons" | "students" | "dungeon"
@@ -90,30 +97,41 @@ export default function TeacherLMSDashboardPage() {
   const [quizExplanation, setQuizExplanation] = useState("");
 
   useEffect(() => {
-    const current = getClientSession();
-    if (!current) {
-      router.replace("/login?role=teacher&redirect=/teacher");
-      return;
-    }
-    if (current.role !== "teacher" && current.role !== "admin") {
-      router.replace("/");
-      return;
-    }
-    setSession(current);
+    const syncTeacherState = () => {
+      const current = getClientSession();
+      if (!current) {
+        router.replace("/login?role=teacher&redirect=/teacher");
+        return;
+      }
+      if (current.role !== "teacher" && current.role !== "admin") {
+        router.replace("/");
+        return;
+      }
+      setSession(current);
 
-    const localCourses = loadLocalCourses();
-    const localLessons = loadLocalLessons();
-    setCourses(localCourses);
-    setLessons(localLessons);
-    setEnrollments(loadLocalEnrollments());
-    setProgress(loadLocalLessonProgress());
+      const localCourses = loadLocalCourses();
+      const localLessons = loadLocalLessons();
+      setCourses(localCourses);
+      setLessons(localLessons);
+      setEnrollments(loadLocalEnrollments());
+      setProgress(loadLocalLessonProgress());
+      setDungeonSaves(loadUserDungeonSaves(current.userId));
 
-    const owned = localCourses.filter((c) =>
-      isOwnerOfCourse(c, current)
-    );
-    if (owned.length > 0) {
-      setSelectedCourseId(owned[0].id);
-    }
+      const owned = localCourses.filter((c) => isOwnerOfCourse(c, current));
+      setSelectedCourseId((prev) =>
+        prev && owned.some((c) => c.id === prev)
+          ? prev
+          : owned[0]?.id || ""
+      );
+    };
+
+    syncTeacherState();
+    window.addEventListener("explain-code-auth-change", syncTeacherState);
+    window.addEventListener("storage", syncTeacherState);
+    return () => {
+      window.removeEventListener("explain-code-auth-change", syncTeacherState);
+      window.removeEventListener("storage", syncTeacherState);
+    };
   }, [router]);
 
   // Load dungeon questions for current course
@@ -621,23 +639,314 @@ export default function TeacherLMSDashboardPage() {
             </p>
           </div>
 
-          {isApproved && (
-            <button
-              type="button"
-              onClick={() =>
-                setEditingCourse({
-                  title: "",
-                  description: "",
-                  level: "beginner",
-                  is_published: true,
-                })
-              }
-              className="inline-flex items-center gap-2 rounded-xl bg-[#2fbf71] px-4 py-2.5 text-xs font-extrabold text-[#0b0b14] shadow-md hover:bg-[#34d37d] transition-colors cursor-pointer whitespace-nowrap"
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Link
+              href="/my-learning"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#3d395a] bg-[#1c1b2b] px-4 py-2.5 text-xs font-bold text-[#f4efe6] hover:border-[#f6c945] hover:bg-[#252238] transition-colors whitespace-nowrap"
             >
-              <span>+ สร้างคอร์สเรียนใหม่</span>
-            </button>
-          )}
+              <Icon name="award" className="h-4 w-4 text-[#f6c945]" />
+              <span>การเรียนของฉัน</span>
+            </Link>
+            <Link
+              href="/my-history"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#3d395a] bg-[#1c1b2b] px-4 py-2.5 text-xs font-bold text-[#f4efe6] hover:border-[#f6c945] hover:bg-[#252238] transition-colors whitespace-nowrap"
+            >
+              <Icon name="clock" className="h-4 w-4 text-[#f6c945]" />
+              <span>ประวัติของฉัน</span>
+            </Link>
+            {isApproved && (
+              <button
+                type="button"
+                onClick={() =>
+                  setEditingCourse({
+                    title: "",
+                    description: "",
+                    level: "beginner",
+                    is_published: true,
+                  })
+                }
+                className="inline-flex items-center gap-2 rounded-xl bg-[#2fbf71] px-4 py-2.5 text-xs font-extrabold text-[#0b0b14] shadow-md hover:bg-[#34d37d] transition-colors cursor-pointer whitespace-nowrap"
+              >
+                <span>+ สร้างคอร์สเรียนใหม่</span>
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* ==================== ความคืบหน้าดันเจี้ยนของครู (เซฟเกมล่าสุด) ==================== */}
+        {dungeonSaves.length > 0 && (
+          <section className="mb-8 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-extrabold text-[#ffe27a] flex items-center gap-2">
+                <Icon name="gamepad" className="h-5 w-5 text-[#9b5de5]" />
+                <span>ความคืบหน้าดันเจี้ยนของคุณ (เซฟเกมล่าสุด)</span>
+              </h2>
+              <Link
+                href="/courses"
+                className="text-xs font-bold text-[#9a93ad] hover:text-[#ffe27a] transition-colors"
+              >
+                ไปหน้าดันเจี้ยนทั้งหมด →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {dungeonSaves.map((save) => {
+                const trackMeta =
+                  LANGUAGE_TRACKS.find((tr) => tr.id === save.language) ||
+                  LANGUAGE_TRACKS[0];
+                const pct = calculateDungeonSaveProgressPercent(save);
+                const savedTimeText = (() => {
+                  try {
+                    return new Date(save.savedAt).toLocaleString("th-TH", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    });
+                  } catch {
+                    return "เมื่อสักครู่";
+                  }
+                })();
+
+                return (
+                  <div
+                    key={save.language}
+                    className="rounded-2xl border border-[#5a2d91] bg-gradient-to-br from-[#1c152e] to-[#141220] p-5 shadow-lg flex flex-col justify-between gap-4"
+                  >
+                    <div>
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <span className="rounded-full border border-[#9b5de5]/60 bg-[#25193b] px-3 py-0.5 text-[11px] font-extrabold text-[#e9d5ff]">
+                          {trackMeta.name}
+                        </span>
+                        <span className="text-[11px] font-semibold text-[#9a93ad]">
+                          💾 เซฟล่าสุด: {savedTimeText}
+                        </span>
+                      </div>
+
+                      <h3 className="text-base font-extrabold text-[#f4efe6]">
+                        ถึงด่านที่ {save.currentFloorNumber}/{save.totalFloors} ·{" "}
+                        {save.currentTopicTitle}
+                      </h3>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-[#c4bdd6]">
+                        <span className="rounded-md border border-[#9b5de5]/60 bg-[#25193b] px-2 py-0.5 text-[11px] font-bold text-[#ffe27a]">
+                          ⚔️ เฟสคำถามที่{" "}
+                          {save.currentPhaseNumber ||
+                            (save.arenaSnapshot?.battlePhaseIndex ?? 0) + 1}
+                          /
+                          {save.totalPhases ||
+                            save.arenaSnapshot?.battleTotalPhases ||
+                            3}
+                        </span>
+                        <span>
+                          พิชิตแล้ว {save.completedTopicIds.length} จาก{" "}
+                          {save.totalFloors} ด่าน · สะสม {save.xp} XP
+                        </span>
+                      </div>
+
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between text-[11px] font-bold mb-1">
+                          <span className="text-[#c4bdd6]">ความคืบหน้า</span>
+                          <span className="text-[#2fbf71]">{pct}%</span>
+                        </div>
+                        <div className="h-2 w-full overflow-hidden rounded-full border border-[#2f2d45] bg-[#0d0b14]">
+                          <div
+                            className="h-full rounded-full bg-[#2fbf71] transition-all"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {save.history && save.history.length > 0 && (
+                        <div className="mt-3 border-t border-[#2f2d45] pt-2.5 space-y-1">
+                          <p className="text-[11px] font-bold text-[#9a93ad]">
+                            ประวัติการเล่นล่าสุด:
+                          </p>
+                          {save.history.slice(0, 3).map((h, i) => (
+                            <div
+                              key={`${h.topicId}-${i}`}
+                              className="flex items-center justify-between text-[11px] text-[#e8e1cf]"
+                            >
+                              <span className="truncate pr-2">{h.topicTitle}</span>
+                              {h.topicTitle.includes("(จุดเซฟเกม") ? (
+                                <span className="shrink-0 font-bold text-[#ffe27a]">
+                                  {h.timestamp}
+                                </span>
+                              ) : (
+                                <span className="shrink-0 font-bold text-[#86efac]">
+                                  {h.scorePercent}% (+{h.xpEarned} XP)
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <Link
+                      href={`/courses?lang=${save.language}&topicId=${save.currentTopicId}`}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#f6c945] px-4 py-2.5 text-xs font-extrabold text-[#120f1c] shadow-md hover:bg-[#ffe27a] transition-colors"
+                    >
+                      <Icon name="play" className="h-4 w-4" filled />
+                      <span>เล่นต่อจากที่เซฟไว้ →</span>
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* ==================== ความคืบหน้าคอร์สและดันเจี้ยนคอร์สที่ครูเข้าเล่น ==================== */}
+        {(() => {
+          const mySelfEnrollments = enrollments.filter(
+            (e) => e.student_id === session.userId
+          );
+          const mySelfProgress = progress.filter(
+            (p) => p.student_id === session.userId
+          );
+          const playedCourseIds = new Set([
+            ...mySelfEnrollments.map((e) => e.course_id),
+            ...mySelfProgress.map((p) => p.course_id),
+          ]);
+          const playedCourses = courses.filter((c) =>
+            playedCourseIds.has(c.id)
+          );
+          if (playedCourses.length === 0) return null;
+
+          return (
+            <section className="mb-8 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-lg font-extrabold text-[#ffe27a] flex items-center gap-2">
+                  <Icon name="award" className="h-5 w-5 text-[#2fbf71]" />
+                  <span>
+                    คอร์สและด่านดันเจี้ยนที่คุณเล่นล่าสุด (ความคืบหน้าส่วนตัว)
+                  </span>
+                </h2>
+                <Link
+                  href="/my-learning"
+                  className="text-xs font-bold text-[#9a93ad] hover:text-[#ffe27a] transition-colors"
+                >
+                  ดูทั้งหมดในการเรียนของฉัน →
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {playedCourses.map((course) => {
+                  const cLessons = lessons
+                    .filter((l) => l.course_id === course.id && l.is_published)
+                    .sort((a, b) => a.order_index - b.order_index);
+                  const cProg = mySelfProgress.filter(
+                    (p) => p.course_id === course.id
+                  );
+                  const completedSet = new Set(
+                    cProg.filter((p) => p.is_completed).map((p) => p.lesson_id)
+                  );
+                  const enroll = mySelfEnrollments.find(
+                    (e) => e.course_id === course.id
+                  );
+                  const resumeLessonIdx = Math.max(
+                    0,
+                    cLessons.findIndex(
+                      (l) => l.id === enroll?.last_accessed_lesson_id
+                    )
+                  );
+                  const resumeLesson =
+                    cLessons[resumeLessonIdx] ||
+                    cLessons.find((l) => !completedSet.has(l.id)) ||
+                    cLessons[0];
+                  const currentFloorNum = Math.min(
+                    Math.max(1, cLessons.length),
+                    resumeLessonIdx + 1
+                  );
+                  const totalCourseFloors = Math.max(1, cLessons.length);
+                  const pct =
+                    cLessons.length > 0
+                      ? completedSet.size >= cLessons.length
+                        ? 100
+                        : Math.max(
+                            Math.round(
+                              (completedSet.size / cLessons.length) * 100
+                            ),
+                            Math.round(
+                              ((Math.max(completedSet.size, currentFloorNum - 1) +
+                                0.5) /
+                                totalCourseFloors) *
+                                100
+                            )
+                          )
+                      : 0;
+
+                  return (
+                    <div
+                      key={course.id}
+                      className="rounded-2xl border border-[#2f2d45] bg-[#141220] p-5 shadow-lg flex flex-col justify-between gap-4"
+                    >
+                      <div>
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                          <span className="rounded-md border border-[#3d395a] bg-[#1c1b2b] px-2.5 py-0.5 text-[11px] font-bold text-[#f6c945]">
+                            รหัส: {course.join_code}
+                          </span>
+                          <span className="text-[11px] font-bold text-[#ffe27a]">
+                            💾 ด่านล่าสุด: ด่านที่ {currentFloorNum}/
+                            {totalCourseFloors}
+                          </span>
+                        </div>
+                        <h3 className="text-base font-extrabold text-[#f4efe6]">
+                          {course.title}
+                        </h3>
+                        {resumeLesson && (
+                          <p className="mt-1 text-xs text-[#c4bdd6]">
+                            ด่าน/บทเรียนที่ค้างไว้:{" "}
+                            <span className="font-bold text-[#ffe27a]">
+                              {resumeLesson.title}
+                            </span>
+                          </p>
+                        )}
+                        <div className="mt-3">
+                          <div className="flex items-center justify-between text-[11px] font-bold mb-1">
+                            <span className="text-[#c4bdd6]">
+                              ความคืบหน้า ({completedSet.size}/{cLessons.length}{" "}
+                              ด่าน)
+                            </span>
+                            <span className="text-[#2fbf71]">{pct}%</span>
+                          </div>
+                          <div className="h-2 w-full overflow-hidden rounded-full border border-[#2f2d45] bg-[#0d0b14]">
+                            <div
+                              className="h-full rounded-full bg-[#2fbf71] transition-all"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                          href={`/dungeon/${course.id}?floor=${Math.max(
+                            0,
+                            currentFloorNum - 1
+                          )}`}
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#9b5de5] bg-[#5a2d91] px-3.5 py-2.5 text-xs font-extrabold text-[#ffe27a] hover:bg-[#6d3fc0] transition-colors whitespace-nowrap"
+                        >
+                          <Icon name="gamepad" className="h-4 w-4 shrink-0" />
+                          <span>
+                            เล่นต่อด่านที่ {currentFloorNum}/{totalCourseFloors} →
+                          </span>
+                        </Link>
+                        {resumeLesson && (
+                          <Link
+                            href={`/courses/${course.id}/lessons/${resumeLesson.id}`}
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#2fbf71] px-3.5 py-2.5 text-xs font-extrabold text-[#0b0b14] hover:bg-[#34d37d] transition-colors whitespace-nowrap"
+                          >
+                            <Icon name="play" className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">เรียนบทนี้ต่อ</span>
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })()}
 
         {/* Teacher Approval Banner if Pending */}
         {!isApproved && (

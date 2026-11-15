@@ -14,12 +14,19 @@ import {
   loadLocalExplanationsHistory,
   removeLocalExplanationHistory,
 } from "../lib/lms-data";
+import {
+  DungeonSaveRecord,
+  calculateDungeonSaveProgressPercent,
+  loadUserDungeonSaves,
+} from "../lib/dungeon-save";
+import { LANGUAGE_TRACKS } from "../lib/language-tracks";
 
 export default function MyHistoryPage() {
   const router = useRouter();
   const [session, setSession] = useState<ClientAuthSession | null>(null);
   const [items, setItems] = useState<CodeExplanation[]>([]);
   const [selectedItem, setSelectedItem] = useState<CodeExplanation | null>(null);
+  const [dungeonSaves, setDungeonSaves] = useState<DungeonSaveRecord[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -29,6 +36,20 @@ export default function MyHistoryPage() {
       return;
     }
     setSession(current);
+    setDungeonSaves(loadUserDungeonSaves(current.userId));
+
+    const handleSync = () => {
+      const latest = getClientSession();
+      if (!latest) {
+        router.replace("/login?redirect=/my-history");
+        return;
+      }
+      setSession(latest);
+      setDungeonSaves(loadUserDungeonSaves(latest.userId));
+    };
+
+    window.addEventListener("explain-code-auth-change", handleSync);
+    window.addEventListener("storage", handleSync);
 
     const fetchHistory = async () => {
       setIsLoading(true);
@@ -60,6 +81,11 @@ export default function MyHistoryPage() {
     };
 
     fetchHistory();
+
+    return () => {
+      window.removeEventListener("explain-code-auth-change", handleSync);
+      window.removeEventListener("storage", handleSync);
+    };
   }, [router]);
 
   const handleDelete = async (id: string) => {
@@ -110,6 +136,101 @@ export default function MyHistoryPage() {
             <span>+ อธิบายโค้ดใหม่</span>
           </Link>
         </div>
+
+        {dungeonSaves.length > 0 && (
+          <section className="mb-8 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-extrabold text-[#ffe27a] flex items-center gap-2">
+                <Icon name="gamepad" className="h-5 w-5 text-[#9b5de5]" />
+                <span>เกมดันเจี้ยนที่เล่นค้างไว้ (เซฟเกมล่าสุด)</span>
+              </h2>
+              <Link
+                href="/my-learning"
+                className="text-xs font-bold text-[#9a93ad] hover:text-[#ffe27a] transition-colors"
+              >
+                ดูในการเรียนของฉัน →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {dungeonSaves.map((save) => {
+                const trackMeta =
+                  LANGUAGE_TRACKS.find((tr) => tr.id === save.language) ||
+                  LANGUAGE_TRACKS[0];
+                const pct = calculateDungeonSaveProgressPercent(save);
+                const savedTimeText = (() => {
+                  try {
+                    return new Date(save.savedAt).toLocaleString("th-TH", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    });
+                  } catch {
+                    return "เมื่อสักครู่";
+                  }
+                })();
+
+                return (
+                  <div
+                    key={save.language}
+                    className="rounded-2xl border border-[#5a2d91] bg-gradient-to-br from-[#1c152e] to-[#141220] p-5 shadow-lg flex flex-col justify-between gap-4"
+                  >
+                    <div>
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <span className="rounded-full border border-[#9b5de5]/60 bg-[#25193b] px-3 py-0.5 text-[11px] font-extrabold text-[#e9d5ff]">
+                          {trackMeta.name}
+                        </span>
+                        <span className="text-[11px] font-semibold text-[#9a93ad]">
+                          💾 เซฟล่าสุด: {savedTimeText}
+                        </span>
+                      </div>
+
+                      <h3 className="text-base font-extrabold text-[#f4efe6]">
+                        ถึงด่านที่ {save.currentFloorNumber}/{save.totalFloors} ·{" "}
+                        {save.currentTopicTitle}
+                      </h3>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-[#c4bdd6]">
+                        <span className="rounded-md border border-[#9b5de5]/60 bg-[#25193b] px-2 py-0.5 text-[11px] font-bold text-[#ffe27a]">
+                          ⚔️ เฟสคำถามที่{" "}
+                          {save.currentPhaseNumber ||
+                            (save.arenaSnapshot?.battlePhaseIndex ?? 0) + 1}
+                          /
+                          {save.totalPhases ||
+                            save.arenaSnapshot?.battleTotalPhases ||
+                            3}
+                        </span>
+                        <span>
+                          พิชิตแล้ว {save.completedTopicIds.length} จาก{" "}
+                          {save.totalFloors} ด่าน · สะสม {save.xp} XP
+                        </span>
+                      </div>
+
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between text-[11px] font-bold mb-1">
+                          <span className="text-[#c4bdd6]">ความคืบหน้า</span>
+                          <span className="text-[#2fbf71]">{pct}%</span>
+                        </div>
+                        <div className="h-2 w-full overflow-hidden rounded-full border border-[#2f2d45] bg-[#0d0b14]">
+                          <div
+                            className="h-full rounded-full bg-[#2fbf71] transition-all"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <Link
+                      href={`/courses?lang=${save.language}&topicId=${save.currentTopicId}`}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#f6c945] px-4 py-2.5 text-xs font-extrabold text-[#120f1c] shadow-md hover:bg-[#ffe27a] transition-colors"
+                    >
+                      <Icon name="play" className="h-4 w-4" filled />
+                      <span>เล่นต่อจากที่เซฟไว้ →</span>
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {isLoading ? (
           <div className="rounded-2xl border border-[#2f2d45] bg-[#141220] p-10 text-center text-sm text-[#9a93ad] shadow-lg">

@@ -60,6 +60,7 @@ import {
 import {
   DungeonArenaSnapshot,
   DungeonSaveRecord,
+  calculateDungeonSaveProgressPercent,
   loadUserDungeonSaveForLanguage,
   saveUserDungeonProgress,
 } from "../lib/dungeon-save";
@@ -312,14 +313,20 @@ function CoursesContent() {
   // Sync ?lang=... and ?customDungeon=... query params
   useEffect(() => {
     queueMicrotask(() => {
-      setCustomDungeons(loadCustomDungeons());
+      const uid = getClientSession()?.userId ?? null;
+      setCustomDungeons(loadCustomDungeons(uid));
       if (customDungeonParam) {
-        const found =
-          getCustomDungeonById(customDungeonParam) || getActiveCustomDungeon();
+        const found = uid
+          ? getCustomDungeonById(customDungeonParam, uid) ||
+            getActiveCustomDungeon(uid)
+          : null;
         if (found) {
           setActiveCustomDungeonState(found);
           setSelectedLanguage(found.language);
           setActiveTab("custom-dungeon");
+        } else {
+          setActiveCustomDungeonState(null);
+          setActiveTab("quest");
         }
       }
     });
@@ -404,6 +411,13 @@ function CoursesContent() {
         "",
         `/courses?lang=${selectedLanguage}&topicId=${selectedTopicId}`
       );
+    }
+    if (session) {
+      const snapForTopic =
+        savedArenaSnapshot && savedArenaSnapshot.topicId === selectedTopicId
+          ? savedArenaSnapshot
+          : null;
+      persistDungeonSave(currentStudent, selectedTopicId, snapForTopic);
     }
     setPlayAttemptNonce((n) => n + 1);
     setActiveTab("practice");
@@ -507,9 +521,12 @@ function CoursesContent() {
             setStudents((prev) => {
               const stu = prev.find((s) => s.id === sid);
               if (!stu) return prev;
+              const localSaveHistory = (stu.history || []).filter((h) =>
+                h.topicTitle.includes("(จุดเซฟเกม")
+              );
               const synced: StudentRecord = {
                 ...stu,
-                history: formattedHistory,
+                history: [...localSaveHistory, ...formattedHistory].slice(0, 20),
               };
               const nextList = prev.map((s) =>
                 s.id === synced.id ? synced : s
@@ -538,6 +555,18 @@ function CoursesContent() {
     const handleAuthChange = () => {
       const updatedSession = getClientSession();
       setSession(updatedSession);
+      const uid = updatedSession?.userId ?? null;
+      setCustomDungeons(loadCustomDungeons(uid));
+      if (!uid) {
+        setActiveCustomDungeonState(null);
+        setActiveTab((prev) => (prev === "custom-dungeon" ? "quest" : prev));
+      } else {
+        const activeForUser = getActiveCustomDungeon(uid);
+        setActiveCustomDungeonState(activeForUser);
+        if (!activeForUser) {
+          setActiveTab((prev) => (prev === "custom-dungeon" ? "quest" : prev));
+        }
+      }
       if (updatedSession) {
         if (updatedSession.userId) {
           setCurrentStudentId(updatedSession.userId);
@@ -556,7 +585,7 @@ function CoursesContent() {
         } catch {
           // ignore
         }
-        if (updatedSession.role === "student" && updatedSession.userId) {
+        if (updatedSession.userId) {
           void syncStudentData(updatedSession.userId);
         }
       } else {
@@ -598,9 +627,7 @@ function CoursesContent() {
 
     if (current?.userId) {
       setCurrentStudentId(current.userId);
-      if (current.role === "student") {
-        void syncStudentData(current.userId);
-      }
+      void syncStudentData(current.userId);
     }
 
     const localCourses = loadLocalCourses();
@@ -840,6 +867,15 @@ function CoursesContent() {
       (arenaSnapshot?.battlePhaseIndex ?? 0) + 1
     );
 
+    const progressPercent = calculateDungeonSaveProgressPercent({
+      totalFloors: currentLanguageTopics.length,
+      completedTopicIds: completedInTrack,
+      currentFloorNumber: targetIdx + 1,
+      currentPhaseNumber: resolvedPhaseNumber,
+      totalPhases: resolvedTotalPhases,
+      arenaSnapshot,
+    });
+
     const record: DungeonSaveRecord = {
       userId: session.userId,
       language: currentLanguage,
@@ -850,6 +886,7 @@ function CoursesContent() {
       currentPhaseNumber: resolvedPhaseNumber,
       totalPhases: resolvedTotalPhases,
       completedTopicIds: completedInTrack,
+      progressPercent,
       xp: studentSnapshot.xp,
       savedAt: new Date().toISOString(),
       history: studentSnapshot.history.slice(0, 15),
@@ -1262,6 +1299,12 @@ function CoursesContent() {
                 );
                 return isCourseForLanguage(c, cLessons, track.id);
               });
+              const trackSave = session?.userId
+                ? loadUserDungeonSaveForLanguage(session.userId, track.id)
+                : null;
+              const trackProgressPct = trackSave
+                ? calculateDungeonSaveProgressPercent(trackSave)
+                : 0;
 
               return (
                 <div
@@ -1304,6 +1347,28 @@ function CoursesContent() {
                     <p className="text-xs font-semibold text-[#9a93ad] line-clamp-2">
                       {t(track.tagline, track.taglineEn || track.tagline)}
                     </p>
+
+                    {trackSave && (
+                      <div className="rounded-xl border border-[#2fbf71]/40 bg-[#102a1e]/80 p-2.5 space-y-1.5">
+                        <div className="flex items-center justify-between gap-2 text-[11px] font-bold">
+                          <span className="text-[#ffe27a] truncate">
+                            {t(
+                              `💾 ด่านล่าสุด: ด่านที่ ${trackSave.currentFloorNumber}/${trackSave.totalFloors}`,
+                              `💾 Last Floor: ${trackSave.currentFloorNumber}/${trackSave.totalFloors}`
+                            )}
+                          </span>
+                          <span className="text-[#2fbf71] shrink-0">
+                            {trackProgressPct}%
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#0d0b14] border border-[#2f2d45]">
+                          <div
+                            className="h-full rounded-full bg-[#2fbf71] transition-all"
+                            style={{ width: `${trackProgressPct}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <button
@@ -1580,6 +1645,10 @@ function CoursesContent() {
                         เฟสคำถามที่ {savedDungeonRecord.currentPhaseNumber || 1}/
                         {savedDungeonRecord.totalPhases || 3}
                       </span>
+                      <span className="rounded-md border border-[#2fbf71]/50 bg-[#0d0b14] px-2 py-0.5 text-[11px] font-extrabold text-[#2fbf71]">
+                        {t("ความคืบหน้า", "Progress")}{" "}
+                        {calculateDungeonSaveProgressPercent(savedDungeonRecord)}%
+                      </span>
                     </div>
                     <button
                       type="button"
@@ -1704,7 +1773,7 @@ function CoursesContent() {
               </section>
 
               {/* Subsection A2: Custom Code Dungeons (from /explain) */}
-              {customDungeons.length > 0 && (
+              {Boolean(session?.userId) && customDungeons.length > 0 && (
                 <section className="flex flex-col gap-3 pb-6 border-b border-[#2f2d45]">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h2 className="text-base sm:text-lg font-extrabold text-[#e9d5ff] flex items-center gap-2">
@@ -1737,7 +1806,10 @@ function CoursesContent() {
                             <button
                               type="button"
                               onClick={() => {
-                                const updated = deleteCustomDungeon(cd.id);
+                                const updated = deleteCustomDungeon(
+                                  cd.id,
+                                  session?.userId ?? null
+                                );
                                 setCustomDungeons(updated);
                                 if (activeCustomDungeon?.id === cd.id) {
                                   setActiveCustomDungeonState(null);
@@ -1758,7 +1830,7 @@ function CoursesContent() {
                         <button
                           type="button"
                           onClick={() => {
-                            setActiveCustomDungeon(cd);
+                            setActiveCustomDungeon(cd, session?.userId ?? null);
                             setActiveCustomDungeonState(cd);
                             setPlayAttemptNonce((n) => n + 1);
                             setActiveTab("custom-dungeon");

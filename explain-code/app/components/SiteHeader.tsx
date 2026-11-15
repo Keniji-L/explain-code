@@ -387,21 +387,19 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                           </div>
                         </div>
 
-                        {session.role === "student" && (
-                          <Link
-                            href="/my-learning"
-                            role="menuitem"
-                            className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-[#f4efe6] hover:bg-[#252238] transition-colors focus-visible:outline-2 focus-visible:outline-[#f6c945]"
-                          >
-                            <Icon
-                              name="award"
-                              className="h-4 w-4 shrink-0 text-[#f6c945]"
-                            />
-                            <span className="truncate">
-                              {t("การเรียนของฉัน", "My Learning")}
-                            </span>
-                          </Link>
-                        )}
+                        <Link
+                          href="/my-learning"
+                          role="menuitem"
+                          className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-[#f4efe6] hover:bg-[#252238] transition-colors focus-visible:outline-2 focus-visible:outline-[#f6c945]"
+                        >
+                          <Icon
+                            name="award"
+                            className="h-4 w-4 shrink-0 text-[#f6c945]"
+                          />
+                          <span className="truncate">
+                            {t("การเรียนของฉัน", "My Learning")}
+                          </span>
+                        </Link>
 
                         {(session.role === "teacher" ||
                           session.role === "admin") && (

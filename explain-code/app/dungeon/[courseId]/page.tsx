@@ -88,7 +88,8 @@ function DungeonPlayContent() {
   const isEn = uiLang === "en";
 
   const courseId = String(params?.courseId || "");
-  const initialFloor = Math.max(0, parseInt(searchParams.get("floor") || "0", 10) || 0);
+  const floorParam = searchParams.get("floor");
+  const initialFloor = Math.max(0, parseInt(floorParam || "0", 10) || 0);
 
   // Avatar and sound
   const [avatarKey, setAvatarKey] = useState<AvatarKey>(DEFAULT_AVATAR);
@@ -98,6 +99,7 @@ function DungeonPlayContent() {
   const [course, setCourse] = useState<Course | null>(null);
   const [courseLessons, setCourseLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [saveNotice, setSaveNotice] = useState<string | null>(null);
 
   // Game state
   const [runId, setRunId] = useState<string>(() => `run-${courseId}-${Date.now()}`);
@@ -142,7 +144,28 @@ function DungeonPlayContent() {
       const relevantLessons = allLessons
         .filter((l) => l.course_id === foundCourse?.id && l.is_published)
         .sort((a, b) => a.order_index - b.order_index);
-      setCourseLessons(relevantLessons.length > 0 ? relevantLessons : [allLessons[0]]);
+      const effectiveLessons =
+        relevantLessons.length > 0 ? relevantLessons : [allLessons[0]];
+      setCourseLessons(effectiveLessons);
+
+      // Resume from saved floor if ?floor= was not explicitly specified
+      const currentSess = getClientSession();
+      if (currentSess && floorParam === null && effectiveLessons.length > 0) {
+        const enrolls = loadLocalEnrollments();
+        const myEnroll = enrolls.find(
+          (e) =>
+            e.course_id === (foundCourse?.id || courseId) &&
+            e.student_id === currentSess.userId
+        );
+        if (myEnroll?.last_accessed_lesson_id) {
+          const savedIdx = effectiveLessons.findIndex(
+            (l) => l.id === myEnroll.last_accessed_lesson_id
+          );
+          if (savedIdx >= 0) {
+            setFloorIndex(savedIdx);
+          }
+        }
+      }
       setLoading(false);
 
       // Initialize authoritative run on server
@@ -188,12 +211,122 @@ function DungeonPlayContent() {
     generateDungeonRoom(courseSeed, 0, totalFloors)
   );
 
+  const persistCourseDungeonProgress = useCallback(
+    (targetFloorIdx: number, markCompleted: boolean, showBanner: boolean) => {
+      const currentLesson = courseLessons[targetFloorIdx];
+      const session = getClientSession();
+      const targetCourseId = course?.id || courseId;
+      if (!currentLesson || !session || !targetCourseId) return;
+
+      const nowIso = new Date().toISOString();
+      const progs = loadLocalLessonProgress();
+      const existingIdx = progs.findIndex(
+        (p) =>
+          p.lesson_id === currentLesson.id && p.student_id === session.userId
+      );
+      let updatedProgs: LessonProgress[];
+      if (existingIdx >= 0) {
+        const prev = progs[existingIdx];
+        const nextCompleted = markCompleted || prev.is_completed;
+        updatedProgs = [...progs];
+        updatedProgs[existingIdx] = {
+          ...prev,
+          is_completed: nextCompleted,
+          quiz_score: nextCompleted ? Math.max(prev.quiz_score || 0, 100) : prev.quiz_score,
+          completed_at: nextCompleted ? prev.completed_at || nowIso : prev.completed_at,
+          updated_at: nowIso,
+        };
+      } else {
+        updatedProgs = [
+          {
+            id: `prog-${Date.now()}`,
+            student_id: session.userId,
+            course_id: targetCourseId,
+            lesson_id: currentLesson.id,
+            is_completed: markCompleted,
+            quiz_score: markCompleted ? 100 : null,
+            opened_at: nowIso,
+            completed_at: markCompleted ? nowIso : null,
+            updated_at: nowIso,
+          },
+          ...progs,
+        ];
+      }
+      saveLocalLessonProgress(updatedProgs);
+
+      const enrolls = loadLocalEnrollments();
+      const existingEnrollIdx = enrolls.findIndex(
+        (e) =>
+          e.course_id === targetCourseId && e.student_id === session.userId
+      );
+      if (existingEnrollIdx >= 0) {
+        const updatedEnrolls = [...enrolls];
+        updatedEnrolls[existingEnrollIdx] = {
+          ...updatedEnrolls[existingEnrollIdx],
+          last_accessed_lesson_id: currentLesson.id,
+          last_accessed_at: nowIso,
+        };
+        saveLocalEnrollments(updatedEnrolls);
+      } else {
+        saveLocalEnrollments([
+          {
+            id: `enr-${Date.now()}`,
+            course_id: targetCourseId,
+            student_id: session.userId,
+            enrolled_at: nowIso,
+            last_accessed_lesson_id: currentLesson.id,
+            last_accessed_at: nowIso,
+          },
+          ...enrolls,
+        ]);
+      }
+
+      if (showBanner) {
+        const completedCount = updatedProgs.filter(
+          (p) =>
+            p.course_id === targetCourseId &&
+            p.student_id === session.userId &&
+            p.is_completed
+        ).length;
+        const pct = Math.min(
+          100,
+          Math.max(
+            Math.round((completedCount / Math.max(1, totalFloors)) * 100),
+            Math.round(
+              ((Math.max(completedCount, targetFloorIdx) + 0.5) /
+                Math.max(1, totalFloors)) *
+                100
+            )
+          )
+        );
+        setSaveNotice(
+          t(
+            `✓ เซฟเกม ด่านที่ ${targetFloorIdx + 1}/${totalFloors} (${currentLesson.title}) · ความคืบหน้า ${pct}% เรียบร้อยแล้ว!`,
+            `✓ Saved Floor ${targetFloorIdx + 1}/${totalFloors} (${pct}% progress)!`
+          )
+        );
+        window.setTimeout(() => setSaveNotice(null), 4000);
+      }
+    },
+    [courseLessons, course?.id, courseId, totalFloors, t]
+  );
+
   // Update room and reset floor-only buffs when floor changes
   useEffect(() => {
     setRoom(generateDungeonRoom(courseSeed, floorIndex, totalFloors));
     setFloorShieldBonus(0);
     setFloorRewardMultiplier(1);
-  }, [courseSeed, floorIndex, totalFloors]);
+    if (!loading && courseLessons.length > 0) {
+      persistCourseDungeonProgress(floorIndex, false, false);
+    }
+  }, [
+    courseSeed,
+    floorIndex,
+    totalFloors,
+    loading,
+    courseLessons.length,
+    persistCourseDungeonProgress,
+  ]);
 
   const avatar = useMemo(() => getAvatar(avatarKey), [avatarKey]);
   const isBossFloor = floorIndex >= totalFloors - 1;
@@ -249,56 +382,7 @@ function DungeonPlayContent() {
       setXp((prev) => prev + gainedXp);
 
       // Two-Way Progress Sync: Mark current lesson completed in local storage
-      const currentLesson = courseLessons[floorIndex];
-      const session = getClientSession();
-      if (currentLesson && session) {
-        const nowIso = new Date().toISOString();
-        const progs = loadLocalLessonProgress();
-        const existingIdx = progs.findIndex(
-          (p) => p.lesson_id === currentLesson.id && p.student_id === session.userId
-        );
-        let updatedProgs: LessonProgress[];
-        if (existingIdx >= 0) {
-          updatedProgs = [...progs];
-          updatedProgs[existingIdx] = {
-            ...updatedProgs[existingIdx],
-            is_completed: true,
-            quiz_score: 100,
-            completed_at: nowIso,
-            updated_at: nowIso,
-          };
-        } else {
-          updatedProgs = [
-            {
-              id: `prog-${Date.now()}`,
-              student_id: session.userId,
-              course_id: courseId,
-              lesson_id: currentLesson.id,
-              is_completed: true,
-              quiz_score: 100,
-              opened_at: nowIso,
-              completed_at: nowIso,
-              updated_at: nowIso,
-            },
-            ...progs,
-          ];
-        }
-        saveLocalLessonProgress(updatedProgs);
-
-        const enrolls = loadLocalEnrollments();
-        const existingEnrollIdx = enrolls.findIndex(
-          (e) => e.course_id === courseId && e.student_id === session.userId
-        );
-        if (existingEnrollIdx >= 0) {
-          const updatedEnrolls = [...enrolls];
-          updatedEnrolls[existingEnrollIdx] = {
-            ...updatedEnrolls[existingEnrollIdx],
-            last_accessed_lesson_id: currentLesson.id,
-            last_accessed_at: nowIso,
-          };
-          saveLocalEnrollments(updatedEnrolls);
-        }
-      }
+      persistCourseDungeonProgress(floorIndex, true, false);
 
       setRoom((prev) => {
         const nextEntity = prev.entity
@@ -409,6 +493,32 @@ function DungeonPlayContent() {
         onExit={() => router.push("/courses")}
       />
 
+      {/* Save Game & Floor Progress Bar */}
+      <div className="w-full max-w-[640px] flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#2f2d45] bg-[#141220] px-3.5 py-2 text-xs">
+        <span className="font-bold text-[#c4bdd6]">
+          {t(
+            `กำลังลุย: ด่านที่ ${floorIndex + 1}/${totalFloors} (${currentLessonTitle}) · ความคืบหน้า ${Math.min(100, Math.round(((floorIndex + (room.entity?.isCompleted ? 1 : 0.5)) / Math.max(1, totalFloors)) * 100))}%`,
+            `Floor ${floorIndex + 1}/${totalFloors} (${currentLessonTitle}) · Progress ${Math.min(100, Math.round(((floorIndex + (room.entity?.isCompleted ? 1 : 0.5)) / Math.max(1, totalFloors)) * 100))}%`
+          )}
+        </span>
+        {getClientSession() && (
+          <button
+            type="button"
+            onClick={() => persistCourseDungeonProgress(floorIndex, false, true)}
+            className="px-3 py-1 rounded-lg text-xs font-extrabold border border-[#2fbf71]/70 bg-[#102a1e] text-[#86efac] hover:bg-[#153827] transition cursor-pointer flex items-center gap-1"
+          >
+            <span>💾</span>
+            <span>{t("เซฟเกมไว้", "Save Game")}</span>
+          </button>
+        )}
+      </div>
+
+      {saveNotice && (
+        <div className="w-full max-w-[640px] rounded-xl border border-[#2fbf71]/70 bg-[#102a1e] px-4 py-2 text-xs font-bold text-[#86efac]">
+          {saveNotice}
+        </div>
+      )}
+
       {/* Active Floor In-Run Buffs */}
       {(floorShieldBonus > 0 || floorRewardMultiplier > 1) && (
         <div className="w-full max-w-[640px] flex flex-wrap items-center justify-center gap-2 text-[11px]">
@@ -498,6 +608,7 @@ function DungeonPlayContent() {
           lessonId={courseLessons[floorIndex]?.id}
           onCorrectAnswer={handleCorrectAnswer}
           onWrongAnswer={handleWrongAnswer}
+          onSaveGame={() => persistCourseDungeonProgress(floorIndex, false, true)}
           onClose={() => setIsInBattle(false)}
         />
       )}

@@ -37,10 +37,65 @@ export interface DungeonSaveRecord {
   currentPhaseNumber?: number;
   totalPhases?: number;
   completedTopicIds: number[];
+  progressPercent?: number;
   xp: number;
   savedAt: string;
   history: StudentRecord["history"];
   arenaSnapshot?: DungeonArenaSnapshot | null;
+}
+
+export function calculateDungeonSaveProgressPercent(
+  save: Pick<
+    DungeonSaveRecord,
+    | "totalFloors"
+    | "completedTopicIds"
+    | "currentFloorNumber"
+    | "currentPhaseNumber"
+    | "totalPhases"
+    | "progressPercent"
+    | "arenaSnapshot"
+  >
+): number {
+  if (
+    typeof save.progressPercent === "number" &&
+    Number.isFinite(save.progressPercent) &&
+    save.progressPercent > 0
+  ) {
+    return Math.max(1, Math.min(100, Math.round(save.progressPercent)));
+  }
+
+  const totalFloors = Math.max(1, save.totalFloors || 1);
+  const completedCount = Array.isArray(save.completedTopicIds)
+    ? save.completedTopicIds.length
+    : 0;
+  const priorFloors = Math.max(0, (save.currentFloorNumber || 1) - 1);
+  const effectiveCompletedFloors = Math.min(
+    totalFloors,
+    Math.max(completedCount, priorFloors)
+  );
+
+  if (completedCount >= totalFloors) {
+    return 100;
+  }
+
+  const totalPhases = Math.max(
+    1,
+    save.totalPhases || save.arenaSnapshot?.battleTotalPhases || 3
+  );
+  const currentPhase = Math.max(
+    1,
+    Math.min(
+      totalPhases,
+      save.currentPhaseNumber ||
+        (save.arenaSnapshot?.battlePhaseIndex ?? 0) + 1
+    )
+  );
+
+  const phaseFraction = Math.min(0.95, currentPhase / totalPhases);
+  const rawPct =
+    ((effectiveCompletedFloors + phaseFraction) / totalFloors) * 100;
+
+  return Math.max(1, Math.min(100, Math.round(rawPct)));
 }
 
 function readAllDungeonSaves(): Record<string, DungeonSaveRecord[]> {

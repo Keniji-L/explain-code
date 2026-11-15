@@ -18,6 +18,7 @@ import {
 } from "../lib/lms-data";
 import {
   DungeonSaveRecord,
+  calculateDungeonSaveProgressPercent,
   loadUserDungeonSaves,
 } from "../lib/dungeon-save";
 import { LANGUAGE_TRACKS } from "../lib/language-tracks";
@@ -32,17 +33,27 @@ export default function MyLearningPage() {
   const [dungeonSaves, setDungeonSaves] = useState<DungeonSaveRecord[]>([]);
 
   useEffect(() => {
-    const current = getClientSession();
-    if (!current) {
-      router.replace("/login?redirect=/my-learning");
-      return;
-    }
-    setSession(current);
-    setCourses(loadLocalCourses());
-    setLessons(loadLocalLessons());
-    setEnrollments(loadLocalEnrollments());
-    setProgress(loadLocalLessonProgress());
-    setDungeonSaves(loadUserDungeonSaves(current.userId));
+    const syncState = () => {
+      const current = getClientSession();
+      if (!current) {
+        router.replace("/login?redirect=/my-learning");
+        return;
+      }
+      setSession(current);
+      setCourses(loadLocalCourses());
+      setLessons(loadLocalLessons());
+      setEnrollments(loadLocalEnrollments());
+      setProgress(loadLocalLessonProgress());
+      setDungeonSaves(loadUserDungeonSaves(current.userId));
+    };
+
+    syncState();
+    window.addEventListener("explain-code-auth-change", syncState);
+    window.addEventListener("storage", syncState);
+    return () => {
+      window.removeEventListener("explain-code-auth-change", syncState);
+      window.removeEventListener("storage", syncState);
+    };
   }, [router]);
 
   if (!session) {
@@ -122,12 +133,7 @@ export default function MyLearningPage() {
                 const trackMeta =
                   LANGUAGE_TRACKS.find((tr) => tr.id === save.language) ||
                   LANGUAGE_TRACKS[0];
-                const pct =
-                  save.totalFloors > 0
-                    ? Math.round(
-                        (save.completedTopicIds.length / save.totalFloors) * 100
-                      )
-                    : 0;
+                const pct = calculateDungeonSaveProgressPercent(save);
                 const savedTimeText = (() => {
                   try {
                     return new Date(save.savedAt).toLocaleString("th-TH", {
@@ -198,7 +204,7 @@ export default function MyLearningPage() {
                               className="flex items-center justify-between text-[11px] text-[#e8e1cf]"
                             >
                               <span className="truncate pr-2">{h.topicTitle}</span>
-                              {h.topicTitle.includes("(จุดเซฟเกม)") ? (
+                              {h.topicTitle.includes("(จุดเซฟเกม") ? (
                                 <span className="shrink-0 font-bold text-[#ffe27a]">
                                   {h.timestamp}
                                 </span>
