@@ -489,7 +489,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                 key={item.href}
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
-                className={`liquid-press flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-[11px] font-extrabold leading-none ${
+                className={`liquid-press flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-xs font-extrabold leading-snug ${
                   isActive
                     ? "liquid-active-nav-item text-[#ffe27a]"
                     : "text-[#c4bdd6] hover:bg-[#252238] hover:text-[#f4efe6]"
@@ -509,7 +509,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                 aria-current={
                   pathname.startsWith("/teacher") ? "page" : undefined
                 }
-                className={`liquid-press flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-[11px] font-extrabold leading-none ${
+                className={`liquid-press flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-xs font-extrabold leading-snug ${
                   pathname.startsWith("/teacher")
                     ? "liquid-active-nav-item text-[#ffe27a]"
                     : "text-[#c4bdd6] hover:bg-[#252238] hover:text-[#f4efe6]"
@@ -524,7 +524,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                 aria-current={
                   pathname.startsWith("/my-learning") ? "page" : undefined
                 }
-                className={`liquid-press flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-[11px] font-extrabold leading-none ${
+                className={`liquid-press flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-xs font-extrabold leading-snug ${
                   pathname.startsWith("/my-learning")
                     ? "liquid-active-nav-item text-[#ffe27a]"
                     : "text-[#c4bdd6] hover:bg-[#252238] hover:text-[#f4efe6]"
@@ -538,7 +538,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
             <Link
               href="/login"
               aria-current={pathname.startsWith("/login") ? "page" : undefined}
-              className={`liquid-press flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-[11px] font-extrabold leading-none ${
+              className={`liquid-press flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-xs font-extrabold leading-snug ${
                 pathname.startsWith("/login")
                   ? "liquid-active-nav-item text-[#ffe27a]"
                   : "text-[#c4bdd6] hover:bg-[#252238] hover:text-[#f4efe6]"

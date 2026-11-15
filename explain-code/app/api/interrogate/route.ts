@@ -108,6 +108,40 @@ async function recordEvaluation(
   }
 }
 
+function evaluateWithBlockModelHeuristic(clean: string): {
+  score: number;
+  passed: boolean;
+  feedback: string;
+} {
+  const hasSurface =
+    /ตัวแปร|let|const|var|if|else|for|while|function|def|return|print|console|บรรทัด|เครื่องหมาย|แอเรย์|ลิสต์|ค่า|variable|loop|array|condition/i.test(
+      clean
+    );
+  const hasExecution =
+    /รอบ|เปลี่ยน|บวก|ลบ|คูณ|หาร|ส่ง|พิมพ์|แสดงผล|กลายเป็น|เท่ากับ|มากกว่า|น้อยกว่า|จริง|เท็จ|เพิ่ม|ลด|วนซ้ำ|เก็บค่า|คำนวณ|run|output|step|value|change/i.test(
+      clean
+    );
+  const hasFunction =
+    /เพื่อ|ทำหน้าที่|หา|นับ|รวม|ตรวจ|ส่วนลด|คะแนน|สูงสุด|ต่ำสุด|ผลลัพธ์|สรุป|กรอง|เฉลี่ย|คำนวณหา|purpose|goal|calculate|total|check/i.test(
+      clean
+    );
+
+  const dims = [hasSurface, hasExecution, hasFunction].filter(Boolean).length;
+  const score = dims === 3 ? 95 : dims === 2 ? 82 : dims === 1 ? 68 : 45;
+  const passed = score >= 65;
+
+  const feedback =
+    dims === 3
+      ? "อธิบายได้ครบทั้งโครงสร้างโค้ด ลำดับการเปลี่ยนค่าตัวแปร และเป้าหมายของโปรแกรมตามกรอบ Block Model!"
+      : dims === 2
+      ? "อธิบายการทำงานได้ดีมาก! หากเพิ่มเหตุผลว่าโค้ดส่วนนี้มีเป้าหมายเพื่ออะไรในภาพรวมจะสมบูรณ์ครบ 3 มิติ"
+      : dims === 1
+      ? "จับประเด็นเริ่มต้นได้แล้ว ลองอธิบายเพิ่มว่าค่าตัวแปรเปลี่ยนเป็นเท่าไหร่เมื่อโค้ดรันแต่ละขั้น"
+      : "คำอธิบายยังไม่ระบุการทำงานของตัวแปรหรือเป้าหมายของโค้ดชัดเจน ลองอธิบายว่าแต่ละบรรทัดเปลี่ยนค่าตัวแปรอย่างไรและทำไปเพื่ออะไรครับ";
+
+  return { score, passed, feedback };
+}
+
 /**
  * ตรวจคำอธิบายอิสระของนักเรียนผ่านหลังบ้าน (ไม่ใส่ API Key ในไฟล์หน้าเว็บ)
  * AI ใช้ตรวจคำอธิบายอิสระเท่านั้น ส่วนเฉลยข้อทำนายผลมาจากการรันโค้ดจริง
@@ -122,6 +156,10 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { code, topicTitle, studentExplanation } = body;
+    const language =
+      typeof body.language === "string" && body.language.trim()
+        ? body.language.trim()
+        : "javascript";
     attemptId = body.attemptId;
     studentId = body.studentId;
 
@@ -151,24 +189,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!keyToUse) {
-      // ระบบตรวจคำอธิบายอัตโนมัติตามเกณฑ์ Block Model 3 มิติ (โครงสร้าง, การทำงานจริง, หน้าที่)
-      const hasSurface =
-        /ตัวแปร|let|if|else|for|while|function|return|บรรทัด|เครื่องหมาย|แอเรย์|ค่า/i.test(clean);
-      const hasExecution =
-        /รอบ|เปลี่ยน|บวก|ลบ|คูณ|ส่ง|พิมพ์|กลายเป็น|เท่ากับ|มากกว่า|น้อยกว่า|จริง|เท็จ/i.test(clean);
-      const hasFunction =
-        /เพื่อ|ทำหน้าที่|หา|นับ|รวม|ตรวจ|ส่วนลด|คะแนน|สูงสุด|ผลลัพธ์/i.test(clean);
-
-      const dims = [hasSurface, hasExecution, hasFunction].filter(Boolean).length;
-      const score = dims === 3 ? 95 : dims === 2 ? 82 : dims === 1 ? 68 : 55;
-      const passed = score >= 65;
-
-      const feedback =
-        dims === 3
-          ? "อธิบายได้ครบทั้งโครงสร้างโค้ด ลำดับการเปลี่ยนค่าตัวแปร และเป้าหมายของโปรแกรมตามกรอบ Block Model!"
-          : dims === 2
-          ? "อธิบายการทำงานได้ดีมาก! หากเพิ่มเหตุผลว่าโค้ดส่วนนี้มีเป้าหมายเพื่ออะไรในภาพรวมจะสมบูรณ์ครบ 3 มิติ"
-          : "จับประเด็นเริ่มต้นได้แล้ว ลองอธิบายเพิ่มว่าค่าตัวแปรเปลี่ยนเป็นเท่าไหร่เมื่อโค้ดรันแต่ละขั้น";
+      const { score, passed, feedback } = evaluateWithBlockModelHeuristic(clean);
 
       const { savedToDb } = await recordEvaluation(
         serverSession,
@@ -189,10 +210,10 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const prompt = `คุณคือครูผู้ช่วยตรวจคำอธิบายโค้ด JavaScript ตามกรอบ Block Model (Text Surface, Execution, Function)
+    const prompt = `คุณคือครูผู้ช่วยตรวจคำอธิบายโค้ดภาษา ${language} ตามกรอบ Block Model (Text Surface, Execution, Function)
 หัวข้อ: "${topicTitle}"
 โค้ด:
-\`\`\`javascript
+\`\`\`${language}
 ${code}
 \`\`\`
 คำอธิบายของนักเรียน: "${clean}"
@@ -215,9 +236,11 @@ ${code}
     });
 
     if (!geminiResult.ok || !geminiResult.data) {
-      const fallbackScore = 80;
-      const fallbackPassed = true;
-      const fallbackFeedback = "อธิบายลำดับการทำงานและหน้าที่ของโค้ดได้ชัดเจนดีมาก!";
+      const {
+        score: fallbackScore,
+        passed: fallbackPassed,
+        feedback: fallbackFeedback,
+      } = evaluateWithBlockModelHeuristic(clean);
       const { savedToDb } = await recordEvaluation(
         serverSession,
         attemptId,
@@ -238,13 +261,16 @@ ${code}
     }
 
     const parsed = geminiResult.data;
+    const heuristicFallback = evaluateWithBlockModelHeuristic(clean);
 
-    const finalScore = typeof parsed.score === "number" ? parsed.score : 80;
-    const finalPassed = Boolean(parsed.passed);
+    const finalScore =
+      typeof parsed.score === "number" ? parsed.score : heuristicFallback.score;
+    const finalPassed =
+      typeof parsed.passed === "boolean" ? parsed.passed : finalScore >= 65;
     const finalFeedback =
       typeof parsed.feedback === "string" && parsed.feedback.trim().length > 0
         ? parsed.feedback
-        : "ตรวจคำอธิบายด้วย AI หลังบ้านเรียบร้อย";
+        : heuristicFallback.feedback;
 
     const { savedToDb } = await recordEvaluation(
       serverSession,
@@ -265,9 +291,11 @@ ${code}
       savedToDb,
     });
   } catch {
-    const catchScore = 78;
-    const catchPassed = true;
-    const catchFeedback = "อธิบายแนวคิดของโค้ดได้ดี เข้าใจลำดับการทำงานของโปรแกรม!";
+    const {
+      score: catchScore,
+      passed: catchPassed,
+      feedback: catchFeedback,
+    } = evaluateWithBlockModelHeuristic(clean);
     const { savedToDb } = await recordEvaluation(
       serverSession,
       attemptId,

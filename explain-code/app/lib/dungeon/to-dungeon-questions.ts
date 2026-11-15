@@ -462,8 +462,8 @@ ${numberedLines}`;
       apiKey,
       prompt,
       temperature: 0.25,
-      timeoutMs: 9000,
-      models: GEMINI_MODEL_FALLBACK_CHAIN,
+      timeoutMs: 18000,
+      models: [GEMINI_MODEL_FALLBACK_CHAIN[0], GEMINI_MODEL_FALLBACK_CHAIN[1]],
     });
 
     if (!geminiResult.ok || !geminiResult.data) {

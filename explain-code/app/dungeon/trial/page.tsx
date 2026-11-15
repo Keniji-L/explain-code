@@ -127,6 +127,19 @@ export default function DungeonTrialPage() {
 
   return (
     <div className="flex-1 max-w-4xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-6 flex flex-col items-center gap-4">
+      {/* Heading & Control Hint */}
+      <div className="w-full flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#2f2d45] bg-[#141220]/90 px-3.5 py-2 text-xs text-[#c4bdd6]">
+        <h1 className="text-xs sm:text-sm font-extrabold text-[#ffe27a]">
+          {t("โหมดทดลองเล่นดันเจี้ยน (Guest Trial)", "Dungeon Guest Trial Mode")}
+        </h1>
+        <span>
+          {t(
+            "⌨️ กด WASD หรือปุ่มลูกศรเพื่อเดินเข้าหามอนสเตอร์ · กด Space เพื่อโต้ตอบ",
+            "⌨️ Press WASD or Arrow keys to approach the monster · Space to interact"
+          )}
+        </span>
+      </div>
+
       {/* HUD Bar */}
       <DungeonHud
         avatar={avatar}

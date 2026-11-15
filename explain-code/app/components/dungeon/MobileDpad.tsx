@@ -123,9 +123,9 @@ export function MobileDpad({ onMove, onAction, disabled = false }: MobileDpadPro
           aria-label={t("ปุ่มกระทำ โต้ตอบ หรือโจมตี", "Action: Interact or Attack")}
         >
           <Icon name="sword" size={16} />
-          <span className="pixel-font text-[9px] sm:text-[10px] font-black uppercase mt-0.5">ACT</span>
+          <span className="pixel-font text-xs font-black uppercase mt-0.5">ACT</span>
         </button>
-        <span className="text-[10px] text-[#9a93ad] font-bold">
+        <span className="text-xs text-[#9a93ad] font-bold">
           {t("โต้ตอบ / คุย", "Interact / Talk")}
         </span>
       </div>

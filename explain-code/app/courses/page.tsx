@@ -1371,7 +1371,7 @@ function CoursesContent() {
                       </div>
                       <div className="shrink-0 flex flex-col items-center gap-0.5 rounded-xl bg-[#1c1b2b] border border-[#9b5de5]/50 px-2 py-1">
                         <PixelSpriteView sprite={bossSprite} size={28} animateBounce />
-                        <span className="pixel-font text-[8px] font-bold text-[#e9d5ff]">
+                        <span className="pixel-font text-xs font-bold text-[#e9d5ff]">
                           BOSS
                         </span>
                       </div>
@@ -1506,7 +1506,7 @@ function CoursesContent() {
                         <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span
-                              className={`rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold ${
+                              className={`rounded-full border px-2.5 py-0.5 text-xs font-extrabold ${
                                 isPublic
                                   ? "bg-[#152922] border-[#2fbf71]/40 text-[#86efac]"
                                   : "bg-[#25193b] border-[#9b5de5]/50 text-[#e9d5ff]"
@@ -1516,7 +1516,7 @@ function CoursesContent() {
                                 ? t("🌐 สาธารณะ", "🌐 Public")
                                 : t("🔒 ส่วนตัว (ปลดล็อกแล้ว)", "🔒 Private (Unlocked)")}
                             </span>
-                            <span className="rounded-full bg-[#141220] border border-[#2f2d45] px-2.5 py-0.5 text-[10px] font-bold text-[#c4bdd6]">
+                            <span className="rounded-full bg-[#141220] border border-[#2f2d45] px-2.5 py-0.5 text-xs font-bold text-[#c4bdd6]">
                               {courseLessons.length} {t("บทเรียน", "lessons")}
                             </span>
                           </div>
@@ -1667,7 +1667,7 @@ function CoursesContent() {
                 {session && savedDungeonRecord && (
                   <div className="rounded-2xl border border-[#2fbf71]/50 bg-[#102a1e]/90 p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
                     <div className="flex flex-wrap items-center gap-2 text-[#e8e1cf]">
-                      <span className="rounded-lg bg-[#2fbf71] px-2 py-0.5 text-[10px] font-black text-[#0b0b14]">
+                      <span className="rounded-lg bg-[#2fbf71] px-2 py-0.5 text-xs font-black text-[#0b0b14]">
                         💾 {t("จุดเซฟล่าสุด", "Latest Save")}
                       </span>
                       <span className="font-extrabold text-[#ffe27a]">
@@ -1746,14 +1746,14 @@ function CoursesContent() {
                               size={34}
                               animateBounce={unlocked && !isPassed}
                             />
-                            <span className="pixel-font text-[8px] font-bold text-[#ffe27a] mt-0.5">
+                            <span className="pixel-font text-xs font-bold text-[#ffe27a] mt-0.5">
                               {isBoss ? "BOSS" : `FL.${idx + 1}`}
                             </span>
                           </div>
 
                           <div className="flex-1 min-w-0">
                             <span
-                              className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                              className={`inline-block px-2 py-0.5 rounded-full text-xs font-extrabold ${
                                 isBoss
                                   ? "bg-[#5a2d91] text-[#ffe27a]"
                                   : isPassed
@@ -1838,7 +1838,7 @@ function CoursesContent() {
                       >
                         <div>
                           <div className="flex items-center justify-between gap-2 mb-1.5">
-                            <span className="rounded-md border border-[#9b5de5]/40 bg-[#5a2d91]/30 px-2 py-0.5 text-[10px] font-extrabold uppercase text-[#e9d5ff]">
+                            <span className="rounded-md border border-[#9b5de5]/40 bg-[#5a2d91]/30 px-2 py-0.5 text-xs font-extrabold uppercase text-[#e9d5ff]">
                               {cd.language}
                             </span>
                             <button
@@ -1954,7 +1954,7 @@ function CoursesContent() {
                           <div className="flex items-center justify-between gap-2 mb-2">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span
-                                className={`rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold ${
+                                className={`rounded-full border px-2.5 py-0.5 text-xs font-extrabold ${
                                   isCoursePublic(course)
                                     ? "bg-[#152922] border-[#2fbf71]/40 text-[#86efac]"
                                     : "bg-[#25193b] border-[#9b5de5]/50 text-[#e9d5ff]"
@@ -2072,7 +2072,7 @@ function CoursesContent() {
                               <span className="font-bold text-[#f4efe6] block">
                                 {entry.displayName}
                               </span>
-                              <span className="text-[10px] text-[#9a93ad] pixel-font">
+                              <span className="text-xs text-[#9a93ad] pixel-font">
                                 Lv.{entry.level} · {entry.totalMonstersDefeated}{" "}
                                 {t("มอนสเตอร์", "defeated")}
                               </span>
@@ -2083,7 +2083,7 @@ function CoursesContent() {
                             <span className="text-[#2fbf71] font-black pixel-font block">
                               {entry.xp} XP
                             </span>
-                            <span className="text-[10px] text-[#9a93ad]">
+                            <span className="text-xs text-[#9a93ad]">
                               {entry.totalDungeonsCleared} {t("ดันเจี้ยน", "cleared")}
                             </span>
                           </div>
@@ -2111,7 +2111,7 @@ function CoursesContent() {
 
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <span
-                    className={`pixel-font text-[10px] px-2.5 py-1 rounded-lg font-bold border ${
+                    className={`pixel-font text-xs px-2.5 py-1 rounded-lg font-bold border ${
                       activeTopic.isBoss
                         ? "bg-[#5a2d91] text-[#ffe27a] border-[#9b5de5]"
                         : "bg-[#0d0b14] text-[#ffe27a] border-[#2f2d45]"
@@ -2146,13 +2146,13 @@ function CoursesContent() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="pixel-font text-[10px] text-[#ffe27a] uppercase bg-[#0d0b14] px-2 py-0.5 rounded border border-[#2f2d45]">
+                          <span className="pixel-font text-xs text-[#ffe27a] uppercase bg-[#0d0b14] px-2 py-0.5 rounded border border-[#2f2d45]">
                             {t("ผู้พิทักษ์ประจำชั้น", "Floor Guardian")}
                           </span>
-                          <span className="text-[10px] bg-[#2fbf71]/20 text-[#2fbf71] px-2 py-0.5 rounded border border-[#2fbf71]/40 font-bold">
+                          <span className="text-xs bg-[#2fbf71]/20 text-[#2fbf71] px-2 py-0.5 rounded border border-[#2fbf71]/40 font-bold">
                             +{floorMonster.xpReward} XP
                           </span>
-                          <span className="text-[10px] bg-[#f6c945]/20 text-[#f6c945] px-2 py-0.5 rounded border border-[#f6c945]/40 font-bold">
+                          <span className="text-xs bg-[#f6c945]/20 text-[#f6c945] px-2 py-0.5 rounded border border-[#f6c945]/40 font-bold">
                             +{floorMonster.coinReward} G
                           </span>
                         </div>
@@ -2262,19 +2262,19 @@ function CoursesContent() {
                         {/* Stats Row */}
                         <div className="grid grid-cols-3 gap-1.5 text-center">
                           <div className="rounded-lg bg-[#0d0b14] border border-[#2f2d45] px-1.5 py-1.5">
-                            <span className="text-[10px] text-[#9a93ad] block">HP</span>
+                            <span className="text-xs text-[#9a93ad] block">HP</span>
                             <span className="pixel-font text-xs font-black text-[#ff4d6d]">
                               ❤️ {av.stats.maxHp}
                             </span>
                           </div>
                           <div className="rounded-lg bg-[#0d0b14] border border-[#2f2d45] px-1.5 py-1.5">
-                            <span className="text-[10px] text-[#9a93ad] block">MP</span>
+                            <span className="text-xs text-[#9a93ad] block">MP</span>
                             <span className="pixel-font text-xs font-black text-[#38bdf8]">
                               💧 {av.stats.initialMp}/{av.stats.maxMp}
                             </span>
                           </div>
                           <div className="rounded-lg bg-[#0d0b14] border border-[#2f2d45] px-1.5 py-1.5">
-                            <span className="text-[10px] text-[#9a93ad] block">Regen</span>
+                            <span className="text-xs text-[#9a93ad] block">Regen</span>
                             <span className="pixel-font text-xs font-black text-[#2fbf71]">
                               +{av.stats.mpRegenOnCorrect} MP
                             </span>
@@ -2283,17 +2283,17 @@ function CoursesContent() {
 
                         {/* Passive Trait */}
                         <div className="rounded-xl bg-[#0d0b14]/90 border border-[#f6c945]/25 px-2.5 py-2 space-y-0.5">
-                          <div className="text-[10px] font-extrabold text-[#f6c945] flex items-center gap-1">
+                          <div className="text-xs font-extrabold text-[#f6c945] flex items-center gap-1">
                             <span>✦ {t(av.stats.passiveName, av.stats.passiveNameEn)}</span>
                           </div>
-                          <p className="text-[10px] text-[#c4bdd6] leading-snug">
+                          <p className="text-xs text-[#c4bdd6] leading-snug">
                             {t(av.stats.passiveDesc, av.stats.passiveDescEn)}
                           </p>
                         </div>
 
                         {/* 3 Unique Skills & Mana Costs */}
                         <div className="space-y-1.5">
-                          <div className="text-[10px] font-extrabold text-[#9a93ad] uppercase">
+                          <div className="text-xs font-extrabold text-[#9a93ad] uppercase">
                             {t("สกิลประจำตัว (ใช้ MP):", "Signature Skills:")}
                           </div>
                           {av.skills.map((skill) => (
@@ -2305,12 +2305,12 @@ function CoursesContent() {
                                 <div className="text-[11px] font-bold text-[#f4efe6] truncate">
                                   {t(skill.name, skill.nameEn)}
                                 </div>
-                                <div className="text-[10px] text-[#9a93ad] leading-tight">
+                                <div className="text-xs text-[#9a93ad] leading-tight">
                                   {t(skill.description, skill.descriptionEn)}
                                 </div>
                               </div>
                               <span
-                                className="pixel-font text-[9px] px-1.5 py-0.5 rounded border shrink-0 mt-0.5"
+                                className="pixel-font text-xs px-1.5 py-0.5 rounded border shrink-0 mt-0.5"
                                 style={{
                                   backgroundColor: `${skill.accentColor}22`,
                                   color: skill.accentColor,
@@ -2342,7 +2342,7 @@ function CoursesContent() {
                               e.stopPropagation();
                               handleConfirmHeroAndPlay(av.key);
                             }}
-                            className="pixel-font text-[9px] bg-[#f6c945] hover:bg-[#ffe27a] text-[#120f1c] px-2.5 py-1 rounded font-black cursor-pointer shrink-0 transition-colors"
+                            className="pixel-font text-xs bg-[#f6c945] hover:bg-[#ffe27a] text-[#120f1c] px-2.5 py-1 rounded font-black cursor-pointer shrink-0 transition-colors"
                           >
                             {t("ลุยเลย →", "PLAY →")}
                           </button>

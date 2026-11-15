@@ -313,7 +313,7 @@ export async function POST(req: NextRequest) {
       const cleanCode = String(inviteCode || "").trim();
       if (cleanCode !== getTeacherInviteCode()) {
         return NextResponse.json(
-          { error: "รหัสเชิญครูไม่ถูกต้อง (รหัสเริ่มต้นสำหรับทดสอบคือ TEACHER2026)" },
+          { error: "รหัสเชิญครูไม่ถูกต้อง กรุณาตรวจสอบรหัสเชิญอีกครั้ง" },
           { status: 403 }
         );
       }

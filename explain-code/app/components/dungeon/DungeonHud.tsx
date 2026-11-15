@@ -107,7 +107,7 @@ export function DungeonHud({
             ))}
         </div>
         <span
-          className="text-[11px] text-[#9a93ad] font-semibold truncate max-w-[160px] sm:max-w-[220px]"
+          className="text-xs text-[#9a93ad] font-semibold truncate max-w-[160px] sm:max-w-[220px]"
           title={`${dungeonTitle} · ${roomTitle}`}
         >
           {roomTitle}
@@ -129,7 +129,8 @@ export function DungeonHud({
           <button
             type="button"
             onClick={onToggleSound}
-            className="p-1.5 rounded-lg bg-[#252238] hover:bg-[#322c4a] text-[#f4efe6] text-xs cursor-pointer transition-colors"
+            aria-label={soundEnabled ? t("ปิดเสียง", "Mute") : t("เปิดเสียง", "Unmute")}
+            className="min-h-[34px] min-w-[34px] flex items-center justify-center p-1.5 rounded-lg bg-[#252238] hover:bg-[#322c4a] text-[#f4efe6] text-xs cursor-pointer transition-colors"
             title={soundEnabled ? t("ปิดเสียง", "Mute") : t("เปิดเสียง", "Unmute")}
           >
             <Icon name={soundEnabled ? "volume-2" : "volume-x"} size={14} />
@@ -137,7 +138,8 @@ export function DungeonHud({
           <button
             type="button"
             onClick={onTogglePause}
-            className="p-1.5 rounded-lg bg-[#252238] hover:bg-[#322c4a] text-[#f4efe6] text-xs cursor-pointer transition-colors"
+            aria-label={t("หยุดชั่วคราว", "Pause")}
+            className="min-h-[34px] min-w-[34px] flex items-center justify-center p-1.5 rounded-lg bg-[#252238] hover:bg-[#322c4a] text-[#f4efe6] text-xs cursor-pointer transition-colors"
             title={t("หยุดชั่วคราว", "Pause")}
           >
             <Icon name="pause" size={14} />
@@ -145,7 +147,8 @@ export function DungeonHud({
           <button
             type="button"
             onClick={onExit}
-            className="p-1.5 rounded-lg bg-[#252238] hover:bg-[#c0283a] text-[#f4efe6] text-xs cursor-pointer transition-colors"
+            aria-label={t("ออกจากดันเจี้ยน", "Exit Dungeon")}
+            className="min-h-[34px] min-w-[34px] flex items-center justify-center p-1.5 rounded-lg bg-[#252238] hover:bg-[#c0283a] text-[#f4efe6] text-xs cursor-pointer transition-colors"
             title={t("ออกจากดันเจี้ยน", "Exit Dungeon")}
           >
             <Icon name="logout" size={14} />
