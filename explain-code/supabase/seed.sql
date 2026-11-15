@@ -1,6 +1,6 @@
 -- ============================================================================
 -- Seed Data: supabase/seed.sql
--- Project: "โค้ดนี้ฉันอธิบายได้" (Vibe Coding 2026 · Block Model 12 ช่อง)
+-- Project: "CODE COOL" (Vibe Coding 2026 · Block Model 12 ช่อง)
 -- Description: Static reference data extracted from app/lib/curriculum.ts
 --              - 7 Topics (Topics 1-6 & Boss Topic 7)
 --              - 12 Block Model Cells (T1-F4)

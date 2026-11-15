@@ -1,6 +1,6 @@
 -- ============================================================================
 -- Migration: 20261112000000_open_platform_lms.sql
--- Project: "โค้ดนี้ฉันอธิบายได้" (Open Learning & Code Explanation Platform)
+-- Project: "CODE COOL" (Open Learning & Code Explanation Platform)
 -- Description: ต่อยอดระบบ Open Platform LMS (profiles, courses, lessons,
 --              enrollments, lesson_progress, code_explanations) + Triggers & RLS
 --              โดยไม่ลบหรือเขียนทับระบบตารางและ Auth เดิม

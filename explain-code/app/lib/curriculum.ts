@@ -1677,7 +1677,7 @@ export const AI_USAGE_LOGS: AiUsageLogItem[] = [
     aiTool: "Generative AI Image Generator + Python Pillow Script (ผ่าน Antigravity IDE)",
     promptTitle: "Prompt 7 · ออกแบบโลโก้หลัก (logo.png) และสร้างชุด Favicon / App Icons",
     promptText:
-      "ออกแบบโลโก้ 'โค้ดนี้ฉันอธิบายได้ (ExplainCode)' สไตล์ Pixel RPG ผสานสัญลักษณ์โค้ดโปรแกรมมิงโทนสีทอง-ม่วงเข้มสำหรับพื้นหลังโหมดมืด แล้วนำไฟล์ logo.png ไปสร้างชุดไอคอนมาตรฐาน favicon.ico (หลายขนาด 16x16 ถึง 64x64), icon.png และ apple-icon.png พร้อมเชื่อมต่อใน Navbar และทุกหน้าของระบบ",
+      "ออกแบบโลโก้ 'CODE COOL (ExplainCode)' สไตล์ Pixel RPG ผสานสัญลักษณ์โค้ดโปรแกรมมิงโทนสีทอง-ม่วงเข้มสำหรับพื้นหลังโหมดมืด แล้วนำไฟล์ logo.png ไปสร้างชุดไอคอนมาตรฐาน favicon.ico (หลายขนาด 16x16 ถึง 64x64), icon.png และ apple-icon.png พร้อมเชื่อมต่อใน Navbar และทุกหน้าของระบบ",
     problemFound:
       "ภาพโลโก้ต้นฉบับมีความละเอียดสูง (1472×704 พิกเซล ทรงแนวนอน) หากรัดสัดส่วนลงในกรอบจัตุรัสหรือทำเป็น Favicon ขนาด 16×16 พิกเซลโดยตรงจะทำให้ภาพบิดเบี้ยว (Aspect Ratio เพี้ยน) และมองเห็นรายละเอียดไม่ชัดบนแท็บเบราว์เซอร์",
     solutionApplied:

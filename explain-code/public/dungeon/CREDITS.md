@@ -1,6 +1,6 @@
 # Dungeon Crawler Asset & Library Credits
 
-This document tracks all external and internal assets, fonts, palettes, and libraries used by the Pixel Art Dungeon Crawler educational mode in "โค้ดนี้ฉันอธิบายได้".
+This document tracks all external and internal assets, fonts, palettes, and libraries used by the Pixel Art Dungeon Crawler educational mode in "CODE COOL".
 
 ## 1. Code-Drawn Pixel Art (CC0 1.0 Universal)
 - **Author**: Antigravity Assistant & Project Maintainers

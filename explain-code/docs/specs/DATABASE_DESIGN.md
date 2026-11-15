@@ -1,4 +1,4 @@
-# ออกแบบฐานข้อมูล (Supabase / PostgreSQL) — "โค้ดนี้ฉันอธิบายได้"
+# ออกแบบฐานข้อมูล (Supabase / PostgreSQL) — "CODE COOL"
 
 สรุปจากโค้ดจริงในโปรเจค: `StudentRecord`, `TeacherRecord`, `ClassroomRecord` ใน `app/lib/curriculum.ts`, ฟังก์ชัน `onCompleteTopic` ใน `PracticeArena.tsx`, API `/api/auth` และ `/api/interrogate`
 

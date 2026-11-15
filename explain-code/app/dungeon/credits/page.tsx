@@ -20,7 +20,7 @@ export default function DungeonCreditsPage() {
             <span>รายการทรัพย์สินและสิทธิ์การใช้งาน (Credits)</span>
           </h1>
           <p className="text-xs sm:text-sm text-[#9a93ad] mt-1">
-            Dungeon Crawler โหมดการเรียนรู้ของ &ldquo;โค้ดนี้ฉันอธิบายได้&rdquo; พัฒนาขึ้นโดยเคารพลิขสิทธิ์และสิทธิ์ทรัพย์สินทางปัญญา 100%
+            Dungeon Crawler โหมดการเรียนรู้ของ &ldquo;CODE COOL&rdquo; พัฒนาขึ้นโดยเคารพลิขสิทธิ์และสิทธิ์ทรัพย์สินทางปัญญา 100%
           </p>
         </div>
 

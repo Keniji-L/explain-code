@@ -203,7 +203,7 @@ function LoginFormContent() {
             <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl overflow-hidden border border-[#f6c945]/60 bg-[#0d0b14] shadow-md">
               <Image
                 src="/logo.png"
-                alt="โค้ดนี้ฉันอธิบายได้"
+                alt="CODE COOL"
                 width={56}
                 height={56}
                 className="h-full w-full object-contain"

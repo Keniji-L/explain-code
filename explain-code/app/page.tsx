@@ -1263,13 +1263,13 @@ export default function ExplainCodeApp() {
             </button>
             <Image
               src="/logo.png"
-              alt="โค้ดนี้ฉันอธิบายได้"
+              alt="CODE COOL"
               width={32}
               height={32}
               className="h-8 w-8 rounded-lg object-contain border border-[#f6c945]/50 bg-[#0d0b14] shrink-0"
             />
             <span>
-              โค้ดนี้ฉันอธิบายได้ {isTeacherRole ? "· ครูผู้สอน" : "· นักเรียน"}
+              CODE COOL {isTeacherRole ? "· ครูผู้สอน" : "· นักเรียน"}
             </span>
           </div>
 
@@ -1769,12 +1769,12 @@ export default function ExplainCodeApp() {
             >
               <Image
                 src="/logo.png"
-                alt="โค้ดนี้ฉันอธิบายได้"
+                alt="CODE COOL"
                 width={32}
                 height={32}
                 className="h-8 w-8 rounded-lg object-contain border border-[#f6c945]/50 bg-[#0d0b14] shrink-0"
               />
-              <span>โค้ดนี้ฉันอธิบายได้</span>
+              <span>CODE COOL</span>
             </button>
             <span className="px-2.5 py-0.5 rounded-full bg-[#25193b] border border-[#9b5de5]/60 text-[#e9d5ff] text-[12px] font-extrabold">
               นักเรียน: {currentStudent.nickname} (ห้อง {currentStudent.roomCode})
@@ -2413,7 +2413,7 @@ export default function ExplainCodeApp() {
                   รายการส่งงาน · บันทึกการใช้ AI (AI Log {AI_USAGE_LOGS.length} Prompts)
                 </span>
                 <h2 className="text-[22px] font-extrabold text-[#f4efe6] mt-2">
-                  บันทึกการใช้ AI พัฒนาโปรเจกต์ &ldquo;โค้ดนี้ฉันอธิบายได้&rdquo;
+                  บันทึกการใช้ AI พัฒนาโปรเจกต์ &ldquo;CODE COOL&rdquo;
                 </h2>
                 <p className="text-[14px] text-[#9a93ad]">
                   แสดงรายการ Prompt ที่ใช้จริง เครื่องมือ AI ปัญหาที่พบ วิธีที่ทีมปรับปรุงแก้ไข และคำอธิบายโครงสร้างโค้ดตามกติกาการแข่งขันหน้า 4–5

@@ -1,6 +1,6 @@
 -- ============================================================================
 -- Migration: 20261112010000_dungeon_system.sql
--- Project: "โค้ดนี้ฉันอธิบายได้" (Pixel Dungeon Crawler Educational Mode)
+-- Project: "CODE COOL" (Pixel Dungeon Crawler Educational Mode)
 -- Description: เพิ่มระบบเกมดันเจี้ยนอ่านโค้ดพิกเซลอาร์ต (dungeon_questions,
 --              player_stats, dungeon_runs, room_attempts, items, achievements)
 --              พร้อม Safe Views, Triggers, และ RLS กันโกง 100%

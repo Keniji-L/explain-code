@@ -206,7 +206,7 @@ export function TeacherDashboard({
       .join("\n");
 
     return [
-      `สรุปผลความเข้าใจการอ่านโค้ด (โค้ดนี้ฉันอธิบายได้)`,
+      `สรุปผลความเข้าใจการอ่านโค้ด (CODE COOL)`,
       `ห้องเรียน: ${currentRoom.roomName} (รหัสห้อง: ${currentRoom.roomCode})`,
       `จำนวนนักเรียน: ${roomStudents.length} คน | คะแนนความเข้าใจเฉลี่ยทั้งห้อง: ${overallRoomAvg}%`,
       `ช่อง Block Model ที่ห้องเก่ง (80%+): ${strongList}`,
@@ -249,13 +249,13 @@ export function TeacherDashboard({
           <div className="flex items-center gap-3">
             <Image
               src="/logo.png"
-              alt="โค้ดนี้ฉันอธิบายได้"
+              alt="CODE COOL"
               width={32}
               height={32}
               className="h-8 w-8 rounded-lg object-contain border border-[#0f766e]/40 bg-[#0d0b14] shrink-0"
             />
             <span className="text-[20px] font-extrabold text-[#0b4f49]">
-              โค้ดนี้ฉันอธิบายได้ · ครู
+              CODE COOL · ครู
             </span>
             <span className="px-2.5 py-0.5 rounded-full bg-[#e3f1ee] text-[#0b4f49] text-[13px] font-bold">
               ผู้สอน: {teacherUsername}

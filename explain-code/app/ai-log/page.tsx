@@ -20,7 +20,7 @@ export default function AiUsageLogPage() {
 
   const handleCopyFullReport = () => {
     const lines: string[] = [
-      "บันทึกการใช้ AI (AI Usage Log) — โครงการ โค้ดนี้ฉันอธิบายได้ (ExplainCode)",
+      "บันทึกการใช้ AI (AI Usage Log) — โครงการ CODE COOL (ExplainCode)",
       "การแข่งขัน Vibe Coding 2026: Innovating Classrooms for a Sustainable Future",
       "==================================================================",
       "",
@@ -59,7 +59,7 @@ export default function AiUsageLogPage() {
                 <span>เอกสารส่งมอบรายการที่ 4 · บันทึกการใช้ AI (AI Usage Log)</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#f4efe6]">
-                บันทึกการใช้ AI พัฒนาโปรเจกต์ &ldquo;โค้ดนี้ฉันอธิบายได้&rdquo;
+                บันทึกการใช้ AI พัฒนาโปรเจกต์ &ldquo;CODE COOL&rdquo;
               </h1>
               <p className="text-sm text-[#9a93ad] leading-relaxed">
                 รวบรวมคำสั่ง (Prompt) ที่ใช้จริงในการพัฒนาระบบและสร้างภาพประกอบ/ไอคอน พร้อมระบุเครื่องมือ AI ที่ใช้ ปัญหาที่พบจากผลลัพธ์ของ AI วิธีการปรับปรุงแก้ไขของทีม และคำอธิบายโครงสร้างการทำงานของโค้ดตามกติกาการแข่งขัน Vibe Coding 2026 (หน้า 4–5)
@@ -125,7 +125,7 @@ export default function AiUsageLogPage() {
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg overflow-hidden bg-[#0d0b14] border border-[#f6c945]/60">
                 <Image
                   src="/logo.png"
-                  alt="โลโก้ โค้ดนี้ฉันอธิบายได้"
+                  alt="โลโก้ CODE COOL"
                   width={36}
                   height={36}
                   className="h-full w-full object-contain"

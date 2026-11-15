@@ -10,7 +10,7 @@ const silkscreen = Silkscreen({
 });
 
 export const metadata: Metadata = {
-  title: "ดันเจี้ยนอ่านโค้ด (Dungeon Crawler) · โค้ดนี้ฉันอธิบายได้",
+  title: "ดันเจี้ยนอ่านโค้ด (Dungeon Crawler) · CODE COOL",
   description:
     "เกมดันเจี้ยนพิกเซลอาร์ต ผจญภัยผ่านบทเรียน ปราบมอนสเตอร์ด้วยการตอบคำถาม Block Model และแก้ปริศนาโค้ด",
 };

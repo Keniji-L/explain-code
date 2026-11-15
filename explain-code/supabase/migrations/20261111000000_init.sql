@@ -1,6 +1,6 @@
 -- ============================================================================
 -- Migration: 20261111000000_init.sql
--- Project: "โค้ดนี้ฉันอธิบายได้" (Vibe Coding 2026 · Block Model 12 ช่อง)
+-- Project: "CODE COOL" (Vibe Coding 2026 · Block Model 12 ช่อง)
 -- Description: Full PostgreSQL schema migration with Supabase Auth,
 --              Block Model reference tables, RLS policies, and analytical views.
 -- ============================================================================

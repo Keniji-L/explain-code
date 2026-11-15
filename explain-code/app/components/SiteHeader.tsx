@@ -237,13 +237,13 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
             <div className="flex items-center justify-start shrink-0 min-w-0">
               <Link
                 href="/"
-                aria-label={t("โค้ดนี้ฉันอธิบายได้ หน้าแรก", "ExplainCode Home")}
+                aria-label={t("CODE COOL หน้าแรก", "ExplainCode Home")}
                 className="flex items-center gap-2.5 sm:gap-3 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f6c945]"
               >
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden bg-[#0d0b14] border border-[#f6c945]/60 shadow-sm shrink-0">
                   <Image
                     src="/logo.png"
-                    alt={t("โลโก้ โค้ดนี้ฉันอธิบายได้", "ExplainCode Logo")}
+                    alt={t("โลโก้ CODE COOL", "ExplainCode Logo")}
                     width={40}
                     height={40}
                     className="h-full w-full object-contain"
@@ -252,7 +252,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                 </div>
                 <div className="leading-tight whitespace-nowrap">
                   <span className="block text-sm sm:text-base font-extrabold tracking-tight text-[#f4efe6]">
-                    {t("โค้ดนี้ฉันอธิบายได้", "ExplainCode")}
+                    {t("CODE COOL", "ExplainCode")}
                   </span>
                   <span className="hidden xl:block text-[11px] font-semibold text-[#9a93ad]">
                     {t(
