@@ -6,6 +6,7 @@ import Link from "next/link";
 import { SiteHeader } from "../components/SiteHeader";
 import { Icon } from "../components/Icons";
 import { AI_USAGE_LOGS, AiUsageLogItem } from "../lib/curriculum";
+import { copyTextToClipboard } from "../lib/clipboard";
 
 type FilterCategory = "all" | AiUsageLogItem["category"];
 
@@ -48,39 +49,7 @@ export default function AiUsageLogPage() {
     });
 
     const reportText = lines.join("\n");
-    let copied = false;
-
-    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-      try {
-        await navigator.clipboard.writeText(reportText);
-        copied = true;
-      } catch {
-        copied = false;
-      }
-    }
-
-    if (!copied && typeof document !== "undefined") {
-      let textarea: HTMLTextAreaElement | null = null;
-      try {
-        textarea = document.createElement("textarea");
-        textarea.value = reportText;
-        textarea.setAttribute("readonly", "");
-        textarea.style.position = "fixed";
-        textarea.style.left = "-9999px";
-        textarea.style.top = "0";
-        textarea.style.opacity = "0";
-        document.body.appendChild(textarea);
-        textarea.select();
-        textarea.setSelectionRange(0, reportText.length);
-        copied = document.execCommand("copy");
-      } catch {
-        copied = false;
-      } finally {
-        if (textarea && textarea.parentNode) {
-          textarea.parentNode.removeChild(textarea);
-        }
-      }
-    }
+    const copied = await copyTextToClipboard(reportText);
 
     if (copyTimerRef.current) {
       clearTimeout(copyTimerRef.current);
@@ -120,8 +89,8 @@ export default function AiUsageLogPage() {
                 onClick={() => void handleCopyFullReport()}
                 className="retro-button inline-flex items-center gap-2 rounded-xl bg-[#f6c945] px-4 py-2.5 text-xs sm:text-sm font-extrabold text-[#120f1c] hover:bg-[#ffe27a] transition-colors cursor-pointer"
               >
-                <Icon name="clipboard" className="h-4 w-4" />
-                <span>
+                  <Icon name="clipboard" className="h-4 w-4 shrink-0" />
+                <span aria-live="polite">
                   {copyStatus === "copied"
                     ? "คัดลอกบันทึก AI ทั้งหมดแล้ว!"
                     : copyStatus === "failed"

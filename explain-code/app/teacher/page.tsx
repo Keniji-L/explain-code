@@ -2136,10 +2136,10 @@ export default function TeacherLMSDashboardPage() {
 
         {/* Modal สร้าง/แก้ไขคอร์ส */}
         {editingCourse && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 overflow-y-auto backdrop-blur-xs">
             <form
               onSubmit={handleSaveCourse}
-              className="w-full max-w-lg rounded-2xl border border-[#3d395a] bg-[#141220] p-6 text-[#f4efe6] shadow-2xl space-y-4"
+              className="my-auto w-full max-w-lg rounded-2xl border border-[#3d395a] bg-[#141220] p-6 text-[#f4efe6] shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
             >
               <h3 className="text-lg font-bold text-[#f4efe6]">
                 {editingCourse.id ? "แก้ไขคอร์สเรียน" : "สร้างคอร์สเรียนใหม่"}
@@ -2322,7 +2322,7 @@ export default function TeacherLMSDashboardPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 overflow-y-auto backdrop-blur-xs">
             <form
               onSubmit={handleSaveLesson}
-              className="my-8 w-full max-w-2xl rounded-2xl border border-[#3d395a] bg-[#141220] p-6 text-[#f4efe6] shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+              className="my-auto w-full max-w-2xl rounded-2xl border border-[#3d395a] bg-[#141220] p-6 text-[#f4efe6] shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
             >
               <h3 className="text-lg font-bold text-[#f4efe6]">
                 {editingLesson.id ? "แก้ไขบทเรียน" : "เพิ่มบทเรียนใหม่"}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import {
   ClassroomRecord,
@@ -8,6 +8,7 @@ import {
   TOPICS,
   getMasteryStatus,
 } from "../lib/curriculum";
+import { copyTextToClipboard } from "../lib/clipboard";
 import { Icon } from "./Icons";
 import { BlockModelGrid } from "./BlockModelGrid";
 
@@ -65,8 +66,21 @@ export function TeacherDashboard({
     classrooms[0]?.roomCode || "ABC123"
   );
   const [newRoomName, setNewRoomName] = useState<string>("");
-  const [copiedCode, setCopiedCode] = useState<boolean>(false);
-  const [copiedSummary, setCopiedSummary] = useState<boolean>(false);
+  const [copiedCodeStatus, setCopiedCodeStatus] = useState<
+    "idle" | "copied" | "failed"
+  >("idle");
+  const [copiedSummaryStatus, setCopiedSummaryStatus] = useState<
+    "idle" | "copied" | "failed"
+  >("idle");
+  const copyCodeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copySummaryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyCodeTimerRef.current) clearTimeout(copyCodeTimerRef.current);
+      if (copySummaryTimerRef.current) clearTimeout(copySummaryTimerRef.current);
+    };
+  }, []);
   const [inspectingStudent, setInspectingStudent] = useState<StudentRecord | null>(
     null
   );
@@ -187,11 +201,14 @@ export function TeacherDashboard({
     }
   };
 
-  const handleCopyRoomCode = () => {
+  const handleCopyRoomCode = async () => {
     if (!currentRoom) return;
-    navigator.clipboard.writeText(currentRoom.roomCode);
-    setCopiedCode(true);
-    setTimeout(() => setCopiedCode(false), 2000);
+    const ok = await copyTextToClipboard(currentRoom.roomCode);
+    if (copyCodeTimerRef.current) clearTimeout(copyCodeTimerRef.current);
+    setCopiedCodeStatus(ok ? "copied" : "failed");
+    copyCodeTimerRef.current = setTimeout(() => {
+      setCopiedCodeStatus("idle");
+    }, 2000);
   };
 
   const buildRoomSummaryText = () => {
@@ -233,11 +250,14 @@ export function TeacherDashboard({
     ].join("\n");
   };
 
-  const handleCopySummary = () => {
+  const handleCopySummary = async () => {
     const text = buildRoomSummaryText();
-    navigator.clipboard.writeText(text);
-    setCopiedSummary(true);
-    setTimeout(() => setCopiedSummary(false), 2500);
+    const ok = await copyTextToClipboard(text);
+    if (copySummaryTimerRef.current) clearTimeout(copySummaryTimerRef.current);
+    setCopiedSummaryStatus(ok ? "copied" : "failed");
+    copySummaryTimerRef.current = setTimeout(() => {
+      setCopiedSummaryStatus("idle");
+    }, 2500);
   };
 
   const handleSaveTeachingAdjustment = async () => {
@@ -430,11 +450,17 @@ export function TeacherDashboard({
               </div>
               <button
                 type="button"
-                onClick={handleCopyRoomCode}
+                onClick={() => void handleCopyRoomCode()}
                 className="press-teal px-4 py-2.5 rounded-xl text-[13px] font-extrabold flex items-center gap-2 cursor-pointer no-print"
               >
                 <Icon name="clipboard" size={16} />
-                <span>{copiedCode ? "คัดลอกแล้ว!" : "คัดลอกรหัส"}</span>
+                <span aria-live="polite">
+                  {copiedCodeStatus === "copied"
+                    ? "คัดลอกแล้ว!"
+                    : copiedCodeStatus === "failed"
+                    ? "คัดลอกไม่สำเร็จ"
+                    : "คัดลอกรหัส"}
+                </span>
               </button>
             </div>
           </div>
@@ -538,13 +564,15 @@ export function TeacherDashboard({
             <div className="flex items-center gap-2 no-print">
               <button
                 type="button"
-                onClick={handleCopySummary}
+                onClick={() => void handleCopySummary()}
                 className="press-teal px-4 py-2 rounded-xl text-[14px] font-extrabold flex items-center gap-2 cursor-pointer"
               >
                 <Icon name="clipboard" size={18} />
-                <span>
-                  {copiedSummary
+                <span aria-live="polite">
+                  {copiedSummaryStatus === "copied"
                     ? "คัดลอกสรุปห้องเรียบร้อย!"
+                    : copiedSummaryStatus === "failed"
+                    ? "ไม่สามารถคัดลอกอัตโนมัติได้"
                     : "คัดลอกสรุปห้องไปปรับการสอน"}
                 </span>
               </button>

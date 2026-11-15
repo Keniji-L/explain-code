@@ -427,7 +427,7 @@ ${numberedLines}`;
       apiKey,
       prompt,
       temperature: 0.25,
-      timeoutMs: 15000,
+      timeoutMs: 9000,
       models: GEMINI_MODEL_FALLBACK_CHAIN,
     });
 
@@ -440,14 +440,23 @@ ${numberedLines}`;
       return null;
     }
 
+    const validParsedSteps = Array.isArray(parsed.steps)
+      ? parsed.steps
+          .filter(
+            (s: unknown): s is Record<string, unknown> =>
+              Boolean(s && typeof s === "object" && !Array.isArray(s))
+          )
+          .slice(0, 8)
+      : [];
+
     const steps: TraceStep[] =
-      Array.isArray(parsed.steps) && parsed.steps.length > 0
-        ? parsed.steps.slice(0, 8).map((s: Record<string, unknown>, idx: number) => ({
+      validParsedSteps.length > 0
+        ? validParsedSteps.map((s, idx) => ({
             stepNumber: idx + 1,
             line: typeof s.line === "number" && s.line >= 1 ? s.line : idx + 1,
             codeLine: typeof s.codeLine === "string" ? s.codeLine : "",
             variables:
-              s.variables && typeof s.variables === "object"
+              s.variables && typeof s.variables === "object" && !Array.isArray(s.variables)
                 ? Object.fromEntries(
                     Object.entries(s.variables as Record<string, unknown>).map(([k, v]) => [
                       k,
@@ -468,11 +477,17 @@ ${numberedLines}`;
     }));
 
     const questions: DungeonQuestion[] = parsed.questions
-      .filter((q: unknown): q is Record<string, unknown> => Boolean(q && typeof q === "object"))
+      .filter(
+        (q: unknown): q is Record<string, unknown> =>
+          Boolean(q && typeof q === "object" && !Array.isArray(q))
+      )
       .slice(0, 4)
       .map((q: Record<string, unknown>, idx: number) => {
         const rawChoices = Array.isArray(q.choices)
-          ? q.choices.map((c) => String(c)).filter((c) => c.trim().length > 0)
+          ? q.choices
+              .filter((c) => c !== null && c !== undefined)
+              .map((c) => String(c).trim())
+              .filter((c) => c.length > 0)
           : [];
         const choices = rawChoices.length >= 2 ? rawChoices.slice(0, 4) : ["Option A", "Option B", "Option C", "Option D"];
         const rawIdx = typeof q.correctIndex === "number" && Number.isInteger(q.correctIndex) ? q.correctIndex : 0;
