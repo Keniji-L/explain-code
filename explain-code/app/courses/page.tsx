@@ -1989,12 +1989,6 @@ function CoursesContent() {
                               <Icon name="gamepad" size={13} />
                               <span>{t("ดันเจี้ยน", "Dungeon")}</span>
                             </Link>
-                            <Link
-                              href={`/courses/${course.id}`}
-                              className="rounded-xl border border-[#2f2d45] bg-[#0d0b14] hover:border-[#4a4766] px-3 py-1.5 text-xs font-extrabold text-[#f4efe6] transition-colors"
-                            >
-                              {t("บทเรียน", "Lessons")}
-                            </Link>
                             <button
                               type="button"
                               onClick={() => handleEnrollCourse(course)}

@@ -435,14 +435,6 @@ function CourseDetailContent() {
 
                       <div className="flex flex-wrap items-center gap-2 shrink-0 self-end sm:self-auto">
                         <Link
-                          href={`/courses/${course.id}/lessons/${lesson.id}?mode=dungeon`}
-                          className="min-w-[104px] px-3 py-1.5 rounded-lg border border-[#9b5de5] bg-[#5a2d91] text-xs font-bold text-[#ffe27a] hover:bg-[#6d3fc0] inline-flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap"
-                          title={t("ลุยห้องดันเจี้ยนของบทนี้", "Enter this lesson's dungeon room")}
-                        >
-                          <Icon name="gamepad" size={13} />
-                          <span>{t("ลุยดันเจี้ยน", "Dungeon")}</span>
-                        </Link>
-                        <Link
                           href={`/courses/${course.id}/lessons/${lesson.id}`}
                           className={`min-w-[124px] inline-flex items-center justify-center rounded-lg border px-3.5 py-1.5 text-xs font-bold transition-colors whitespace-nowrap ${
                             isDone
