@@ -8,6 +8,29 @@ import { SiteHeader, setClientSession } from "../components/SiteHeader";
 import { Icon } from "../components/Icons";
 import { INITIAL_STUDENTS, INITIAL_TEACHERS } from "../lib/curriculum";
 
+const REDIRECT_PAGE_LABELS: Record<string, string> = {
+  "/": "หน้าแรก",
+  "/my-history": "ประวัติการเรียนรู้ของฉัน",
+  "/my-learning": "หน้าการเรียนรู้ของฉัน",
+  "/courses": "คอร์สเรียนทั้งหมด",
+  "/dungeon": "ดันเจี้ยนอ่านโค้ด",
+  "/explain": "ฝึกอธิบายโค้ด",
+  "/depths": "แบบฝึกหัดเจาะลึก",
+  "/teacher": "แดชบอร์ดครู",
+  "/ai-log": "บันทึกการใช้ AI",
+};
+
+function getFriendlyRedirectLabel(path: string): string {
+  const cleanPath = path.split("?")[0];
+  if (REDIRECT_PAGE_LABELS[cleanPath]) {
+    return REDIRECT_PAGE_LABELS[cleanPath];
+  }
+  const matchedPrefix = Object.keys(REDIRECT_PAGE_LABELS).find(
+    (prefix) => prefix !== "/" && cleanPath.startsWith(`${prefix}/`)
+  );
+  return matchedPrefix ? REDIRECT_PAGE_LABELS[matchedPrefix] : path;
+}
+
 function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -214,15 +237,15 @@ function LoginFormContent() {
               เข้าสู่ระบบ
             </h1>
             <p className="mt-1 text-sm text-[#9a93ad]">
-              ใช้ชื่อเล่นสมมติหรือชื่อผู้ใช้ ระบบตรวจสอบบทบาท (นักเรียน/ครู) ให้อัตโนมัติ
+              กรอกชื่อเล่นหรือชื่อผู้ใช้ของคุณเพื่อเข้าสู่ระบบ (รองรับทั้งนักเรียนและครู)
             </p>
             {redirectPath && (
               <p className="mt-2 rounded-lg border border-[#f6c945]/40 bg-[#281d08] px-3 py-1.5 text-xs font-medium text-[#ffe27a]">
-                เมื่อเข้าสู่ระบบสำเร็จ ระบบจะพาคุณกลับไปยังหน้า{" "}
-                <code className="font-mono font-bold text-[#f6c945]">
-                  {redirectPath}
-                </code>{" "}
-                อัตโนมัติ
+                หลังเข้าสู่ระบบสำเร็จ จะพาคุณไปยังหน้า{" "}
+                <span className="font-bold text-[#f6c945]">
+                  {getFriendlyRedirectLabel(redirectPath)}
+                </span>{" "}
+                โดยอัตโนมัติ
               </p>
             )}
           </div>
