@@ -69,14 +69,21 @@ export function CodeChestModal({
         onSolved({ xpAwarded: xpReward, coinsAwarded: coinReward });
       } else {
         dungeonSound.playHurt();
+        if (eliminatedChoices.length >= 1) {
+          onClose();
+          return;
+        }
         setEliminatedChoices((prev) =>
           prev.includes(chosen) ? prev : [...prev, chosen]
         );
         setSelectedChoice(null);
+        const hintText = isEn
+          ? question.hintEn || question.hint || "Try tracing the code again!"
+          : question.hint || "ลองไล่โค้ดและเลือกคำตอบอื่นดูอีกครั้ง!";
         setFeedbackError(
           isEn
-            ? question.hintEn || question.hint || "Not quite! Try another choice."
-            : question.hint || "ยังไม่ถูกต้อง ลองไล่โค้ดและเลือกคำตอบอื่นดูอีกครั้ง!"
+            ? `Not quite! 1 attempt remaining — ${hintText}`
+            : `ยังไม่ถูกต้อง! เหลือโอกาสตอบอีก 1 ครั้ง — ${hintText}`
         );
       }
     },
@@ -91,6 +98,7 @@ export function CodeChestModal({
       xpReward,
       coinReward,
       onSolved,
+      onClose,
     ]
   );
 
