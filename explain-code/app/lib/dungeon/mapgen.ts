@@ -34,7 +34,7 @@ export interface DungeonRoom {
   doorPos: { x: number; y: number };
   torches: { x: number; y: number }[];
   entity: DungeonEntity | null;
-  chest?: { x: number; y: number; isOpened: boolean; isMimic?: boolean } | null;
+  chest?: { x: number; y: number; isOpened: boolean } | null;
   roomType: RoomType;
   floorIndex: number;
   totalFloors: number;
@@ -155,14 +155,13 @@ export function generateDungeonRoom(
     tiles[entityY][entityX] = TileType.PUZZLE;
   }
 
-  // Place an optional Code Chest in ~35% of non-chest rooms; ~12% of spawned chests are secret Mimics
-  let chest: { x: number; y: number; isOpened: boolean; isMimic?: boolean } | null = null;
-  if (roomType !== "chest" && rng() < 0.35) {
+  // Place an optional Code Chest in non-chest rooms
+  let chest: { x: number; y: number; isOpened: boolean } | null = null;
+  if (roomType !== "chest") {
     const chestX = rng() > 0.5 ? 2 : 13;
     const chestY = 5;
-    const isMimic = rng() < 0.12;
     tiles[chestY][chestX] = TileType.CHEST;
-    chest = { x: chestX, y: chestY, isOpened: false, isMimic };
+    chest = { x: chestX, y: chestY, isOpened: false };
   }
 
   return {
