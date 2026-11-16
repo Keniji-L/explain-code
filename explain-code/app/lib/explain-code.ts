@@ -3,7 +3,7 @@ import { callGeminiGenerateJson } from "./gemini-client";
 
 export interface ExplainCodeInput {
   code: string;
-  language: string;
+  language?: string;
   uiLang?: "th" | "en";
 }
 
@@ -26,6 +26,31 @@ const LANGUAGE_LABELS: Record<string, string> = {
   html: "HTML / CSS",
   sql: "SQL",
 };
+
+/**
+ * ตรวจจับภาษาโปรแกรมเบื้องต้นจากไวยากรณ์ (ใช้เป็นค่าสำรองเมื่อไม่ได้ระบุภาษา)
+ */
+function detectLanguageHeuristic(code: string): string {
+  if (/<!DOCTYPE\s+html|<html[\s>]|<head[\s>]|<body[\s>]|<style[\s>]/i.test(code)) {
+    return "html";
+  }
+  if (/^\s*(SELECT|INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM|CREATE\s+TABLE|ALTER\s+TABLE)\b/im.test(code)) {
+    return "sql";
+  }
+  if (/#include\s*<|using\s+namespace\s+std|std::|cout\s*<</.test(code)) {
+    return "cpp";
+  }
+  if (/public\s+class\s+\w+|System\.out\.print|public\s+static\s+void\s+main/.test(code)) {
+    return "java";
+  }
+  if (/^\s*def\s+\w+\s*\(|^\s*from\s+\w+\s+import\b|^\s*import\s+\w+\s*$|print\s*\(|\belif\b/m.test(code)) {
+    return "python";
+  }
+  if (/:\s*(string|number|boolean|any|unknown|void|never)\b|\binterface\s+\w+|\btype\s+\w+\s*=/.test(code)) {
+    return "typescript";
+  }
+  return "javascript";
+}
 
 /**
  * วิเคราะห์บรรทัดโค้ดแต่ละบรรทัดแบบอัจฉริยะ (Smart Deterministic Mock Analyzer)
@@ -135,15 +160,21 @@ async function explainWithGemini(
   apiKey: string
 ): Promise<ExplainCodeResult | null> {
   const isEn = uiLang === "en";
+  const isAuto = language === "auto";
   const numberedLines = rawCode
     .split(/\r?\n/)
     .map((line, idx) => `${idx + 1}: ${line}`)
     .join("\n");
 
   const prompt = isEn
-    ? `You are a friendly programming tutor. Explain the following ${langLabel} code clearly for a high-school/vocational student.
+    ? `You are a friendly programming tutor. ${
+        isAuto
+          ? "Automatically detect the programming language of the following code and explain it clearly"
+          : `Explain the following ${langLabel} code clearly`
+      } for a high-school/vocational student.
 Return ONLY valid JSON (no markdown fences) with this exact structure:
 {
+  "language": "detected programming language in lowercase (e.g., javascript, python, typescript, java, cpp, sql, html, go, rust, php)",
   "summary": "2-3 concise sentences summarizing what the code does overall.",
   "keyConcepts": ["Concept 1", "Concept 2", "Concept 3"],
   "stepByStepFlow": ["1. ...", "2. ...", "3. ..."],
@@ -158,9 +189,14 @@ Rules:
 
 Code:
 ${numberedLines}`
-    : `คุณคือครูผู้ช่วยสอนเขียนโปรแกรมที่อธิบายเข้าใจง่าย จงวิเคราะห์และอธิบายโค้ดภาษา ${langLabel} ต่อไปนี้สำหรับนักเรียนมัธยม/อาชีวะ
+    : `คุณคือครูผู้ช่วยสอนเขียนโปรแกรมที่อธิบายเข้าใจง่าย ${
+        isAuto
+          ? "จงตรวจจับภาษาโปรแกรมของโค้ดต่อไปนี้โดยอัตโนมัติ แล้ววิเคราะห์และอธิบายโค้ด"
+          : `จงวิเคราะห์และอธิบายโค้ดภาษา ${langLabel} ต่อไปนี้`
+      }สำหรับนักเรียนมัธยม/อาชีวะ
 ตอบกลับเป็น JSON ที่ถูกต้องเท่านั้น (ห้ามใส่ markdown fence) ตามโครงสร้างนี้:
 {
+  "language": "ชื่อภาษาโปรแกรมที่ตรวจจับได้เป็นตัวพิมพ์เล็ก เช่น javascript, python, typescript, java, cpp, sql, html, go, rust, php",
   "summary": "สรุปภาพรวมการทำงานของโค้ดสั้นๆ กระชับ 2-3 ประโยคเป็นภาษาไทย",
   "keyConcepts": ["แนวคิดหลัก 1", "แนวคิดหลัก 2", "แนวคิดหลัก 3"],
   "stepByStepFlow": ["1. ...", "2. ...", "3. ..."],
@@ -178,6 +214,7 @@ ${numberedLines}`;
 
   try {
     const geminiResult = await callGeminiGenerateJson<{
+      language?: unknown;
       summary?: unknown;
       lineByLine?: unknown;
       keyConcepts?: unknown;
@@ -203,6 +240,13 @@ ${numberedLines}`;
       return null;
     }
 
+    const fallbackLanguage = isAuto ? detectLanguageHeuristic(rawCode) : language;
+    const resolvedLanguage =
+      typeof parsed.language === "string" && parsed.language.trim().length > 0
+        ? parsed.language.trim().toLowerCase()
+        : fallbackLanguage;
+    const resolvedLangLabel = LANGUAGE_LABELS[resolvedLanguage] || resolvedLanguage;
+
     const sourceLines = rawCode.split(/\r?\n/);
     const lineByLine: LineExplanationItem[] = parsed.lineByLine
       .filter(
@@ -224,7 +268,7 @@ ${numberedLines}`;
           explanation:
             typeof item.explanation === "string" && item.explanation.trim().length > 0
               ? item.explanation.trim()
-              : explainSingleLine(actualCode, lineNum, language),
+              : explainSingleLine(actualCode, lineNum, resolvedLanguage),
         };
       });
 
@@ -243,13 +287,13 @@ ${numberedLines}`;
       : [];
 
     return {
-      language,
+      language: resolvedLanguage,
       summary: parsed.summary.trim(),
       lineByLine,
       keyConcepts:
         keyConcepts.length > 0
           ? keyConcepts
-          : [isEn ? `${langLabel} Fundamentals` : `พื้นฐานภาษา ${langLabel}`],
+          : [isEn ? `${resolvedLangLabel} Fundamentals` : `พื้นฐานภาษา ${resolvedLangLabel}`],
       stepByStepFlow:
         stepByStepFlow.length > 0
           ? stepByStepFlow
@@ -278,19 +322,22 @@ export async function explainCodeSnippet(
   input: ExplainCodeInput
 ): Promise<ExplainCodeResult> {
   const rawCode = (input.code || "").trim();
-  const language = (input.language || "javascript").toLowerCase();
+  const requestedLanguage = (input.language || "auto").trim().toLowerCase() || "auto";
   const uiLang: "th" | "en" = input.uiLang === "en" ? "en" : "th";
-  const langLabel = LANGUAGE_LABELS[language] || language;
 
   if (!rawCode) {
     throw new Error("กรุณาวางโค้ดที่ต้องการให้อธิบาย");
   }
 
+  const detectedLanguage =
+    requestedLanguage === "auto" ? detectLanguageHeuristic(rawCode) : requestedLanguage;
+  const langLabel = LANGUAGE_LABELS[detectedLanguage] || detectedLanguage;
+
   const serverAiKey = process.env.GEMINI_API_KEY || process.env.EXPLAIN_AI_API_KEY;
   if (serverAiKey) {
     const aiResult = await explainWithGemini(
       rawCode,
-      language,
+      requestedLanguage,
       langLabel,
       uiLang,
       serverAiKey
@@ -299,6 +346,8 @@ export async function explainCodeSnippet(
       return aiResult;
     }
   }
+
+  const language = detectedLanguage;
 
   const lines = rawCode.split(/\r?\n/);
   const lineByLine: LineExplanationItem[] = [];

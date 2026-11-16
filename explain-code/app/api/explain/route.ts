@@ -66,7 +66,10 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const code = String(body.code || "");
-    const language = String(body.language || "javascript");
+    const language =
+      typeof body.language === "string" && body.language.trim()
+        ? body.language.trim()
+        : "auto";
     const uiLang: "th" | "en" = body.uiLang === "en" ? "en" : "th";
 
     if (!code.trim()) {

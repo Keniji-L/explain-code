@@ -14,14 +14,14 @@ import { ExplainCodeResult } from "../lib/explain-code";
 import { appendLocalExplanationHistory } from "../lib/lms-data";
 import { saveCustomDungeon } from "../lib/custom-dungeon";
 
-const LANGUAGE_OPTIONS = [
-  { value: "javascript", label: "JavaScript" },
-  { value: "typescript", label: "TypeScript" },
-  { value: "python", label: "Python" },
-  { value: "java", label: "Java" },
-  { value: "cpp", label: "C / C++" },
-  { value: "sql", label: "SQL" },
-  { value: "html", label: "HTML / CSS" },
+const SAMPLE_SNIPPET_BUTTONS = [
+  { key: "javascript", label: "JS" },
+  { key: "python", label: "Python" },
+  { key: "typescript", label: "TS" },
+  { key: "java", label: "Java" },
+  { key: "cpp", label: "C++" },
+  { key: "sql", label: "SQL" },
+  { key: "html", label: "HTML" },
 ];
 
 const SAMPLE_SNIPPETS: Record<string, string> = {
@@ -116,7 +116,6 @@ export default function ExplainCodePage() {
   const router = useRouter();
   const { t, uiLang } = useUiLanguage();
   const [session, setSession] = useState<ClientAuthSession | null>(null);
-  const [language, setLanguage] = useState<string>("javascript");
   const [code, setCode] = useState<string>(SAMPLE_SNIPPETS.javascript);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -138,13 +137,6 @@ export default function ExplainCodePage() {
     return () =>
       window.removeEventListener("explain-code-auth-change", onAuthChange);
   }, []);
-
-  const handleLanguageChange = (newLang: string) => {
-    setLanguage(newLang);
-    if (SAMPLE_SNIPPETS[newLang] && (!code.trim() || Object.values(SAMPLE_SNIPPETS).includes(code))) {
-      setCode(SAMPLE_SNIPPETS[newLang]);
-    }
-  };
 
   const handleExplain = async () => {
     setError(null);
@@ -169,7 +161,7 @@ export default function ExplainCodePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code,
-          language,
+          language: "auto",
           uiLang,
           userId: session?.userId || null,
         }),
@@ -224,7 +216,7 @@ export default function ExplainCodePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code,
-          language,
+          language: result.language || "javascript",
           uiLang,
           explanation: result,
         }),
@@ -325,37 +317,15 @@ export default function ExplainCodePage() {
           {/* Left Column: Code Input */}
           <div className="lg:col-span-5">
             <div className="rounded-2xl border border-[#2f2d45] bg-[#141220] p-5 shadow-lg">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-[#9a93ad]">
-                  {t("1. เลือกภาษาโปรแกรม", "1. Select Programming Language")}
-                </label>
-                <select
-                  value={language}
-                  onChange={(e) => handleLanguageChange(e.target.value)}
-                  className="rounded-xl border border-[#3d395a] bg-[#1c1b2b] px-3.5 py-2 text-xs font-bold text-[#f4efe6] focus:border-[#f6c945] focus:outline-hidden"
-                >
-                  {LANGUAGE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-[#9a93ad]">
-                  {t("2. วางโค้ดที่ต้องการให้อธิบาย", "2. Paste Code to Explain")}
+                  {t("วางโค้ดที่ต้องการให้อธิบาย", "Paste Code to Explain")}
                 </label>
                 <div className="flex items-center gap-3">
-                  {SAMPLE_SNIPPETS[language] && (
-                    <button
-                      type="button"
-                      onClick={() => setCode(SAMPLE_SNIPPETS[language])}
-                      className="text-[11px] font-semibold text-[#f6c945] underline hover:text-[#ffe27a] cursor-pointer whitespace-nowrap"
-                    >
-                      {t("ใช้โค้ดตัวอย่าง", "Load Sample")}
-                    </button>
-                  )}
+                  <span className="inline-flex items-center gap-1 rounded-full border border-[#9b5de5]/40 bg-[#5a2d91]/25 px-2.5 py-0.5 text-[11px] font-semibold text-[#d8b4fe]">
+                    <Icon name="sparkles" className="h-3 w-3" />
+                    {t("ตรวจจับภาษาอัตโนมัติ", "Auto-detect")}
+                  </span>
                   <button
                     type="button"
                     onClick={() => setCode("")}
@@ -364,6 +334,22 @@ export default function ExplainCodePage() {
                     {t("ล้างโค้ด", "Clear")}
                   </button>
                 </div>
+              </div>
+
+              <div className="mb-3 flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-semibold text-[#9a93ad] mr-1">
+                  {t("ตัวอย่าง:", "Samples:")}
+                </span>
+                {SAMPLE_SNIPPET_BUTTONS.map((sample) => (
+                  <button
+                    key={sample.key}
+                    type="button"
+                    onClick={() => setCode(SAMPLE_SNIPPETS[sample.key])}
+                    className="rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-2 py-1 text-[11px] font-semibold text-[#e8e1cf] hover:border-[#f6c945]/60 hover:text-[#f6c945] transition-colors cursor-pointer"
+                  >
+                    {sample.label}
+                  </button>
+                ))}
               </div>
 
               <textarea
@@ -576,8 +562,8 @@ export default function ExplainCodePage() {
                 </h2>
                 <p className="mt-1 max-w-md text-xs leading-relaxed text-[#9a93ad]">
                   {t(
-                    "วางโค้ดทางด้านซ้าย เลือกภาษาโปรแกรม แล้วกดปุ่ม “อธิบายโค้ด” เพื่อดูคำอธิบายแบบละเอียดทีละบรรทัด",
-                    "Paste your code on the left, choose the language, and click “Explain Code” for a detailed line-by-line breakdown."
+                    "วางโค้ดทางด้านซ้าย แล้วกดปุ่ม “อธิบายโค้ด” ระบบจะตรวจจับภาษาอัตโนมัติและอธิบายแบบละเอียดทีละบรรทัด",
+                    "Paste your code on the left and click “Explain Code” — the language is auto-detected with a detailed line-by-line breakdown."
                   )}
                 </p>
               </div>
