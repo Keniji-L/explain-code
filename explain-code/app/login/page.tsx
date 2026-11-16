@@ -224,15 +224,6 @@ function LoginFormContent() {
             <Icon name="home" className="h-4 w-4 text-[#f6c945]" />
             <span>{t("← กลับไปหน้าแรก", "← Back to Home")}</span>
           </Link>
-          <Link
-            href={registerHref}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-[#2fbf71]/70 bg-[#102a1e] px-4 py-2 text-xs sm:text-sm font-extrabold text-[#86efac] hover:bg-[#153827] transition-colors"
-          >
-            <Icon name="user" className="h-4 w-4" />
-            <span>
-              {t("ยังไม่มีบัญชี? สมัครสมาชิก →", "No account yet? Register →")}
-            </span>
-          </Link>
         </div>
 
         <div className="rounded-2xl border border-[#2f2d45] bg-[#141220] p-6 sm:p-8 shadow-xl">
@@ -430,13 +421,6 @@ function LoginFormContent() {
                 {t("ไปหน้าสมัครสมาชิกใหม่ →", "Go to Registration →")}
               </Link>
             </p>
-            <Link
-              href="/"
-              className="w-full inline-flex items-center justify-center gap-2 rounded-xl border-2 border-[#f6c945]/75 bg-[#1c1b2b] px-4 py-3 text-sm font-extrabold text-[#ffe27a] shadow-md hover:border-[#f6c945] hover:bg-[#281d08] transition-all"
-            >
-              <Icon name="home" className="h-4 w-4 text-[#f6c945]" />
-              <span>{t("กลับไปหน้าแรก", "Back to Home")}</span>
-            </Link>
           </div>
         </div>
       </main>
