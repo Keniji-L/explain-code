@@ -5,7 +5,7 @@ import React, {
   useContext,
   useEffect,
   useCallback,
-  useSyncExternalStore,
+  useState,
 } from "react";
 
 export type UiLanguage = "th" | "en";
@@ -23,22 +23,7 @@ const LanguageContext = createContext<LanguageContextType | undefined>(
   undefined
 );
 
-function subscribeUiLang(callback: () => void): () => void {
-  if (typeof window === "undefined") return () => {};
-  const handleStorage = (e: StorageEvent) => {
-    if (e.key === UI_LANGUAGE_STORAGE_KEY) {
-      callback();
-    }
-  };
-  window.addEventListener("storage", handleStorage);
-  window.addEventListener("explain-code-ui-lang-change", callback);
-  return () => {
-    window.removeEventListener("storage", handleStorage);
-    window.removeEventListener("explain-code-ui-lang-change", callback);
-  };
-}
-
-function getUiLangSnapshot(): UiLanguage {
+function readStoredUiLang(): UiLanguage {
   if (typeof window === "undefined") return "th";
   try {
     const stored = localStorage.getItem(UI_LANGUAGE_STORAGE_KEY);
@@ -48,20 +33,33 @@ function getUiLangSnapshot(): UiLanguage {
   }
 }
 
-function getUiLangServerSnapshot(): UiLanguage {
-  return "th";
-}
-
 export function LanguageProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const uiLang = useSyncExternalStore(
-    subscribeUiLang,
-    getUiLangSnapshot,
-    getUiLangServerSnapshot
-  );
+  // Always start with "th" so SSR and initial client hydration match 100%
+  const [uiLang, setUiLangState] = useState<UiLanguage>("th");
+
+  useEffect(() => {
+    const syncFromStorage = () => {
+      const next = readStoredUiLang();
+      setUiLangState((prev) => (prev !== next ? next : prev));
+    };
+    syncFromStorage();
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === UI_LANGUAGE_STORAGE_KEY) {
+        syncFromStorage();
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("explain-code-ui-lang-change", syncFromStorage);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("explain-code-ui-lang-change", syncFromStorage);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -71,6 +69,7 @@ export function LanguageProvider({
   }, [uiLang]);
 
   const setUiLang = useCallback((nextLang: UiLanguage) => {
+    setUiLangState(nextLang);
     try {
       localStorage.setItem(UI_LANGUAGE_STORAGE_KEY, nextLang);
     } catch {
