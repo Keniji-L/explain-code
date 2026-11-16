@@ -22,8 +22,8 @@ export default function SiteFooter() {
           <span className="text-[#6f688a]">•</span>
           <span>
             {isTh
-              ? "พัฒนาโดย Khantikun / Patcharapol"
-              : "Created by Khantikun / Patcharapol"}
+              ? "พัฒนาโดย Khantikun / Patcharaphol"
+              : "Created by Khantikun / Patcharaphol"}
           </span>
         </div>
         <div className="flex items-center gap-3 text-[#9a93ad]">
