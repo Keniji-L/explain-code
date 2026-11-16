@@ -17,8 +17,10 @@ export interface CodeChestModalProps {
   question: DungeonQuestion;
   xpReward?: number;
   coinReward?: number;
+  isMimic?: boolean;
   enableInRunRewardPicker?: boolean;
   onSolved: (reward: { xpAwarded: number; coinsAwarded: number }) => void;
+  onMimicFailed?: () => void;
   onSelectInRunReward?: (rewardType: InRunRewardType) => void;
   onClose: () => void;
 }
@@ -27,8 +29,10 @@ export function CodeChestModal({
   question,
   xpReward = 20,
   coinReward = 15,
+  isMimic = false,
   enableInRunRewardPicker = true,
   onSolved,
+  onMimicFailed,
   onSelectInRunReward,
   onClose,
 }: CodeChestModalProps) {
@@ -38,6 +42,7 @@ export function CodeChestModal({
   const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
   const [eliminatedChoices, setEliminatedChoices] = useState<number[]>([]);
   const [isSolved, setIsSolved] = useState<boolean>(false);
+  const [isFailed, setIsFailed] = useState<boolean>(false);
   const [selectedInRunReward, setSelectedInRunReward] = useState<InRunRewardType | null>(null);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
@@ -60,7 +65,7 @@ export function CodeChestModal({
   const handleSubmit = useCallback(
     (choiceOverride?: number) => {
       const chosen = choiceOverride ?? selectedChoice;
-      if (chosen === null || isSolved || eliminatedChoices.includes(chosen)) return;
+      if (chosen === null || isSolved || isFailed || eliminatedChoices.includes(chosen)) return;
 
       if (chosen === question.correctIndex) {
         setIsSolved(true);
@@ -70,6 +75,12 @@ export function CodeChestModal({
       } else {
         dungeonSound.playHurt();
         if (eliminatedChoices.length >= 1) {
+          if (isMimic) {
+            setIsFailed(true);
+            setFeedbackError(null);
+            onMimicFailed?.();
+            return;
+          }
           onClose();
           return;
         }
@@ -90,7 +101,9 @@ export function CodeChestModal({
     [
       selectedChoice,
       isSolved,
+      isFailed,
       eliminatedChoices,
+      isMimic,
       question.correctIndex,
       question.hint,
       question.hintEn,
@@ -98,12 +111,13 @@ export function CodeChestModal({
       xpReward,
       coinReward,
       onSolved,
+      onMimicFailed,
       onClose,
     ]
   );
 
   const handleSelectChoice = (idx: number) => {
-    if (isSolved || eliminatedChoices.includes(idx)) return;
+    if (isSolved || isFailed || eliminatedChoices.includes(idx)) return;
     if (selectedChoice === idx) {
       handleSubmit(idx);
       return;
@@ -135,7 +149,7 @@ export function CodeChestModal({
         handleCloseModal();
         return;
       }
-      if (isSolved) {
+      if (isSolved || isFailed) {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           handleCloseModal();
@@ -156,28 +170,40 @@ export function CodeChestModal({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isSolved, displayChoices.length, eliminatedChoices, selectedChoice, handleSubmit, handleCloseModal]);
+  }, [isSolved, isFailed, displayChoices.length, eliminatedChoices, selectedChoice, handleSubmit, handleCloseModal]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-xs select-none overflow-y-auto">
-      <div className="retro-panel rounded-2xl max-w-xl w-full p-4 sm:p-6 flex flex-col gap-4 text-[#f4efe6] border-2 border-[#f6c945]/70 my-auto max-h-[95vh] overflow-y-auto">
+      <div
+        className={`retro-panel rounded-2xl max-w-xl w-full p-4 sm:p-6 flex flex-col gap-4 text-[#f4efe6] border-2 my-auto max-h-[95vh] overflow-y-auto ${
+          isMimic ? "border-[#ff4d6d]/80" : "border-[#f6c945]/70"
+        }`}
+      >
         {/* Header */}
         <div className="flex items-center justify-between gap-3 border-b border-[#4a4766] pb-3">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-[#120f1c] border border-[#f6c945]/50 shrink-0">
+            <div className={`p-2 rounded-xl bg-[#120f1c] border shrink-0 ${isMimic ? "border-[#ff4d6d]/60" : "border-[#f6c945]/50"}`}>
               <PixelSpriteView
                 sprite={isSolved ? CHEST_OPEN_SPRITE : CHEST_CLOSED_SPRITE}
                 size={36}
-                animateBounce={!isSolved}
+                animateBounce={!isSolved && !isFailed}
               />
             </div>
             <div>
-              <span className="pixel-font text-[10px] text-[#f6c945] font-black uppercase">
-                {t("📦 หีบปริศนาโค้ด (CODE CHEST)", "📦 CODE CHEST EVENT")}
+              <span className={`pixel-font text-[10px] font-black uppercase ${isMimic ? "text-[#ff6b81]" : "text-[#f6c945]"}`}>
+                {isMimic
+                  ? t("⚠️ กล่องลับ MIMIC · ห้ามใช้สกิล/AI ช่วย", "⚠️ SECRET MIMIC CHEST · NO AI/SKILLS")
+                  : t("📦 หีบปริศนาโค้ด (CODE CHEST)", "📦 CODE CHEST EVENT")}
               </span>
               <h3 className="text-sm sm:text-base font-extrabold text-[#ffe27a]">
                 {isSolved
-                  ? t("เปิดหีบสำเร็จ! รับสมบัติเลย", "Chest Unlocked!")
+                  ? isMimic
+                    ? t("ปราบ Mimic สำเร็จ! รับรางวัลพิเศษ", "Mimic Defeated! Special Loot")
+                    : t("เปิดหีบสำเร็จ! รับสมบัติเลย", "Chest Unlocked!")
+                  : isFailed
+                  ? t("พ่ายแพ้ต่อกับดัก Mimic! (-1 ❤️)", "Defeated by the Mimic Trap! (-1 ❤️)")
+                  : isMimic
+                  ? t("โจทย์ระดับยากมาก! วิเคราะห์ด้วยตัวเองล้วนๆ", "Hard Challenge — Solve without AI or Skills!")
                   : t("ตอบคำถามสั้นๆ เพื่อไขรหัสเปิดหีบ", "Solve the Predict/Trace puzzle to open")}
               </h3>
             </div>
@@ -235,9 +261,9 @@ export function CodeChestModal({
 
             if (isEliminated) {
               btnClass = "bg-[#120f1c] border-[#2f2d45] text-[#6b6580] opacity-40 line-through cursor-not-allowed";
-            } else if (isSolved && idx === question.correctIndex) {
+            } else if ((isSolved || isFailed) && idx === question.correctIndex) {
               btnClass = "bg-[#1a7a4a] border-[#2fbf71] text-white font-black";
-            } else if (isSolved) {
+            } else if (isSolved || isFailed) {
               btnClass = "bg-[#120f1c] border-[#2f2d45] text-[#9a93ad] opacity-60";
             } else if (isSelected) {
               btnClass = "bg-[#5a2d91] border-[#f6c945] text-[#ffe27a]";
@@ -247,7 +273,7 @@ export function CodeChestModal({
               <button
                 key={idx}
                 type="button"
-                disabled={isSolved || isEliminated}
+                disabled={isSolved || isFailed || isEliminated}
                 onClick={() => handleSelectChoice(idx)}
                 className={`retro-button px-3.5 py-2.5 rounded-xl text-left text-xs sm:text-sm font-semibold flex items-center gap-3 transition-colors ${
                   isEliminated ? "cursor-not-allowed" : "cursor-pointer"
@@ -269,6 +295,18 @@ export function CodeChestModal({
           </div>
         )}
 
+        {isFailed && (
+          <div className="p-3.5 rounded-xl border-2 border-[#c0283a] bg-[#2d141c] text-xs space-y-2.5">
+            <div className="font-extrabold text-[#fca5a5]">
+              {t("💀 แพ้กล่องลับ Mimic! คำตอบที่ถูกต้องคือ:", "💀 Defeated by Mimic! Correct Answer:")}{" "}
+              <span className="text-[#86efac]">{displayChoices[question.correctIndex]}</span>
+            </div>
+            <p className="text-[#f4efe6] leading-relaxed">
+              <strong>{t("คำอธิบายแบบละเอียด:", "Detailed Explanation:")}</strong> {displayExplanation}
+            </p>
+          </div>
+        )}
+
         {isSolved && (
           <div className="p-3.5 rounded-xl border-2 border-[#2fbf71] bg-[#1a7a4a]/30 text-xs space-y-3">
             <div className="flex items-center justify-between gap-2 font-extrabold text-[#86efac]">
@@ -280,6 +318,23 @@ export function CodeChestModal({
             <p className="text-[#f4efe6] leading-relaxed">
               <strong>{t("คำอธิบาย:", "Explanation:")}</strong> {displayExplanation}
             </p>
+
+            {isMimic && (
+              <div className="rounded-lg border border-[#f6c945]/60 bg-[#281d08]/80 px-3 py-2 text-[#ffe27a] space-y-0.5">
+                <div className="font-extrabold">
+                  {t(
+                    "🎁 ของรางวัลระดับแรร์จาก Mimic (ส่วนนี้ยังไม่เสร็จ / กำลังพัฒนา)",
+                    "🎁 Rare Mimic Loot (Work in Progress / Coming Soon)"
+                  )}
+                </div>
+                <p className="text-[11px] text-[#e8e1cf]">
+                  {t(
+                    "ระบบไอเท็มพิเศษจากการปราบกล่องลับ Mimic กำลังอยู่ในระหว่างออกแบบเพิ่มเติมสำหรับอัปเดตถัดไป!",
+                    "Special rare items from defeating Mimic chests are currently being designed for an upcoming update!"
+                  )}
+                </p>
+              </div>
+            )}
 
             {enableInRunRewardPicker && (
               <div className="pt-2 border-t border-[#2fbf71]/40 space-y-2">
@@ -341,7 +396,7 @@ export function CodeChestModal({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#4a4766]">
-          {!isSolved ? (
+          {!isSolved && !isFailed ? (
             <button
               type="button"
               disabled={selectedChoice === null}
@@ -360,7 +415,9 @@ export function CodeChestModal({
               onClick={handleCloseModal}
               className="retro-button px-5 py-2.5 rounded-xl bg-[#2fbf71] hover:bg-[#34d37d] text-[#120f1c] text-xs font-black pixel-font cursor-pointer"
             >
-              {t("เก็บสมบัติ & เดินต่อ →", "COLLECT & CONTINUE →")}
+              {isFailed
+                ? t("ปิดกล่องและไปต่อ →", "CLOSE & CONTINUE →")
+                : t("เก็บสมบัติ & เดินต่อ →", "COLLECT & CONTINUE →")}
             </button>
           )}
         </div>

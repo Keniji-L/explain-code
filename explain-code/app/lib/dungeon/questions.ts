@@ -292,13 +292,13 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     questionEn: "In JavaScript, what is the key difference between let and const?",
     choices: [
       "let เปลี่ยนแปลงค่าไม่ได้ แต่ const เปลี่ยนแปลงได้",
-      "const ต้องกำหนดค่าเริ่มต้นและไม่สามารถกำหนดค่าใหม่ได้ แต่ let กำหนดค่าใหม่ได้",
+      "const กำหนดค่าใหม่ไม่ได้ แต่ let เปลี่ยนแปลงค่าได้",
       "ทั้งสองตัวทำงานเหมือนกันทุกประการ",
       "const ใช้สำหรับตัวเลขเท่านั้น ส่วน let ใช้สำหรับข้อความ",
     ],
     choicesEn: [
       "let cannot be reassigned, while const can",
-      "const cannot be reassigned after initialization, while let can be reassigned",
+      "const cannot be reassigned, while let can",
       "They behave identically in every way",
       "const is only for numbers, while let is only for strings",
     ],
@@ -728,5 +728,30 @@ export function getChestQuestion(
       : SAMPLE_DUNGEON_QUESTIONS;
 
   const idx = Math.abs(seedIndex) % pool.length;
-  return pool[idx] || SAMPLE_DUNGEON_QUESTIONS[0];
+  const picked = pool[idx] || SAMPLE_DUNGEON_QUESTIONS[0];
+  return picked.id.startsWith("chest-")
+    ? shuffleDungeonQuestionChoices(picked, `${seedIndex}:${picked.id}`)
+    : picked;
+}
+
+export function getMimicChestQuestion(
+  seedIndex: number,
+  language?: LearningLanguage
+): DungeonQuestion {
+  const resolvedLang: LearningLanguage = language || "javascript";
+  const hardLangPool = SAMPLE_DUNGEON_QUESTIONS.filter(
+    (q) => q.language === resolvedLang && q.difficulty === "hard"
+  );
+  const allHardPool = SAMPLE_DUNGEON_QUESTIONS.filter(
+    (q) => q.difficulty === "hard"
+  );
+  const pool =
+    hardLangPool.length > 0
+      ? hardLangPool
+      : allHardPool.length > 0
+      ? allHardPool
+      : SAMPLE_DUNGEON_QUESTIONS;
+  const idx = Math.abs(seedIndex) % pool.length;
+  const picked = pool[idx] || SAMPLE_DUNGEON_QUESTIONS[0];
+  return shuffleDungeonQuestionChoices(picked, `mimic:${seedIndex}:${picked.id}`);
 }

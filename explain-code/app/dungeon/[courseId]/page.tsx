@@ -6,7 +6,7 @@ import { AVATARS, getAvatar, DEFAULT_AVATAR, AvatarKey } from "../../lib/dungeon
 import { hashString, dungeonNameForCourse } from "../../lib/dungeon/seed";
 import { generateDungeonRoom, DungeonRoom } from "../../lib/dungeon/mapgen";
 import { getMonsterDef, MonsterDef } from "../../lib/dungeon/monsters";
-import { getQuestionForFloor, getChestQuestion, DungeonQuestion } from "../../lib/dungeon/questions";
+import { getQuestionForFloor, getChestQuestion, getMimicChestQuestion, DungeonQuestion } from "../../lib/dungeon/questions";
 import { LANGUAGE_TRACKS, LearningLanguage } from "../../lib/language-tracks";
 import { GameCanvas } from "../../components/dungeon/GameCanvas";
 import { DungeonHud } from "../../components/dungeon/DungeonHud";
@@ -109,6 +109,7 @@ function DungeonPlayContent() {
   const [maxHearts] = useState<number>(3);
   const [coins, setCoins] = useState<number>(0);
   const [xp, setXp] = useState<number>(0);
+  const [focus, setFocus] = useState<number | null>(null);
   const [floorShieldBonus, setFloorShieldBonus] = useState<number>(0);
   const [floorRewardMultiplier, setFloorRewardMultiplier] = useState<number>(1);
   const [screenShake, setScreenShake] = useState<number>(0);
@@ -149,8 +150,30 @@ function DungeonPlayContent() {
         relevantLessons.length > 0 ? relevantLessons : [allLessons[0]];
       setCourseLessons(effectiveLessons);
 
-      // Resume from saved floor if ?floor= was not explicitly specified
+      // Resume from saved floor & resources (coins, xp, hearts, focus MP)
       const currentSess = getClientSession();
+      const runKey = `explain_code_course_run_${foundCourse?.id || courseId}_${currentSess?.userId || "guest"}`;
+      try {
+        const rawRun = localStorage.getItem(runKey);
+        if (rawRun) {
+          const parsed = JSON.parse(rawRun) as {
+            floorIndex?: number;
+            coins?: number;
+            xp?: number;
+            hearts?: number;
+            focus?: number;
+          };
+          if (typeof parsed.coins === "number") setCoins(parsed.coins);
+          if (typeof parsed.xp === "number") setXp(parsed.xp);
+          if (typeof parsed.hearts === "number" && parsed.hearts > 0) setHearts(parsed.hearts);
+          if (typeof parsed.focus === "number") setFocus(parsed.focus);
+          if (floorParam === null && typeof parsed.floorIndex === "number" && parsed.floorIndex >= 0 && parsed.floorIndex < effectiveLessons.length) {
+            setFloorIndex(parsed.floorIndex);
+          }
+        }
+      } catch {
+        // ignore storage errors
+      }
       if (currentSess && floorParam === null && effectiveLessons.length > 0) {
         const enrolls = loadLocalEnrollments();
         const myEnroll = enrolls.find(
@@ -344,10 +367,36 @@ function DungeonPlayContent() {
     [floorIndex, isBossFloor, courseLang, course?.id, courseId]
   );
 
+  const isMimicChest =
+    chestModalMode === "side-chest" && Boolean(room.chest?.isMimic);
+
   const chestQuestion: DungeonQuestion = useMemo(
-    () => getChestQuestion(floorIndex + courseSeed, courseLang, currentQuestion.id),
-    [floorIndex, courseSeed, courseLang, currentQuestion.id]
+    () =>
+      isMimicChest
+        ? getMimicChestQuestion(floorIndex + courseSeed, courseLang)
+        : getChestQuestion(floorIndex + courseSeed, courseLang, currentQuestion.id),
+    [isMimicChest, floorIndex, courseSeed, courseLang, currentQuestion.id]
   );
+
+  useEffect(() => {
+    if (loading || isVictory || isGameOver) return;
+    try {
+      const currentSess = getClientSession();
+      const runKey = `explain_code_course_run_${course?.id || courseId}_${currentSess?.userId || "guest"}`;
+      localStorage.setItem(
+        runKey,
+        JSON.stringify({
+          floorIndex,
+          coins,
+          xp,
+          hearts,
+          focus: focus ?? avatar.stats.initialMp,
+        })
+      );
+    } catch {
+      // ignore storage errors
+    }
+  }, [loading, isVictory, isGameOver, course?.id, courseId, floorIndex, coins, xp, hearts, focus, avatar.stats.initialMp]);
 
   const currentLessonTitle = courseLessons[floorIndex]
     ? getLocalizedLesson(courseLessons[floorIndex], uiLang).title
@@ -419,13 +468,22 @@ function DungeonPlayContent() {
     } else {
       dungeonSound.playVictory();
       setIsVictory(true);
+      try {
+        const currentSess = getClientSession();
+        localStorage.removeItem(
+          `explain_code_course_run_${course?.id || courseId}_${currentSess?.userId || "guest"}`
+        );
+      } catch {
+        // ignore
+      }
     }
-  }, [floorIndex, totalFloors]);
+  }, [floorIndex, totalFloors, course?.id, courseId]);
 
   const handleRetry = useCallback(() => {
     setHearts(3);
     setCoins(0);
     setXp(0);
+    setFocus(avatar.stats.initialMp);
     setFloorIndex(0);
     setIsGameOver(false);
     setIsVictory(false);
@@ -435,7 +493,15 @@ function DungeonPlayContent() {
     setFloorRewardMultiplier(1);
     setIsPaused(false);
     setRoom(generateDungeonRoom(courseSeed, 0, totalFloors));
-  }, [courseSeed, totalFloors]);
+    try {
+      const currentSess = getClientSession();
+      localStorage.removeItem(
+        `explain_code_course_run_${course?.id || courseId}_${currentSess?.userId || "guest"}`
+      );
+    } catch {
+      // ignore
+    }
+  }, [courseSeed, totalFloors, avatar.stats.initialMp, course?.id, courseId]);
 
   const handleChestSolved = useCallback(
     (reward: { xpAwarded: number; coinsAwarded: number }) => {
@@ -584,9 +650,16 @@ function DungeonPlayContent() {
       {chestModalMode !== null && (
         <CodeChestModal
           question={chestQuestion}
-          xpReward={25}
-          coinReward={20}
+          isMimic={isMimicChest}
+          xpReward={isMimicChest ? 80 : 25}
+          coinReward={isMimicChest ? 60 : 20}
           onSolved={handleChestSolved}
+          onMimicFailed={() => {
+            handleWrongAnswer();
+            setRoom((prev) =>
+              prev.chest ? { ...prev, chest: { ...prev.chest, isOpened: true } } : prev
+            );
+          }}
           onSelectInRunReward={handleSelectInRunReward}
           onClose={() => setChestModalMode(null)}
         />
@@ -601,14 +674,20 @@ function DungeonPlayContent() {
           monsterHp={room.entity?.isCompleted ? 0 : currentMonster.maxHp}
           maxMonsterHp={currentMonster.maxHp}
           playerHearts={hearts}
-          initialFocus={3}
-          maxFocus={6}
+          avatarKey={avatarKey}
+          initialFocus={focus ?? avatar.stats.initialMp}
+          maxFocus={avatar.stats.maxMp}
           extraShield={floorShieldBonus}
           rewardMultiplier={floorRewardMultiplier}
           courseId={courseId}
           lessonId={courseLessons[floorIndex]?.id}
           onCorrectAnswer={handleCorrectAnswer}
           onWrongAnswer={handleWrongAnswer}
+          onProgressChange={(progress) => {
+            if (typeof progress.focus === "number") {
+              setFocus(progress.focus);
+            }
+          }}
           onSaveGame={() => persistCourseDungeonProgress(floorIndex, false, true)}
           onClose={() => setIsInBattle(false)}
         />
