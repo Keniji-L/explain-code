@@ -3288,9 +3288,9 @@ public class Main {
             text: "if (title != null) safeTitle = title; else safeTitle = \"Guest\";",
             textEn: "if (title != null) safeTitle = title; else safeTitle = \"Guest\";",
           },
-          { id: "b", text: "for (int i = 0; i < 2; i++)", textEn: "for (int i = 0; i < 2; i++)" },
-          { id: "c", text: "switch (title)", textEn: "switch (title)" },
-          { id: "d", text: "try / finally", textEn: "try / finally" },
+          { id: "b", text: "for (int i = 0; i < 2; i++) safeTitle = title;", textEn: "for (int i = 0; i < 2; i++) safeTitle = title;" },
+          { id: "c", text: "switch (title) { case null: return \"Guest\"; }", textEn: "switch (title) { case null: return \"Guest\"; }" },
+          { id: "d", text: "try { safeTitle = title; } finally { }", textEn: "try { safeTitle = title; } finally { }" },
         ],
         correctOptionId: "a",
         hint: "เครื่องหมาย `? :` เป็นรูปแบบย่อของเงื่อนไข 2 ทาง",
@@ -3854,8 +3854,8 @@ export const HTML_TOPICS: TopicQuest[] = [
         options: [
           {
             id: "a",
-            text: "ช่วยให้โปรแกรมอ่านหน้าจอ (Screen Reader) อ่านชื่อช่องได้ และคลิกที่ป้ายชื่อเพื่อโฟกัสช่องกรอกได้",
-            textEn: "Screen readers can announce the field name and users can click the label to focus the input",
+            text: "ช่วยให้ Screen Reader อ่านชื่อช่องและคลิกโฟกัสได้",
+            textEn: "Allows screen readers to announce and focus the input",
           },
           {
             id: "b",
@@ -3864,7 +3864,7 @@ export const HTML_TOPICS: TopicQuest[] = [
           },
           {
             id: "c",
-            text: "ช่วยเข้ารหัสข้อมูลอีเมลอัตโนมัติ",
+            text: "ช่วยเข้ารหัสข้อมูลอีเมลก่อนส่งอัตโนมัติ",
             textEn: "It automatically encrypts the email input",
           },
           {

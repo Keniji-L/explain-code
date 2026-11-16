@@ -6,6 +6,7 @@ import {
   runCodeByLanguage,
 } from "../language-tracks";
 import { INITIAL_LESSONS } from "../lms-data";
+import { condenseProseForChoice, measureChoiceLengthBalance } from "../question-choice-balance";
 
 export interface DungeonTraceStep {
   line: number;
@@ -192,15 +193,25 @@ export function getQuestionsForTopic(
       0,
       q.options.findIndex((o) => o.id === q.correctOptionId)
     );
+    const choices = q.options.map((o) => o.text);
+    const choicesEn = q.options.map((o) => o.textEn || o.text);
+    const balanceMetrics = measureChoiceLengthBalance(choices, correctIdx);
+    if (!balanceMetrics.balanced) {
+      const targetMax = Math.max(36, Math.round(balanceMetrics.avgDistractorLength * 1.35));
+      choices[correctIdx] = condenseProseForChoice(choices[correctIdx], targetMax);
+      if (choicesEn[correctIdx]) {
+        choicesEn[correctIdx] = condenseProseForChoice(choicesEn[correctIdx], Math.max(44, targetMax + 8));
+      }
+    }
     return {
       id: `topic-${topic.id}-${q.id}`,
       language: resolvedLang,
       question: q.question,
       questionEn: `[Block ${q.cellId}] ${q.questionEn || q.question}`,
       codeSnippet: topic.code,
-    codeSnippetEn: topic.codeEn,
-      choices: q.options.map((o) => o.text),
-      choicesEn: q.options.map((o) => o.textEn || o.text),
+      codeSnippetEn: topic.codeEn,
+      choices,
+      choicesEn,
       correctIndex: correctIdx,
       explanation: q.explanation,
       explanationEn: q.explanationEn || q.explanation,
@@ -326,8 +337,8 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     question: "ฟังก์ชัน greet นี้มีจุดประสงค์หลัก (Function-Purpose) ตาม Block Model เพื่ออะไร?",
     questionEn: "What is the primary purpose of the greet function?",
     codeSnippet: "function greet(name) {\n  return 'สวัสดี ' + name;\n}",
-    choices: ["พิมพ์ข้อความลงในคอนโซลทันที", "วนซ้ำเพื่อค้นหาชื่อในฐานข้อมูล", "ลบค่าตัวแปร name ออกจากระบบ", "รับชื่อเป็นอาร์กิวเมนต์แล้วส่งคืนข้อความทักทายกลับไปให้ผู้เรียก"],
-    choicesEn: ["Immediately logs a message to the console", "Loops through a database to find a user", "Deletes the name variable", "Takes a name argument and returns a greeting string to the caller"],
+    choices: ["พิมพ์ข้อความลงในคอนโซลทันที", "วนซ้ำเพื่อค้นหาชื่อในฐานข้อมูล", "ลบค่าตัวแปร name ออกจากระบบ", "รับค่า name แล้วส่งคืนข้อความทักทาย"],
+    choicesEn: ["Logs a message directly to the console", "Loops through a database to find a user", "Deletes the name variable from memory", "Takes name and returns a greeting string"],
     correctIndex: 3,
     explanation:
       "ฟังก์ชันนี้ไม่ได้เรียก console.log แต่ใช้ return เพื่อส่งคืนสตริงที่นำคำว่า 'สวัสดี ' มาต่อกับค่า parameter ที่ส่งเข้ามา",
@@ -437,8 +448,8 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     question: "บอสคลังศิลา SQL! เหตุใดจึงใช้ WHERE SUM(amount) >= 100 หลัง GROUP BY ไม่ได้?",
     questionEn: "SQL Vault Boss! Why cannot WHERE SUM(amount) >= 100 be used after GROUP BY?",
     codeSnippet: "SELECT category, SUM(amount) AS total\nFROM sales\nGROUP BY category\nHAVING SUM(amount) >= 100;",
-    choices: ["เพราะ SUM ใช้ได้เฉพาะกับข้อความ", "เพราะ WHERE กรองรายแถวก่อน GROUP BY ต้องใช้ HAVING กรองระดับกลุ่ม", "เพราะต้องใช้ ORDER BY แทน", "เพราะตาราง sales ห้ามใช้ตัวเลข"],
-    choicesEn: ["Because SUM only works on text", "Because WHERE filters rows before GROUP BY; HAVING filters aggregated groups", "Because ORDER BY must be used instead", "Because sales tables forbid numbers"],
+    choices: ["เพราะ SUM ใช้ได้เฉพาะกับข้อความ", "WHERE กรองก่อน GROUP BY ต้องใช้ HAVING", "เพราะต้องใช้คำสั่ง ORDER BY แทน", "เพราะตาราง sales ห้ามใช้คอลัมน์ตัวเลข"],
+    choicesEn: ["Because SUM only works on text columns", "WHERE runs before GROUP BY; use HAVING", "Because ORDER BY must be used instead", "Because sales tables forbid numeric columns"],
     correctIndex: 1,
     explanation: "WHERE ทำงานก่อนการรวมกลุ่ม (GROUP BY) จึงยังไม่รู้จักผลลัพธ์ของ SUM() ต้องใช้ HAVING กรองหลัง GROUP BY",
     explanationEn: "WHERE executes before GROUP BY; HAVING evaluates aggregate conditions after grouping.",
