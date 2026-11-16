@@ -212,10 +212,10 @@ function LoginFormContent() {
   })();
 
   return (
-    <div className="min-h-screen bg-[#0d0b14] text-[#f4efe6]">
+    <div className="flex min-h-screen flex-col bg-[#0d0b14] text-[#f4efe6]">
       <SiteHeader />
 
-      <main className="mx-auto max-w-xl px-4 py-8 sm:py-10 sm:px-6">
+      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center px-4 py-8 sm:py-10 sm:px-6">
         <div className="mb-4 flex items-center justify-between gap-2">
           <Link
             href="/"
