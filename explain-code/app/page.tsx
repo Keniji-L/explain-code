@@ -1226,45 +1226,6 @@ export default function ExplainCodeApp() {
             </div>
           </section>
 
-          {/* Pixel RPG Dungeon Banner */}
-          <section className="mb-12 rounded-2xl border border-[#3d395a] bg-[#1c1b2b] p-6 sm:p-8 text-[#f4efe6] shadow-md relative overflow-hidden">
-            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div className="space-y-2 max-w-xl">
-                <span className="inline-block rounded-full bg-[#5a2d91] border border-[#9b5de5]/60 px-3 py-1 text-xs font-bold text-[#ffe27a] whitespace-nowrap">
-                  Pixel RPG Dungeon
-                </span>
-                <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#f6c945]">
-                  {t(
-                    "ตะลุยเขาวงกตพิกเซล ปราบมอนสเตอร์ด้วยโค้ด",
-                    "Explore Pixel Mazes & Defeat Monsters with Code"
-                  )}
-                </h2>
-                <p className="text-xs sm:text-sm text-[#c4bdd6]">
-                  {t(
-                    "เลือกฮีโร่ 4 คลาส ใช้ Relics & Focus MP แก้ปริศนา Predict / Trace / Modify ครบ 6 ภาษา",
-                    "Pick 1 of 4 Pixel Heroes, use Relics & Focus MP, and conquer Predict / Trace / Modify battles."
-                  )}
-                </p>
-              </div>
-
-              <div className="flex flex-wrap md:flex-col gap-2.5 w-full md:w-auto shrink-0">
-                <Link
-                  href="/courses"
-                  className="retro-button inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#f6c945] px-5 py-3 text-xs sm:text-sm font-black text-[#120f1c] hover:bg-[#ffe27a] transition-colors"
-                >
-                  <Icon name="gamepad" className="h-4 w-4 shrink-0" />
-                  <span>{t("เข้าสู่ดันเจี้ยน →", "Enter Dungeon →")}</span>
-                </Link>
-                <Link
-                  href="/dungeon/trial"
-                  className="inline-flex items-center justify-center whitespace-nowrap rounded-xl border border-[#4a4766] bg-[#252238] px-4 py-2.5 text-xs font-bold text-[#f4efe6] hover:border-[#f6c945]/70 hover:bg-[#322c4a] transition-colors"
-                >
-                  {t("ทดลองเล่น 1 ห้อง", "1-Room Trial")}
-                </Link>
-              </div>
-            </div>
-          </section>
-
           {/* Compact 3-Step Guide */}
           <section className="rounded-2xl border border-[#2f2d45] bg-[#141220] p-6 sm:p-7 shadow-lg">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
