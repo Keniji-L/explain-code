@@ -418,42 +418,6 @@ function LoginFormContent() {
                 </span>
               </button>
             </form>
-
-            {/* ปุ่มเข้าสู่ระบบด่วนสำหรับกรรมการและผู้ทดลองใช้งาน */}
-            <div className="rounded-xl border border-[#2f2d45] bg-[#1c1b2b]/80 p-3.5 space-y-2.5">
-              <p className="text-xs font-extrabold text-[#ffe27a] text-center">
-                {t(
-                  "⚡ เข้าสู่ระบบด่วนสำหรับทดลองใช้งาน (ข้อมูลสมมติ)",
-                  "⚡ Quick Demo Sign-In (Synthetic Accounts)"
-                )}
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => {
-                    setLoginIdentifier("แมวส้ม");
-                    setLoginSecret("1234");
-                    void executeUnifiedLogin("แมวส้ม", "1234");
-                  }}
-                  className="rounded-lg border border-[#2fbf71]/50 bg-[#102a1e] px-3 py-2 text-xs font-extrabold text-[#86efac] hover:bg-[#163a29] disabled:opacity-60 transition-colors cursor-pointer"
-                >
-                  {t("🎮 นักเรียน: แมวส้ม", "🎮 Demo Student")}
-                </button>
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => {
-                    setLoginIdentifier("ครูสมชาย");
-                    setLoginSecret("12345678");
-                    void executeUnifiedLogin("ครูสมชาย", "12345678");
-                  }}
-                  className="rounded-lg border border-[#9b5de5]/60 bg-[#25193b] px-3 py-2 text-xs font-extrabold text-[#e9d5ff] hover:bg-[#31214d] disabled:opacity-60 transition-colors cursor-pointer"
-                >
-                  {t("👨‍🏫 ครูผู้สอน: ครูสมชาย", "👨‍🏫 Demo Teacher")}
-                </button>
-              </div>
-            </div>
           </div>
 
           <div className="mt-6 border-t border-[#2f2d45] pt-5 flex flex-col gap-3">
