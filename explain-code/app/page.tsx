@@ -1131,10 +1131,13 @@ export default function ExplainCodeApp() {
           <section className="text-center max-w-2xl mx-auto mb-12">
             <h1 className="mt-4 text-3xl sm:text-5xl font-extrabold tracking-tight text-[#f4efe6] leading-tight">
               {t("เขียนโค้ดได้แล้ว ", "You Can Write Code — ")}
+            </h1>
+            <h1 className="mt-4 text-3xl sm:text-5xl font-extrabold tracking-tight text-[#f4efe6] leading-tight">
               <span className="text-[#f6c945] underline decoration-[#9b5de5] underline-offset-8">
                 {t("แต่อธิบายโค้ดได้จริงไหม?", "Can You Explain It?")}
               </span>
             </h1>
+
             <p className="mt-4 text-sm sm:text-base text-[#9a93ad]">
               {t(
                 'เปลี่ยนจาก "เขียนโค้ดได้แต่อธิบายไม่ถูก" เป็น "เข้าใจการทำงานทุกบรรทัด" ผ่านดันเจี้ยน RPG และตัวช่วยอธิบายโค้ด',
