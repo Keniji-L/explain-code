@@ -219,9 +219,9 @@ function LoginFormContent() {
         <div className="mb-4 flex items-center justify-between gap-2">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-xl border-2 border-[#f6c945]/70 bg-[#1c1b2b] px-4 py-2 text-xs sm:text-sm font-extrabold text-[#ffe27a] shadow-sm hover:border-[#f6c945] hover:bg-[#281d08] transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#f6c945] px-4 py-2 text-xs sm:text-sm font-extrabold text-[#120f1c] shadow-md hover:bg-[#ffe27a] transition-colors"
           >
-            <Icon name="home" className="h-4 w-4 text-[#f6c945]" />
+            <Icon name="home" className="h-4 w-4 text-[#120f1c]" />
             <span>{t("← กลับไปหน้าแรก", "← Back to Home")}</span>
           </Link>
         </div>
