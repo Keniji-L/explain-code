@@ -35,6 +35,7 @@ import { PixelSpriteView } from "../../../../components/dungeon/PixelSpriteView"
 import { getMonsterDef } from "../../../../lib/dungeon/monsters";
 import { generateDungeonRoom } from "../../../../lib/dungeon/mapgen";
 import { hashString } from "../../../../lib/dungeon/seed";
+import { shuffleArrayWithSeed } from "../../../../lib/dungeon/questions";
 
 function LessonViewContent() {
   const params = useParams();
@@ -61,8 +62,10 @@ function LessonViewContent() {
   );
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
   const [quizScore, setQuizScore] = useState<number | null>(null);
+  const [quizShuffleSeed, setQuizShuffleSeed] = useState<number>(0);
 
   useEffect(() => {
+    setQuizShuffleSeed(Math.floor(Math.random() * 1_000_000_000) + 1);
     const current = getClientSession();
     setSession(current);
 
@@ -290,8 +293,28 @@ function LessonViewContent() {
     }
   };
 
+  const shuffledQuizQuestions = useMemo(() => {
+    const raw = Array.isArray(lesson?.quiz_questions) ? lesson.quiz_questions : [];
+    if (!quizShuffleSeed || raw.length === 0) return raw;
+    return raw.map((q) => {
+      const len = q.options.length;
+      if (len <= 1 || q.correctIndex < 0 || q.correctIndex >= len) return q;
+      const indices = shuffleArrayWithSeed(
+        Array.from({ length: len }, (_, i) => i),
+        `${quizShuffleSeed}:${q.id}`
+      );
+      const newOptions = indices.map((i) => q.options[i]);
+      const newCorrectIndex = indices.indexOf(q.correctIndex);
+      return {
+        ...q,
+        options: newOptions,
+        correctIndex: newCorrectIndex >= 0 ? newCorrectIndex : q.correctIndex,
+      };
+    });
+  }, [lesson?.quiz_questions, quizShuffleSeed]);
+
   const handleSubmitQuiz = async () => {
-    const questions = lesson.quiz_questions || [];
+    const questions = shuffledQuizQuestions;
     if (questions.length === 0) return;
 
     let correctCount = 0;
@@ -552,7 +575,7 @@ function LessonViewContent() {
                   )}
                 </div>
 
-                {lesson.quiz_questions.map((q, qIdx) => (
+                {shuffledQuizQuestions.map((q, qIdx) => (
                   <div
                     key={q.id || qIdx}
                     className="rounded-xl border border-[#2f2d45] bg-[#141220] p-4 space-y-2.5"
@@ -564,10 +587,8 @@ function LessonViewContent() {
                       {q.options.map((opt, optIdx) => {
                         const isPicked = selectedAnswers[q.id] === optIdx;
                         const isCorrect = q.correctIndex === optIdx;
-                        const localizedCourse = getLocalizedCourse(course, uiLang);
-  const localizedLesson = getLocalizedLesson(lesson, uiLang);
 
-  return (
+                        return (
                           <button
                             key={optIdx}
                             type="button"

@@ -82,6 +82,57 @@ function resolveOptionIndex(options: string[], targetOutput: string): number {
   return 0;
 }
 
+export function shuffleArrayWithSeed<T>(
+  items: readonly T[],
+  seedInput: string | number
+): T[] {
+  const copy = [...items];
+  if (copy.length <= 1) return copy;
+  const seedStr = String(seedInput);
+  let h = 2166136261;
+  for (let i = 0; i < seedStr.length; i++) {
+    h ^= seedStr.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  let state = (h >>> 0) || 1;
+  const nextRand = () => {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(nextRand() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+export function shuffleDungeonQuestionChoices(
+  q: DungeonQuestion,
+  seedInput: string | number
+): DungeonQuestion {
+  const len = q.choices.length;
+  if (len <= 1 || q.correctIndex < 0 || q.correctIndex >= len) {
+    return q;
+  }
+  const indices = shuffleArrayWithSeed(
+    Array.from({ length: len }, (_, idx) => idx),
+    seedInput
+  );
+  const newChoices = indices.map((i) => q.choices[i]);
+  const newChoicesEn =
+    q.choicesEn && q.choicesEn.length === len
+      ? indices.map((i) => q.choicesEn![i])
+      : q.choicesEn;
+  const newCorrectIndex = indices.indexOf(q.correctIndex);
+
+  return {
+    ...q,
+    choices: newChoices,
+    choicesEn: newChoicesEn,
+    correctIndex: newCorrectIndex >= 0 ? newCorrectIndex : q.correctIndex,
+  };
+}
+
 /**
  * สร้างลำดับการต่อสู้แบบ Multi-Phase สำหรับ TopicQuest 1 ด่าน:
  * Phase 1: Predict Output
@@ -190,7 +241,9 @@ export function getQuestionsForTopic(
     phaseLabel: "Final Phase · Modify Challenge",
   };
 
-  return [predictQuestion, ...blockQuestions, modifyQuestion];
+  return [predictQuestion, ...blockQuestions, modifyQuestion].map((q) =>
+    shuffleDungeonQuestionChoices(q, `${topic.id}:${q.id}`)
+  );
 }
 
 const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
@@ -201,9 +254,9 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     question: "โค้ดด้านล่างนี้ ค่าของตัวแปร x หลังจบลูปจะมีค่าเท่าใด?",
     questionEn: "What will be the value of variable x after the loop finishes?",
     codeSnippet: "let x = 0;\nfor (let i = 1; i <= 3; i++) {\n  x += i;\n}",
-    choices: ["3", "6", "0", "4"],
-    choicesEn: ["3", "6", "0", "4"],
-    correctIndex: 1,
+    choices: ["6", "3", "0", "4"],
+    choicesEn: ["6", "3", "0", "4"],
+    correctIndex: 0,
     explanation:
       "รอบที่ 1: i=1 -> x=1, รอบที่ 2: i=2 -> x=1+2=3, รอบที่ 3: i=3 -> x=3+3=6 ดังนั้นเมื่อจบลูป x จะเท่ากับ 6",
     explanationEn:
@@ -255,19 +308,9 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     question: "เงื่อนไขใดจะทำให้บล็อกคำสั่ง if ทำงาน?",
     questionEn: "Which condition causes the if block to execute?",
     codeSnippet: "let score = 75;\nif (score >= 80) {\n  result = 'A';\n} else {\n  result = 'B';\n}",
-    choices: [
-      "เมื่อ score มีค่าน้อยกว่า 80",
-      "เมื่อ score มีค่าตั้งแต่ 80 ขึ้นไป",
-      "เมื่อ score เท่ากับ 75 เท่านั้น",
-      "คำสั่ง if จะทำงานเสมอไม่ว่า score จะมีค่าเท่าใด",
-    ],
-    choicesEn: [
-      "When score is less than 80",
-      "When score is 80 or greater",
-      "Only when score equals 75",
-      "The if block always runs regardless of score",
-    ],
-    correctIndex: 1,
+    choices: ["เมื่อ score มีค่าน้อยกว่า 80", "เมื่อ score เท่ากับ 75 เท่านั้น", "เมื่อ score มีค่าตั้งแต่ 80 ขึ้นไป", "คำสั่ง if จะทำงานเสมอไม่ว่า score จะมีค่าเท่าใด"],
+    choicesEn: ["When score is less than 80", "Only when score equals 75", "When score is 80 or greater", "The if block always runs regardless of score"],
+    correctIndex: 2,
     explanation:
       "เครื่องหมาย >= หมายถึงมากกว่าหรือเท่ากับ ดังนั้นบล็อก if จะทำงานเมื่อ score มีค่า 80 ขึ้นไป",
     explanationEn: ">= means greater than or equal to, so it runs when score is 80 or higher.",
@@ -283,19 +326,9 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     question: "ฟังก์ชัน greet นี้มีจุดประสงค์หลัก (Function-Purpose) ตาม Block Model เพื่ออะไร?",
     questionEn: "What is the primary purpose of the greet function?",
     codeSnippet: "function greet(name) {\n  return 'สวัสดี ' + name;\n}",
-    choices: [
-      "พิมพ์ข้อความลงในคอนโซลทันที",
-      "รับชื่อเป็นอาร์กิวเมนต์แล้วส่งคืนข้อความทักทายกลับไปให้ผู้เรียก",
-      "วนซ้ำเพื่อค้นหาชื่อในฐานข้อมูล",
-      "ลบค่าตัวแปร name ออกจากระบบ",
-    ],
-    choicesEn: [
-      "Immediately logs a message to the console",
-      "Takes a name argument and returns a greeting string to the caller",
-      "Loops through a database to find a user",
-      "Deletes the name variable",
-    ],
-    correctIndex: 1,
+    choices: ["พิมพ์ข้อความลงในคอนโซลทันที", "วนซ้ำเพื่อค้นหาชื่อในฐานข้อมูล", "ลบค่าตัวแปร name ออกจากระบบ", "รับชื่อเป็นอาร์กิวเมนต์แล้วส่งคืนข้อความทักทายกลับไปให้ผู้เรียก"],
+    choicesEn: ["Immediately logs a message to the console", "Loops through a database to find a user", "Deletes the name variable", "Takes a name argument and returns a greeting string to the caller"],
+    correctIndex: 3,
     explanation:
       "ฟังก์ชันนี้ไม่ได้เรียก console.log แต่ใช้ return เพื่อส่งคืนสตริงที่นำคำว่า 'สวัสดี ' มาต่อกับค่า parameter ที่ส่งเข้ามา",
     explanationEn:
@@ -313,19 +346,9 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     questionEn: "Boss Attack! Which snippet below creates an Infinite Loop?",
     codeSnippet: "// ตัวเลือก ก: for (let i = 0; i < 5; i++)\n// ตัวเลือก ข: while (true)\n// ตัวเลือก ค: while (x > 10) โดย x = 5",
     codeSnippetEn: "// Option A: for (let i = 0; i < 5; i++)\n// Option B: while (true)\n// Option C: while (x > 10) where x = 5",
-    choices: [
-      "ตัวเลือก ก เท่านั้น",
-      "ตัวเลือก ข: while (true) ที่ไม่มีเงื่อนไข break",
-      "ตัวเลือก ค เท่านั้น",
-      "ไม่มีข้อใดทำให้เกิด Infinite Loop",
-    ],
-    choicesEn: [
-      "Option A only",
-      "Option B: while (true) with no break condition",
-      "Option C only",
-      "None of them",
-    ],
-    correctIndex: 1,
+    choices: ["ตัวเลือก ข: while (true) ที่ไม่มีเงื่อนไข break", "ตัวเลือก ก เท่านั้น", "ตัวเลือก ค เท่านั้น", "ไม่มีข้อใดทำให้เกิด Infinite Loop"],
+    choicesEn: ["Option B: while (true) with no break condition", "Option A only", "Option C only", "None of them"],
+    correctIndex: 0,
     explanation:
       "while (true) จะตรวจสอบเงื่อนไขเป็นจริงตลอดกาล หากภายในบล็อกไม่มีคำสั่ง break หรือ return จะทำให้ระบบค้างเนื่องจากเกิด Infinite Loop",
     explanationEn:
@@ -344,9 +367,9 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     question: "ในภาษา Python คำสั่ง range(1, 5) จะวนซ้ำสำหรับค่า i ใดบ้าง?",
     questionEn: "In Python, which values of i does range(1, 5) produce?",
     codeSnippet: "for i in range(1, 5):\n    print(i)",
-    choices: ["1, 2, 3, 4", "1, 2, 3, 4, 5", "0, 1, 2, 3, 4", "1 และ 5"],
-    choicesEn: ["1, 2, 3, 4", "1, 2, 3, 4, 5", "0, 1, 2, 3, 4", "1 and 5 only"],
-    correctIndex: 0,
+    choices: ["1, 2, 3, 4, 5", "1, 2, 3, 4", "0, 1, 2, 3, 4", "1 และ 5"],
+    choicesEn: ["1, 2, 3, 4, 5", "1, 2, 3, 4", "0, 1, 2, 3, 4", "1 and 5 only"],
+    correctIndex: 1,
     explanation: "range(start, stop) จะหยุดก่อนถึง stop เสมอ จึงได้ 1, 2, 3, 4",
     explanationEn: "range(start, stop) is half-open and excludes stop, yielding 1, 2, 3, 4.",
     difficulty: "easy",
@@ -361,9 +384,9 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     question: "โค้ด Python ด้านล่างนี้จะพิมพ์ข้อความใดออกมา?",
     questionEn: "What will this Python snippet print?",
     codeSnippet: 'temp = 34\nif temp >= 38:\n    print("Hot")\nelif temp >= 30:\n    print("Warm")\nelse:\n    print("Cool")',
-    choices: ["Hot", "Warm", "Cool", "Normal"],
-    choicesEn: ["Hot", "Warm", "Cool", "Normal"],
-    correctIndex: 1,
+    choices: ["Hot", "Cool", "Warm", "Normal"],
+    choicesEn: ["Hot", "Cool", "Warm", "Normal"],
+    correctIndex: 2,
     explanation: "34 < 38 จึงข้าม if แรก และ 34 >= 30 เป็นจริงใน elif จึงพิมพ์ Warm",
     explanationEn: "34 < 38 skips if, and 34 >= 30 matches elif, printing Warm.",
     difficulty: "medium",
@@ -378,9 +401,9 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     question: "บอสมังกรไพธอน! หาก AI เขียน total = sum([10, 20, 30]) แล้ววน for i in range(1, 3): total += i ค่าสุดท้ายคือเท่าไร?",
     questionEn: "Python Dragon Boss! Given total = 60 and for i in range(1, 3): total += i, what is the final total?",
     codeSnippet: "total = sum([10, 20, 30])\nfor i in range(1, 3):\n    total += i\nprint(total)",
-    choices: ["66", "63", "61", "65"],
-    choicesEn: ["66", "63", "61", "65"],
-    correctIndex: 1,
+    choices: ["66", "61", "65", "63"],
+    choicesEn: ["66", "61", "65", "63"],
+    correctIndex: 3,
     explanation: "sum([10, 20, 30]) = 60 จากนั้น range(1, 3) ให้ค่า i = 1 และ 2 (ไม่รวม 3) ดังนั้น 60 + 1 + 2 = 63",
     explanationEn: "sum([10, 20, 30]) is 60; range(1, 3) yields 1 and 2, so 60 + 1 + 2 = 63.",
     difficulty: "hard",
@@ -397,19 +420,9 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     question: "ลำดับการทำงานจริง (Execution Order) ของฐานข้อมูล SQL ข้อใดถูกต้อง?",
     questionEn: "Which SQL execution order is actually used by the database engine?",
     codeSnippet: "SELECT name, price\nFROM products\nWHERE price >= 500\nORDER BY price ASC;",
-    choices: [
-      "SELECT -> FROM -> WHERE -> ORDER BY",
-      "FROM -> WHERE -> SELECT -> ORDER BY",
-      "ORDER BY -> WHERE -> FROM -> SELECT",
-      "WHERE -> SELECT -> ORDER BY -> FROM",
-    ],
-    choicesEn: [
-      "SELECT -> FROM -> WHERE -> ORDER BY",
-      "FROM -> WHERE -> SELECT -> ORDER BY",
-      "ORDER BY -> WHERE -> FROM -> SELECT",
-      "WHERE -> SELECT -> ORDER BY -> FROM",
-    ],
-    correctIndex: 1,
+    choices: ["FROM -> WHERE -> SELECT -> ORDER BY", "SELECT -> FROM -> WHERE -> ORDER BY", "ORDER BY -> WHERE -> FROM -> SELECT", "WHERE -> SELECT -> ORDER BY -> FROM"],
+    choicesEn: ["FROM -> WHERE -> SELECT -> ORDER BY", "SELECT -> FROM -> WHERE -> ORDER BY", "ORDER BY -> WHERE -> FROM -> SELECT", "WHERE -> SELECT -> ORDER BY -> FROM"],
+    correctIndex: 0,
     explanation: "ฐานข้อมูลต้องดึงตารางจาก FROM ก่อน แล้วกรองด้วย WHERE จากนั้นเลือกคอลัมน์ SELECT และเรียงด้วย ORDER BY",
     explanationEn: "Databases load FROM first, filter rows with WHERE, project columns in SELECT, then sort with ORDER BY.",
     difficulty: "easy",
@@ -424,19 +437,9 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     question: "บอสคลังศิลา SQL! เหตุใดจึงใช้ WHERE SUM(amount) >= 100 หลัง GROUP BY ไม่ได้?",
     questionEn: "SQL Vault Boss! Why cannot WHERE SUM(amount) >= 100 be used after GROUP BY?",
     codeSnippet: "SELECT category, SUM(amount) AS total\nFROM sales\nGROUP BY category\nHAVING SUM(amount) >= 100;",
-    choices: [
-      "เพราะ WHERE กรองรายแถวก่อน GROUP BY ต้องใช้ HAVING กรองระดับกลุ่ม",
-      "เพราะ SUM ใช้ได้เฉพาะกับข้อความ",
-      "เพราะต้องใช้ ORDER BY แทน",
-      "เพราะตาราง sales ห้ามใช้ตัวเลข",
-    ],
-    choicesEn: [
-      "Because WHERE filters rows before GROUP BY; HAVING filters aggregated groups",
-      "Because SUM only works on text",
-      "Because ORDER BY must be used instead",
-      "Because sales tables forbid numbers",
-    ],
-    correctIndex: 0,
+    choices: ["เพราะ SUM ใช้ได้เฉพาะกับข้อความ", "เพราะ WHERE กรองรายแถวก่อน GROUP BY ต้องใช้ HAVING กรองระดับกลุ่ม", "เพราะต้องใช้ ORDER BY แทน", "เพราะตาราง sales ห้ามใช้ตัวเลข"],
+    choicesEn: ["Because SUM only works on text", "Because WHERE filters rows before GROUP BY; HAVING filters aggregated groups", "Because ORDER BY must be used instead", "Because sales tables forbid numbers"],
+    correctIndex: 1,
     explanation: "WHERE ทำงานก่อนการรวมกลุ่ม (GROUP BY) จึงยังไม่รู้จักผลลัพธ์ของ SUM() ต้องใช้ HAVING กรองหลัง GROUP BY",
     explanationEn: "WHERE executes before GROUP BY; HAVING evaluates aggregate conditions after grouping.",
     difficulty: "hard",
@@ -453,9 +456,9 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     question: "เมื่อรันโค้ด TypeScript ด้านล่าง console.log จะพิมพ์ค่าใดออกมา?",
     questionEn: "What does console.log output for this TypeScript snippet?",
     codeSnippet: 'interface Product { name: string; price: number; }\nconst item: Product = { name: "Mouse", price: 450 };\nconsole.log(item.price * 2);',
-    choices: ["450", "900", "Mouse", "NaN"],
-    choicesEn: ["450", "900", "Mouse", "NaN"],
-    correctIndex: 1,
+    choices: ["450", "Mouse", "900", "NaN"],
+    choicesEn: ["450", "Mouse", "900", "NaN"],
+    correctIndex: 2,
     explanation: "item.price เป็น number มีค่า 450 เมื่อคูณ 2 จึงได้ 900",
     explanationEn: "item.price is 450 (number), so 450 * 2 outputs 900.",
     difficulty: "easy",
@@ -470,19 +473,9 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     question: "บอสวิหารไทป์สคริปต์! ข้อใดอธิบายประโยชน์ของ Generic <T> ใน function first<T>(arr: readonly T[]): T | undefined ได้ดีที่สุด?",
     questionEn: "TypeScript Temple Boss! What best describes the benefit of Generic <T> in first<T>(arr: readonly T[]): T | undefined?",
     codeSnippet: "function first<T>(arr: readonly T[]): T | undefined {\n  return arr[0];\n}",
-    choices: [
-      "คงชนิดข้อมูลของสมาชิกในอาเรย์ไว้ในค่าที่ return โดยไม่ต้องเสีย Type Safety แบบ any",
-      "ลบ Type Annotation ออกจากโปรเจกต์ทั้งหมด",
-      "อนุญาตให้แก้ไขอาร์เรย์ arr ภายในฟังก์ชันได้",
-      "เปลี่ยนอาเรย์ให้เป็น SQL Table",
-    ],
-    choicesEn: [
-      "Preserves the array element type in the return value without losing type safety like 'any'",
-      "Removes all type checks across the project",
-      "Allows mutating the readonly array inside the function",
-      "Converts the array into a SQL table",
-    ],
-    correctIndex: 0,
+    choices: ["ลบ Type Annotation ออกจากโปรเจกต์ทั้งหมด", "อนุญาตให้แก้ไขอาร์เรย์ arr ภายในฟังก์ชันได้", "เปลี่ยนอาเรย์ให้เป็น SQL Table", "คงชนิดข้อมูลของสมาชิกในอาเรย์ไว้ในค่าที่ return โดยไม่ต้องเสีย Type Safety แบบ any"],
+    choicesEn: ["Removes all type checks across the project", "Allows mutating the readonly array inside the function", "Converts the array into a SQL table", "Preserves the array element type in the return value without losing type safety like 'any'"],
+    correctIndex: 3,
     explanation: "Generic <T> จับคู่ชนิดของสมาชิก input เข้ากับชนิดของผลลัพธ์ output อย่างปลอดภัย",
     explanationEn: "Generic <T> links the input element type to the return type with full compile-time safety.",
     difficulty: "hard",
@@ -499,9 +492,9 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     question: "ในภาษา C++ โค้ดด้านล่างนี้จะพิมพ์ค่าใดออกทางหน้าจอ?",
     questionEn: "In C++, what does this snippet print to stdout?",
     codeSnippet: "int total = 7;\nint count = 2;\nint avg = total / count;\ncout << avg << endl;",
-    choices: ["3.5", "3", "4", "7"],
-    choicesEn: ["3.5", "3", "4", "7"],
-    correctIndex: 1,
+    choices: ["3", "3.5", "4", "7"],
+    choicesEn: ["3", "3.5", "4", "7"],
+    correctIndex: 0,
     explanation: "int หารด้วย int ใน C++ จะเกิด Integer Division ตัดทศนิยมทิ้ง 7 / 2 จึงได้ 3",
     explanationEn: "Dividing two ints in C++ performs integer division, truncating 3.5 down to 3.",
     difficulty: "easy",
@@ -535,9 +528,9 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     question: "โค้ด Java ด้านล่างนี้จะพิมพ์ข้อความใดออกมา?",
     questionEn: "What will this Java code print?",
     codeSnippet: 'String role = new String("admin");\nif (role == "admin") {\n    System.out.println("Granted");\n} else {\n    System.out.println("Denied");\n}',
-    choices: ["Granted", "Denied", "admin", "Compile Error"],
-    choicesEn: ["Granted", "Denied", "admin", "Compile Error"],
-    correctIndex: 1,
+    choices: ["Granted", "admin", "Denied", "Compile Error"],
+    choicesEn: ["Granted", "admin", "Denied", "Compile Error"],
+    correctIndex: 2,
     explanation: 'new String("admin") สร้าง Reference ใหม่ที่ไม่ตรงกับ String Literal "admin" การใช้ == จึงได้ false และพิมพ์ Denied (ควรใช้ .equals())',
     explanationEn: 'new String("admin") allocates a distinct object reference, so == evaluates to false and prints Denied. Use .equals() instead.',
     difficulty: "medium",
@@ -552,9 +545,9 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     question: "บอสหอคอย Java! เมื่อ Hero เริ่มที่ hp = 100 และโดน takeDamage(30), takeDamage(45), takeDamage(50) ค่า hero.hp สุดท้ายคือเท่าไร?",
     questionEn: "Java Citadel Boss! Hero starts at hp = 100 and takes hits of 30, 45, 50. What is final hero.hp?",
     codeSnippet: "void takeDamage(int dmg) {\n    if (dmg > this.hp) { this.hp = 0; }\n    else { this.hp -= dmg; }\n}",
-    choices: ["-25", "0", "25", "100"],
-    choicesEn: ["-25", "0", "25", "100"],
-    correctIndex: 1,
+    choices: ["-25", "25", "100", "0"],
+    choicesEn: ["-25", "25", "100", "0"],
+    correctIndex: 3,
     explanation: "100 -> 70 -> 25 -> รอบสุดท้าย dmg (50) > hp (25) จึงตั้งค่า this.hp = 0",
     explanationEn: "100 -> 70 -> 25 -> on hit 50 > 25, the guard clamps this.hp to 0.",
     difficulty: "hard",

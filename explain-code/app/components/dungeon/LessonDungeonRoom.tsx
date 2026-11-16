@@ -12,6 +12,7 @@ import {
   getChestQuestion,
   SAMPLE_DUNGEON_QUESTIONS,
   DungeonQuestion,
+  shuffleDungeonQuestionChoices,
 } from "../../lib/dungeon/questions";
 import {
   LearningLanguage,
@@ -93,6 +94,7 @@ export function LessonDungeonRoom({
   const [isInBattle, setIsInBattle] = useState<boolean>(false);
   const [chestModalMode, setChestModalMode] = useState<"side-chest" | null>(null);
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
+  const [quizShuffleSeed, setQuizShuffleSeed] = useState<number>(0);
 
   const courseSeed = useMemo(() => hashString(course.id || "default"), [course.id]);
   const isBossFloor = lessonIndex >= totalLessons - 1;
@@ -113,6 +115,7 @@ export function LessonDungeonRoom({
 
   // Load avatar/sound and enforce fresh room for guests (no saved completion)
   useEffect(() => {
+    setQuizShuffleSeed(Math.floor(Math.random() * 1_000_000_000) + 1);
     const hasSession = Boolean(getClientSession());
     if (!hasSession) {
       setIsRoomConquered(false);
@@ -179,7 +182,7 @@ export function LessonDungeonRoom({
           explanationEn?: string;
         };
         const localizedTitle = getLocalizedLesson(lesson, uiLang).title;
-        return {
+        const baseQuestion: DungeonQuestion = {
           id: q.id || `lesson-${lesson.id}-q-${idx}`,
           language: lessonLang,
           question: q.question,
@@ -202,6 +205,10 @@ export function LessonDungeonRoom({
           expectedOutput: simulatedOut || undefined,
           phaseLabel: `${localizedTitle} (${idx + 1}/${quizList.length})`,
         };
+        return shuffleDungeonQuestionChoices(
+          baseQuestion,
+          `${quizShuffleSeed || lesson.id}:${baseQuestion.id}`
+        );
       });
     }
 
@@ -215,6 +222,8 @@ export function LessonDungeonRoom({
     isBossFloor,
     lessonIndex,
     course.id,
+    uiLang,
+    quizShuffleSeed,
     t,
   ]);
 
@@ -366,6 +375,7 @@ export function LessonDungeonRoom({
     setXpEarned(0);
     setFloorShieldBonus(0);
     setFloorRewardMultiplier(1);
+    setQuizShuffleSeed(Math.floor(Math.random() * 1_000_000_000) + 1);
     setIsRoomConquered(false);
     setIsPaused(false);
     setChestModalMode(null);

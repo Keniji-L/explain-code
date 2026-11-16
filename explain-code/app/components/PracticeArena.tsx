@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { shuffleArrayWithSeed } from "../lib/dungeon/questions";
 import {
   TopicQuest,
   BlockCellId,
@@ -63,6 +64,15 @@ export function PracticeArena({
 }: PracticeArenaProps) {
   const { t } = useUiLanguage();
   const [primmStep, setPrimmStep] = useState<PrimmStep>(1);
+  const [optionShuffleSeed, setOptionShuffleSeed] = useState<string>(() =>
+    String(topic.id)
+  );
+
+  useEffect(() => {
+    setOptionShuffleSeed(
+      `${topic.id}-${Math.floor(Math.random() * 1_000_000_000) + 1}`
+    );
+  }, [topic.id]);
 
   // ขั้น 1 & 2: ทำนายผล & เทียบผลรันจริง
   const [predictedAnswer, setPredictedAnswer] = useState<string>("");
@@ -624,7 +634,10 @@ export function PracticeArena({
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {topic.predictOptions.map((opt) => {
+                  {shuffleArrayWithSeed(
+                    topic.predictOptions,
+                    `${optionShuffleSeed}:predict`
+                  ).map((opt) => {
                     const selected = predictedAnswer === opt;
                     return (
                       <button
@@ -813,7 +826,10 @@ export function PracticeArena({
 
                 {/* ตัวเลือกคำตอบ 4 ข้อ */}
                 <div className="space-y-2.5">
-                  {currentQ.options.map((opt) => {
+                  {shuffleArrayWithSeed(
+                    currentQ.options,
+                    `${optionShuffleSeed}:${currentQ.id}`
+                  ).map((opt) => {
                     const isSelected = currentQState.selectedOptionId === opt.id;
                     const isCorrectOpt = opt.id === currentQ.correctOptionId;
                     const showAsCorrect =
@@ -1039,7 +1055,10 @@ export function PracticeArena({
                     )}
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                    {topic.modifyChallenge.options.map((opt) => (
+                    {shuffleArrayWithSeed(
+                      topic.modifyChallenge.options,
+                      `${optionShuffleSeed}:modify`
+                    ).map((opt) => (
                       <button
                         key={opt}
                         type="button"
