@@ -292,13 +292,13 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     questionEn: "In JavaScript, what is the key difference between let and const?",
     choices: [
       "let เปลี่ยนแปลงค่าไม่ได้ แต่ const เปลี่ยนแปลงได้",
-      "const ต้องกำหนดค่าเริ่มต้นและไม่สามารถกำหนดค่าใหม่ได้ แต่ let กำหนดค่าใหม่ได้",
+      "const กำหนดค่าใหม่ไม่ได้ แต่ let เปลี่ยนแปลงค่าได้",
       "ทั้งสองตัวทำงานเหมือนกันทุกประการ",
       "const ใช้สำหรับตัวเลขเท่านั้น ส่วน let ใช้สำหรับข้อความ",
     ],
     choicesEn: [
       "let cannot be reassigned, while const can",
-      "const cannot be reassigned after initialization, while let can be reassigned",
+      "const cannot be reassigned, while let can",
       "They behave identically in every way",
       "const is only for numbers, while let is only for strings",
     ],

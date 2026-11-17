@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { shuffleArrayWithSeed } from "../lib/dungeon/questions";
+import { condenseProseForChoice, measureChoiceLengthBalance } from "../lib/question-choice-balance";
 import {
   TopicQuest,
   BlockCellId,
@@ -826,10 +827,34 @@ export function PracticeArena({
 
                 {/* ตัวเลือกคำตอบ 4 ข้อ */}
                 <div className="space-y-2.5">
-                  {shuffleArrayWithSeed(
-                    currentQ.options,
-                    `${optionShuffleSeed}:${currentQ.id}`
-                  ).map((opt) => {
+                  {(() => {
+                    const correctIdx = Math.max(
+                      0,
+                      currentQ.options.findIndex((o) => o.id === currentQ.correctOptionId)
+                    );
+                    const rawTexts = currentQ.options.map((o) => o.text);
+                    const metrics = measureChoiceLengthBalance(rawTexts, correctIdx);
+                    const balancedOptions = !metrics.balanced
+                      ? currentQ.options.map((o, i) => {
+                          if (i !== correctIdx) return o;
+                          const targetMax =
+                            metrics.maxDistractorLength >= 32
+                              ? Math.min(
+                                  metrics.maxDistractorLength,
+                                  Math.max(32, Math.round(metrics.avgDistractorLength * 1.35))
+                                )
+                              : Math.max(32, Math.round(metrics.avgDistractorLength * 1.35));
+                          return {
+                            ...o,
+                            text: condenseProseForChoice(o.text, targetMax),
+                          };
+                        })
+                      : currentQ.options;
+                    return shuffleArrayWithSeed(
+                      balancedOptions,
+                      `${optionShuffleSeed}:${currentQ.id}`
+                    );
+                  })().map((opt) => {
                     const isSelected = currentQState.selectedOptionId === opt.id;
                     const isCorrectOpt = opt.id === currentQ.correctOptionId;
                     const showAsCorrect =
