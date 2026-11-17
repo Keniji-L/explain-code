@@ -50,6 +50,7 @@ function LessonViewContent() {
   const [showQuickNotes, setShowQuickNotes] = useState<boolean>(false);
 
   const [session, setSession] = useState<ClientAuthSession | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [course, setCourse] = useState<Course | null>(null);
   const [courseLessons, setCourseLessons] = useState<Lesson[]>([]);
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -150,9 +151,10 @@ function LessonViewContent() {
           isCompleted: existingProg?.is_completed || false,
           quizScore: existingProg?.quiz_score ?? null,
         }),
-      }).catch(() => {});
-    }
-  }, [courseId, lessonId]);
+        }).catch(() => {});
+      }
+      setIsLoading(false);
+    }, [courseId, lessonId]);
 
   const currentIdx = lesson
     ? courseLessons.findIndex((l) => l.id === lesson.id)
@@ -171,6 +173,17 @@ function LessonViewContent() {
       ),
     [currentRoom.entity?.monsterType, currentIdx, totalLessons]
   );
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0d0b14] text-[#f4efe6]">
+        <SiteHeader />
+        <main className="mx-auto max-w-4xl px-4 py-12 text-center text-sm font-bold text-[#9a93ad]">
+          {t("กำลังโหลดบทเรียน...", "Loading lesson...")}
+        </main>
+      </div>
+    );
+  }
 
   if (!course || !lesson) {
     return (

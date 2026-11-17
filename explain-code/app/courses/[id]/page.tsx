@@ -35,6 +35,7 @@ function CourseDetailContent() {
   const courseId = String(params?.id || "");
 
   const [session, setSession] = useState<ClientAuthSession | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [course, setCourse] = useState<Course | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
@@ -60,7 +61,19 @@ function CourseDetailContent() {
     setEnrollments(loadLocalEnrollments());
     setProgress(loadLocalLessonProgress());
     setUnlockedPrivateIds(loadUnlockedPrivateCourseIds());
+    setIsLoading(false);
   }, [courseId]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0d0b14] text-[#f4efe6]">
+        <SiteHeader />
+        <main className="mx-auto max-w-4xl px-4 py-12 text-center text-sm font-bold text-[#9a93ad]">
+          {t("กำลังโหลดรายละเอียดคอร์ส...", "Loading course details...")}
+        </main>
+      </div>
+    );
+  }
 
   if (!course) {
     return (

@@ -87,9 +87,8 @@ export function LessonDungeonRoom({
   const [floorShieldBonus, setFloorShieldBonus] = useState<number>(0);
   const [floorRewardMultiplier, setFloorRewardMultiplier] = useState<number>(1);
   const [screenShake, setScreenShake] = useState<number>(0);
-  const [isRoomConquered, setIsRoomConquered] = useState<boolean>(
-    () => Boolean(getClientSession()) && isCompleted
-  );
+  const [hasSession, setHasSession] = useState<boolean>(false);
+  const [isRoomConquered, setIsRoomConquered] = useState<boolean>(false);
 
   // Overlays
   const [isPaused, setIsPaused] = useState<boolean>(false);
@@ -101,25 +100,17 @@ export function LessonDungeonRoom({
   const courseSeed = useMemo(() => hashString(course.id || "default"), [course.id]);
   const isBossFloor = lessonIndex >= totalLessons - 1;
 
-  // Generate deterministic room for this lesson
-  const [room, setRoom] = useState<DungeonRoom>(() => {
-    const r = generateDungeonRoom(courseSeed, lessonIndex, totalLessons);
-    const hasSession = Boolean(getClientSession());
-    if (hasSession && isCompleted && r.entity) {
-      return {
-        ...r,
-        entity: { ...r.entity, hp: 0, isCompleted: true },
-        isDoorUnlocked: true,
-      };
-    }
-    return r;
-  });
+  // Generate deterministic room for this lesson (sync completion after mount to avoid hydration mismatch)
+  const [room, setRoom] = useState<DungeonRoom>(() =>
+    generateDungeonRoom(courseSeed, lessonIndex, totalLessons)
+  );
 
-  // Load avatar/sound and enforce fresh room for guests (no saved completion)
+  // Load avatar/sound and sync completion or guest state after mount
   useEffect(() => {
     setQuizShuffleSeed(Math.floor(Math.random() * 1_000_000_000) + 1);
-    const hasSession = Boolean(getClientSession());
-    if (!hasSession) {
+    const sessionExists = Boolean(getClientSession());
+    setHasSession(sessionExists);
+    if (!sessionExists) {
       setIsRoomConquered(false);
       setHearts(3);
       setCoinsEarned(0);
@@ -127,6 +118,17 @@ export function LessonDungeonRoom({
       setIsInBattle(false);
       setIsGameOver(false);
       setRoom(generateDungeonRoom(courseSeed, lessonIndex, totalLessons));
+    } else if (isCompleted) {
+      setIsRoomConquered(true);
+      setRoom((prev) =>
+        prev.entity
+          ? {
+              ...prev,
+              entity: { ...prev.entity, hp: 0, isCompleted: true },
+              isDoorUnlocked: true,
+            }
+          : prev
+      );
     }
 
     try {
@@ -545,7 +547,7 @@ export function LessonDungeonRoom({
             <div className="flex items-center gap-2 text-[#2fbf71] font-bold">
               <Icon name="check" size={16} />
               <span>
-                {getClientSession()
+                {hasSession
                   ? t(
                       "พิชิตห้องดันเจี้ยนบทนี้สำเร็จ! บันทึกผลเรียนจบเรียบร้อย",
                       "Lesson Dungeon Room Cleared! Progress saved."

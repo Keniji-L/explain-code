@@ -102,7 +102,11 @@ export function TopicDungeonArena({
   onSaveGame,
 }: TopicDungeonArenaProps) {
   const { uiLang, t } = useUiLanguage();
-  const hasSession = Boolean(getClientSession());
+  const [hasSession, setHasSession] = useState<boolean>(false);
+
+  useEffect(() => {
+    setHasSession(Boolean(getClientSession()));
+  }, []);
 
   const activeLanguage = language;
   const activeTopic = topic;

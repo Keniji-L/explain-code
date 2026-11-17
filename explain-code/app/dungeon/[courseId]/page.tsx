@@ -100,6 +100,7 @@ function DungeonPlayContent() {
   const [course, setCourse] = useState<Course | null>(null);
   const [courseLessons, setCourseLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [hasSession, setHasSession] = useState<boolean>(false);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
 
   // Game state
@@ -152,6 +153,7 @@ function DungeonPlayContent() {
 
       // Resume from saved floor & resources (coins, xp, hearts, focus MP)
       const currentSess = getClientSession();
+      setHasSession(Boolean(currentSess));
       const runKey = `explain_code_course_run_${foundCourse?.id || courseId}_${currentSess?.userId || "guest"}`;
       try {
         const rawRun = localStorage.getItem(runKey);
@@ -568,7 +570,7 @@ function DungeonPlayContent() {
             `Floor ${floorIndex + 1}/${totalFloors} (${currentLessonTitle}) · Progress ${Math.min(100, Math.round(((floorIndex + (room.entity?.isCompleted ? 1 : 0.5)) / Math.max(1, totalFloors)) * 100))}%`
           )}
         </span>
-        {getClientSession() && (
+        {hasSession && (
           <button
             type="button"
             onClick={() => persistCourseDungeonProgress(floorIndex, false, true)}
