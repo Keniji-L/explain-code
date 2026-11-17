@@ -25,6 +25,7 @@ export interface DungeonArenaSnapshot {
   battleShieldCharges?: number;
   battleAccumulatedXp: number;
   battleAccumulatedCoins: number;
+  savedAt?: number;
 }
 
 export interface DungeonSaveRecord {

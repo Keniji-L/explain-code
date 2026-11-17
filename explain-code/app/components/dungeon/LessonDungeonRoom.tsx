@@ -414,7 +414,10 @@ export function LessonDungeonRoom({
     setHearts((prev) => {
       const next = prev - 1;
       if (next <= 0) {
-        setTimeout(() => setIsGameOver(true), 400);
+        setTimeout(() => {
+          setIsInBattle(false);
+          setIsGameOver(true);
+        }, 400);
       }
       return Math.max(0, next);
     });
@@ -655,6 +658,7 @@ export function LessonDungeonRoom({
           localValidation={shouldUseLocalValidation}
           onCorrectAnswer={handleCorrectAnswer}
           onWrongAnswer={handleWrongAnswer}
+          onHealPlayer={() => setHearts((h) => Math.min(3, h + 1))}
           onProgressChange={(progress) => {
             if (typeof progress.focus === "number") {
               setFocus(progress.focus);

@@ -685,6 +685,7 @@ function DungeonPlayContent() {
           lessonId={courseLessons[floorIndex]?.id}
           onCorrectAnswer={handleCorrectAnswer}
           onWrongAnswer={handleWrongAnswer}
+          onHealPlayer={() => setHearts((h) => Math.min(maxHearts, h + 1))}
           onProgressChange={(progress) => {
             if (typeof progress.focus === "number") {
               setFocus(progress.focus);

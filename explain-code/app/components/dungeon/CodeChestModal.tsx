@@ -156,9 +156,16 @@ export function CodeChestModal({
         }
         return;
       }
-      if (e.key >= "1" && e.key <= "4") {
+      const codeMatch = e.code?.match(/^(?:Digit|Numpad)([1-4])$/);
+      const numKey =
+        e.key >= "1" && e.key <= "4"
+          ? parseInt(e.key, 10)
+          : codeMatch
+          ? parseInt(codeMatch[1], 10)
+          : null;
+      if (numKey !== null) {
         e.preventDefault();
-        const idx = parseInt(e.key, 10) - 1;
+        const idx = numKey - 1;
         if (idx < displayChoices.length && !eliminatedChoices.includes(idx)) {
           setSelectedChoice(idx);
         }

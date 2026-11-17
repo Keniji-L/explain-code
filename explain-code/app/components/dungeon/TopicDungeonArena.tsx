@@ -13,7 +13,7 @@ import {
   getTopicsByLanguage,
   runCodeByLanguage,
 } from "../../lib/language-tracks";
-import { getQuestionsForTopic, getChestQuestion, DungeonQuestion } from "../../lib/dungeon/questions";
+import { getQuestionsForTopic, getChestQuestion, getMimicChestQuestion, DungeonQuestion } from "../../lib/dungeon/questions";
 import {
   AVATARS,
   AvatarKey,
@@ -271,6 +271,7 @@ export function TopicDungeonArena({
   const floorIdentity = `${activeLanguage}:${activeTopic.id}`;
   const prevFloorIdentityRef = useRef<string>(floorIdentity);
   const appliedSnapshotRef = useRef<DungeonArenaSnapshot | null>(matchedSnapshot);
+  const currentSnapshotSavedAtRef = useRef<number>(0);
 
   // Hydrate snapshot or reset room ONLY when switching to a different floor/language
   useEffect(() => {
@@ -350,6 +351,13 @@ export function TopicDungeonArena({
 
     if (matchedSnapshot && appliedSnapshotRef.current !== matchedSnapshot) {
       appliedSnapshotRef.current = matchedSnapshot;
+      // Skip re-hydrating / remounting BattleOverlay when this snapshot was just emitted by onSaveGame
+      if (
+        matchedSnapshot.savedAt &&
+        Math.abs(matchedSnapshot.savedAt - currentSnapshotSavedAtRef.current) < 1500
+      ) {
+        return;
+      }
       hydrateFromSnapshot(matchedSnapshot);
     }
   }, [
@@ -455,9 +463,14 @@ export function TopicDungeonArena({
     [currentMonster, uiLang]
   );
 
+  const isMimicChest = Boolean(room.chest?.isMimic);
+
   const chestQuestion = useMemo(
-    () => getChestQuestion(activeTopic.id, activeLanguage, phaseQuestions[0]?.id),
-    [activeTopic.id, activeLanguage, phaseQuestions]
+    () =>
+      isMimicChest
+        ? getMimicChestQuestion(activeTopic.id, activeLanguage)
+        : getChestQuestion(activeTopic.id, activeLanguage, phaseQuestions[0]?.id),
+    [isMimicChest, activeTopic.id, activeLanguage, phaseQuestions]
   );
 
   const handleEncounterEntity = useCallback(() => {
@@ -1121,9 +1134,16 @@ export function TopicDungeonArena({
       {isChestOpen && (
         <CodeChestModal
           question={chestQuestion}
-          xpReward={20}
-          coinReward={15}
+          isMimic={isMimicChest}
+          xpReward={isMimicChest ? 80 : 20}
+          coinReward={isMimicChest ? 60 : 15}
           onSolved={handleChestSolved}
+          onMimicFailed={() => {
+            handleWrongAnswer();
+            setRoom((prev) =>
+              prev.chest ? { ...prev, chest: { ...prev.chest, isOpened: true } } : prev
+            );
+          }}
           onSelectInRunReward={handleSelectInRunReward}
           onClose={() => setIsChestOpen(false)}
         />
@@ -1155,8 +1175,11 @@ export function TopicDungeonArena({
         onSaveGame={
           onSaveGame
             ? (overridePhaseIdx) => {
+                const nowTs = Date.now();
+                currentSnapshotSavedAtRef.current = nowTs;
                 const snapWithPhase: DungeonArenaSnapshot = {
                   ...currentSnapshot,
+                  savedAt: nowTs,
                   isInBattle: true,
                   battlePhaseIndex:
                     typeof overridePhaseIdx === "number"
