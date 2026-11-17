@@ -715,7 +715,11 @@ export function BattleOverlay({
     : activeQuestion.hint || buildFallbackHint(activeQuestion, false);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-xs select-none overflow-y-auto">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-xs select-none overflow-y-auto"
+    >
       <div className="retro-panel rounded-2xl max-w-2xl w-full p-3 sm:p-6 flex flex-col gap-3 sm:gap-4 text-[#f4efe6] relative overflow-hidden my-auto max-h-[95vh] overflow-y-auto">
         {/* Top Bar: Encounter Label + Save + Close Button */}
         <div className="flex items-center justify-between gap-2">

@@ -1130,10 +1130,8 @@ export default function ExplainCodeApp() {
           {/* Hero Section */}
           <section className="text-center max-w-2xl mx-auto mb-12">
             <h1 className="mt-4 text-3xl sm:text-5xl font-extrabold tracking-tight text-[#f4efe6] leading-tight">
-              {t("เขียนโค้ดได้แล้ว ", "You Can Write Code — ")}
-            </h1>
-            <h1 className="mt-4 text-3xl sm:text-5xl font-extrabold tracking-tight text-[#f4efe6] leading-tight">
-              <span className="text-[#f6c945] underline decoration-[#9b5de5] underline-offset-8">
+              <span>{t("เขียนโค้ดได้แล้ว ", "You Can Write Code — ")}</span>
+              <span className="mt-2 block text-[#f6c945] underline decoration-[#9b5de5] underline-offset-8">
                 {t("แต่อธิบายโค้ดได้จริงไหม?", "Can You Explain It?")}
               </span>
             </h1>
@@ -1176,7 +1174,7 @@ export default function ExplainCodeApp() {
                 </h2>
                 <p className="mt-2 text-sm text-[#9a93ad] leading-relaxed">
                   {t(
-                    "เลือกภาษาที่ต้องการ แล้วตะลุยด่านพิกเซลด้วยคำถาม Block Model ทั้ง 6 ภาษา",
+                    "เลือกภาษาที่ต้องการ แล้วตะลุยด่านพิกเซลด้วยคำถาม Block Model ทั้ง 7 ภาษา",
                     "Pick a language and raid 2D pixel floors with Block Model challenges."
                   )}
                 </p>

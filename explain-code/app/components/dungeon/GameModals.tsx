@@ -18,7 +18,11 @@ export function PauseModal({ isOpen, onResume, onExit }: PauseModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs select-none">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs select-none"
+    >
       <div className="retro-panel rounded-2xl max-w-sm w-full p-6 text-center space-y-5 text-[#f4efe6]">
         <div className="space-y-1">
           <span className="pixel-font text-xs text-[#ffe27a]">GAME PAUSED</span>
@@ -65,7 +69,11 @@ export function GameOverModal({ isOpen, onRetry, onExit }: GameOverModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs select-none">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs select-none"
+    >
       <div className="retro-panel rounded-2xl max-w-md w-full p-6 text-center space-y-5 text-[#f4efe6] border-2 border-[#c0283a]">
         <div className="space-y-2">
           <div className="w-14 h-14 mx-auto rounded-full bg-[#c0283a]/20 border border-[#c0283a] flex items-center justify-center text-[#ff4d6d]">
@@ -132,7 +140,11 @@ export function VictoryModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs select-none">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs select-none"
+    >
       <div className="retro-panel rounded-2xl max-w-md w-full p-6 text-center space-y-6 text-[#f4efe6] border-2 border-[#f6c945] animate-in zoom-in-95 duration-200">
         <div className="space-y-2">
           <div className="w-16 h-16 mx-auto rounded-full bg-[#f6c945]/20 border-2 border-[#f6c945] flex items-center justify-center text-[#ffe27a] animate-bounce">

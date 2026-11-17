@@ -506,14 +506,14 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                 key={item.href}
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
-                className={`liquid-press flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-xs font-extrabold leading-snug ${
+                className={`liquid-press min-w-0 flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-xs font-extrabold leading-snug ${
                   isActive
                     ? "liquid-active-nav-item text-[#ffe27a]"
                     : "text-[#c4bdd6] hover:bg-[#252238] hover:text-[#f4efe6]"
                 }`}
               >
                 <Icon name={item.icon} className="h-5 w-5" />
-                <span className="truncate">{item.label}</span>
+                <span className="w-full truncate text-center">{item.label}</span>
               </Link>
             );
           })}
@@ -526,14 +526,14 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                 aria-current={
                   pathname.startsWith("/teacher") ? "page" : undefined
                 }
-                className={`liquid-press flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-xs font-extrabold leading-snug ${
+                className={`liquid-press min-w-0 flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-xs font-extrabold leading-snug ${
                   pathname.startsWith("/teacher")
                     ? "liquid-active-nav-item text-[#ffe27a]"
                     : "text-[#c4bdd6] hover:bg-[#252238] hover:text-[#f4efe6]"
                 }`}
               >
                 <Icon name="users" className="h-5 w-5" />
-                <span className="truncate">{t("แดชบอร์ดครู", "Teacher")}</span>
+                <span className="w-full truncate text-center">{t("แดชบอร์ดครู", "Teacher")}</span>
               </Link>
             ) : (
               <Link
@@ -541,28 +541,28 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                 aria-current={
                   pathname.startsWith("/my-learning") ? "page" : undefined
                 }
-                className={`liquid-press flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-xs font-extrabold leading-snug ${
+                className={`liquid-press min-w-0 flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-xs font-extrabold leading-snug ${
                   pathname.startsWith("/my-learning")
                     ? "liquid-active-nav-item text-[#ffe27a]"
                     : "text-[#c4bdd6] hover:bg-[#252238] hover:text-[#f4efe6]"
                 }`}
               >
                 <Icon name="award" className="h-5 w-5" />
-                <span className="truncate">{t("เรียนของฉัน", "My Learning")}</span>
+                <span className="w-full truncate text-center">{t("เรียนของฉัน", "My Learning")}</span>
               </Link>
             )
           ) : (
             <Link
               href="/login"
               aria-current={pathname.startsWith("/login") ? "page" : undefined}
-              className={`liquid-press flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-xs font-extrabold leading-snug ${
+              className={`liquid-press min-w-0 flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-xs font-extrabold leading-snug ${
                 pathname.startsWith("/login")
                   ? "liquid-active-nav-item text-[#ffe27a]"
                   : "text-[#c4bdd6] hover:bg-[#252238] hover:text-[#f4efe6]"
               }`}
             >
               <Icon name="user" className="h-5 w-5" />
-              <span className="truncate">{t("บัญชีผู้ใช้", "Account")}</span>
+              <span className="w-full truncate text-center">{t("บัญชีผู้ใช้", "Account")}</span>
             </Link>
           )}
         </div>
