@@ -15,6 +15,49 @@ function generateJoinCode(): string {
   return code;
 }
 
+function isPublicCourseRecord(course: { visibility?: string; is_published?: boolean }): boolean {
+  if (course.visibility === "private") return false;
+  if (course.visibility === "public") return true;
+  return Boolean(course.is_published);
+}
+
+function sanitizeLmsForClient(
+  courses: any[],
+  lessons: any[],
+  session: { userId?: string; role?: string } | null,
+  enrollments: any[] = []
+) {
+  const enrolledCourseIds = new Set(
+    enrollments.map((e: any) => String(e?.course_id || ""))
+  );
+  const canAccessCourse = (c: any) => {
+    if (isPublicCourseRecord(c)) return true;
+    if (!session?.userId) return false;
+    if (session.role === "admin") return true;
+    if (c.teacher_id === session.userId) return true;
+    return enrolledCourseIds.has(String(c.id));
+  };
+
+  const accessiblePrivateIds = new Set(
+    courses.filter((c) => !isPublicCourseRecord(c) && canAccessCourse(c)).map((c) => c.id)
+  );
+  const publicCourseIds = new Set(
+    courses.filter((c) => isPublicCourseRecord(c)).map((c) => c.id)
+  );
+
+  const sanitizedCourses = courses.map((c) => {
+    if (canAccessCourse(c)) return c;
+    return { ...c, join_code: "" };
+  });
+
+  const sanitizedLessons = lessons.filter((l) => {
+    const cid = l?.course_id;
+    return publicCourseIds.has(cid) || accessiblePrivateIds.has(cid);
+  });
+
+  return { courses: sanitizedCourses, lessons: sanitizedLessons };
+}
+
 /**
  * GET /api/lms
  * ดึงข้อมูลคอร์ส บทเรียน การลงทะเบียน และความคืบหน้าจาก Supabase (พร้อม fallback ข้อมูลเริ่มต้น)
@@ -73,11 +116,12 @@ export async function GET(req: NextRequest) {
     }
 
     if (!isSupabaseConfigured()) {
+      const safe = sanitizeLmsForClient(INITIAL_COURSES, INITIAL_LESSONS, session);
       return NextResponse.json({
         success: true,
         source: "seed",
-        courses: INITIAL_COURSES,
-        lessons: INITIAL_LESSONS,
+        courses: safe.courses,
+        lessons: safe.lessons,
         enrollments: [],
         progress: [],
         dungeonSaves: [],
@@ -87,11 +131,12 @@ export async function GET(req: NextRequest) {
 
     const supabase = getSupabaseAdmin();
     if (!supabase) {
+      const safe = sanitizeLmsForClient(INITIAL_COURSES, INITIAL_LESSONS, session);
       return NextResponse.json({
         success: true,
         source: "seed",
-        courses: INITIAL_COURSES,
-        lessons: INITIAL_LESSONS,
+        courses: safe.courses,
+        lessons: safe.lessons,
         enrollments: [],
         progress: [],
         dungeonSaves: [],
@@ -257,11 +302,18 @@ export async function GET(req: NextRequest) {
           ]
         : INITIAL_LESSONS;
 
+    const safe = sanitizeLmsForClient(
+      mergedCourses,
+      mergedLessons,
+      session,
+      enrollmentsData
+    );
+
     return NextResponse.json({
       success: true,
       source: coursesData !== null ? "supabase" : "seed",
-      courses: mergedCourses,
-      lessons: mergedLessons,
+      courses: safe.courses,
+      lessons: safe.lessons,
       enrollments: enrollmentsData,
       progress: progressData,
       dungeonSaves: dungeonSavesData,
@@ -269,11 +321,12 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     console.error("GET /api/lms error:", err);
+    const safe = sanitizeLmsForClient(INITIAL_COURSES, INITIAL_LESSONS, null);
     return NextResponse.json({
       success: true,
       source: "seed",
-      courses: INITIAL_COURSES,
-      lessons: INITIAL_LESSONS,
+      courses: safe.courses,
+      lessons: safe.lessons,
       enrollments: [],
       progress: [],
       dungeonSaves: [],
@@ -647,6 +700,56 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, deletedLessonId: lessonId });
     }
 
+    // 5a. ตรวจสอบ Join Code ของคอร์สแบบส่วนตัวบนเซิร์ฟเวอร์
+    if (action === "verify-join-code") {
+      const cleanCode =
+        typeof body.joinCode === "string" ? body.joinCode.trim().toUpperCase() : "";
+      const targetCourseId =
+        typeof body.courseId === "string" ? body.courseId.trim() : "";
+
+      if (!cleanCode) {
+        return NextResponse.json(
+          { error: "กรุณากรอกรหัสเข้าร่วมคอร์ส" },
+          { status: 400 }
+        );
+      }
+
+      let matchedCourse: any = null;
+      if (supabase) {
+        try {
+          let query = supabase
+            .from("courses")
+            .select("*")
+            .ilike("join_code", cleanCode);
+          if (targetCourseId && UUID_REGEX.test(targetCourseId)) {
+            query = query.eq("id", targetCourseId);
+          }
+          const { data } = await query.limit(1).maybeSingle();
+          if (data) matchedCourse = data;
+        } catch (e) {
+          console.warn("verify-join-code supabase notice:", e);
+        }
+      }
+
+      if (!matchedCourse) {
+        matchedCourse =
+          INITIAL_COURSES.find(
+            (c) =>
+              c.join_code.toUpperCase() === cleanCode &&
+              (!targetCourseId || c.id === targetCourseId)
+          ) || null;
+      }
+
+      if (!matchedCourse) {
+        return NextResponse.json(
+          { error: "รหัสเข้าร่วมคอร์สไม่ถูกต้อง หรือไม่พบคอร์ส" },
+          { status: 403 }
+        );
+      }
+
+      return NextResponse.json({ success: true, course: matchedCourse });
+    }
+
     // 5. นักเรียนเข้าร่วมคอร์ส (Enroll)
     if (action === "enroll") {
       if (!session?.userId) {
@@ -656,7 +759,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const { courseId, studentId, lastAccessedLessonId } = body;
+      const { courseId, studentId, lastAccessedLessonId, joinCode } = body;
       if (typeof courseId !== "string" || !courseId.trim()) {
         return NextResponse.json(
           { error: "ต้องระบุรหัสคอร์สเรียน (courseId)" },
@@ -680,6 +783,41 @@ export async function POST(req: NextRequest) {
         session.role === "admin" && requestedStudentId
           ? requestedStudentId
           : session.userId;
+
+      // ตรวจสอบสิทธิ์สำหรับคอร์สส่วนตัว (Private Course)
+      let targetCourse: any = INITIAL_COURSES.find((c) => c.id === courseId) || null;
+      if (!targetCourse && supabase && UUID_REGEX.test(courseId)) {
+        const { data: cRow } = await supabase
+          .from("courses")
+          .select("id, teacher_id, is_published, join_code")
+          .eq("id", courseId)
+          .maybeSingle();
+        if (cRow) targetCourse = cRow;
+      }
+
+      if (targetCourse && !isPublicCourseRecord(targetCourse)) {
+        const isOwnerOrAdmin =
+          session.role === "admin" || targetCourse.teacher_id === session.userId;
+        let alreadyEnrolled = false;
+        if (!isOwnerOrAdmin && supabase && UUID_REGEX.test(courseId) && UUID_REGEX.test(effectiveStudentId)) {
+          const { data: existingEnr } = await supabase
+            .from("enrollments")
+            .select("id")
+            .eq("course_id", courseId)
+            .eq("student_id", effectiveStudentId)
+            .maybeSingle();
+          alreadyEnrolled = Boolean(existingEnr);
+        }
+        const providedCode =
+          typeof joinCode === "string" ? joinCode.trim().toUpperCase() : "";
+        const expectedCode = String(targetCourse.join_code || "").trim().toUpperCase();
+        if (!isOwnerOrAdmin && !alreadyEnrolled && (!providedCode || providedCode !== expectedCode)) {
+          return NextResponse.json(
+            { error: "คอร์สนี้เป็นแบบส่วนตัว กรุณากรอกรหัสเข้าร่วมคอร์สให้ถูกต้อง" },
+            { status: 403 }
+          );
+        }
+      }
       const nowIso = new Date().toISOString();
 
       const enrollment = {

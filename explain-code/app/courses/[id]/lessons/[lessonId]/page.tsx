@@ -18,12 +18,16 @@ import {
 import {
   getLocalizedCourse,
   getLocalizedLesson,
+  isCoursePublic,
   loadLocalCourses,
   loadLocalEnrollments,
   loadLocalLessonProgress,
   loadLocalLessons,
+  loadUnlockedPrivateCourseIds,
+  saveLocalCourses,
   saveLocalEnrollments,
   saveLocalLessonProgress,
+  saveLocalLessons,
 } from "../../../../lib/lms-data";
 import {
   runCodeByLanguage,
@@ -51,6 +55,7 @@ function LessonViewContent() {
 
   const [session, setSession] = useState<ClientAuthSession | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isCourseLocked, setIsCourseLocked] = useState<boolean>(false);
   const [course, setCourse] = useState<Course | null>(null);
   const [courseLessons, setCourseLessons] = useState<Lesson[]>([]);
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -66,24 +71,103 @@ function LessonViewContent() {
   const [quizShuffleSeed, setQuizShuffleSeed] = useState<number>(0);
 
   useEffect(() => {
+    let active = true;
     setQuizShuffleSeed(Math.floor(Math.random() * 1_000_000_000) + 1);
     const current = getClientSession();
     setSession(current);
 
-    const allCourses = loadLocalCourses();
-    const foundCourse = allCourses.find((c) => c.id === courseId) || null;
+    const checkCourseLock = (
+      targetCourse: Course | null,
+      enrolls: Enrollment[]
+    ): boolean => {
+      if (!targetCourse || isCoursePublic(targetCourse)) return false;
+      const unlockedIds = loadUnlockedPrivateCourseIds();
+      if (unlockedIds.includes(targetCourse.id)) return false;
+      if (
+        current &&
+        (current.role === "admin" ||
+          targetCourse.teacher_id === current.userId ||
+          (targetCourse.teacher_id === "tch-1" &&
+            (current.username.includes("สมชาย") || current.userId === "tch-1")) ||
+          enrolls.some(
+            (e) =>
+              e.course_id === targetCourse.id && e.student_id === current.userId
+          ))
+      ) {
+        return false;
+      }
+      return true;
+    };
+
+    const localCourses = loadLocalCourses();
+    const localLessons = loadLocalLessons();
+    const localEnrolls = loadLocalEnrollments();
+    const foundCourse = localCourses.find((c) => c.id === courseId) || null;
     setCourse(foundCourse);
 
-    const allLessons = loadLocalLessons()
+    const allLessons = localLessons
       .filter((l) => l.course_id === courseId && l.is_published)
       .sort((a, b) => a.order_index - b.order_index);
     setCourseLessons(allLessons);
 
     const foundLesson = allLessons.find((l) => l.id === lessonId) || null;
     setLesson(foundLesson);
+    setIsCourseLocked(checkCourseLock(foundCourse, localEnrolls));
     setRunOutput("");
     setSelectedAnswers({});
     setQuizSubmitted(false);
+    if (foundCourse && foundLesson) {
+      setIsLoading(false);
+    }
+
+    const syncMissingFromServer = async () => {
+      if (foundCourse && foundLesson) return;
+      try {
+        const res = await fetch(
+          `/api/lms?studentId=${encodeURIComponent(current?.userId || "")}`
+        );
+        const data = await res.json();
+        if (!active || !res.ok || !Array.isArray(data.courses)) return;
+
+        const mergedCourses: Course[] = [
+          ...data.courses,
+          ...localCourses.filter(
+            (lc) => !data.courses.some((dc: Course) => dc.id === lc.id)
+          ),
+        ];
+        const mergedLessons: Lesson[] = [
+          ...(data.lessons || []),
+          ...localLessons.filter(
+            (ll) => !(data.lessons || []).some((dl: Lesson) => dl.id === ll.id)
+          ),
+        ];
+        saveLocalCourses(mergedCourses);
+        saveLocalLessons(mergedLessons);
+
+        const remoteCourse =
+          mergedCourses.find((c) => c.id === courseId) || null;
+        const remoteLessons = mergedLessons
+          .filter((l) => l.course_id === courseId && l.is_published)
+          .sort((a, b) => a.order_index - b.order_index);
+        const remoteLesson =
+          remoteLessons.find((l) => l.id === lessonId) || null;
+        const mergedEnrolls =
+          current && Array.isArray(data.enrollments)
+            ? [...data.enrollments, ...localEnrolls]
+            : localEnrolls;
+
+        setCourse(remoteCourse);
+        setCourseLessons(remoteLessons);
+        setLesson(remoteLesson);
+        setIsCourseLocked(checkCourseLock(remoteCourse, mergedEnrolls));
+      } catch {
+        // ignore
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+
+    void syncMissingFromServer();
 
     if (current && foundLesson) {
       const nowIso = new Date().toISOString();
@@ -180,6 +264,31 @@ function LessonViewContent() {
         <SiteHeader />
         <main className="mx-auto max-w-4xl px-4 py-12 text-center text-sm font-bold text-[#9a93ad]">
           {t("กำลังโหลดบทเรียน...", "Loading lesson...")}
+        </main>
+      </div>
+    );
+  }
+
+  if (isCourseLocked && course) {
+    return (
+      <div className="min-h-screen bg-[#0d0b14] text-[#f4efe6]">
+        <SiteHeader />
+        <main className="mx-auto max-w-lg px-4 py-12 text-center space-y-4">
+          <h1 className="text-xl font-bold text-[#f4efe6]">
+            {t("🔒 คอร์สนี้เป็นแบบส่วนตัว", "🔒 Private Course")}
+          </h1>
+          <p className="text-xs text-[#c4bdd6]">
+            {t(
+              "กรุณากรอกรหัสเข้าร่วมคอร์ส (Join Code) ที่หน้าคอร์สก่อนเข้าเรียนบทเรียนนี้",
+              "Please enter the course Join Code on the course page before accessing this lesson."
+            )}
+          </p>
+          <Link
+            href={`/courses/${course.id}`}
+            className="inline-block rounded-xl bg-[#2fbf71] px-4 py-2 text-xs font-extrabold text-[#0b0b14] hover:bg-[#34d37d] transition-colors"
+          >
+            {t("ไปหน้ากรอกรหัสเข้าร่วมคอร์ส →", "Go to Unlock Course →")}
+          </Link>
         </main>
       </div>
     );

@@ -18,10 +18,14 @@ import { dungeonSound } from "../../lib/dungeon/sound";
 import { Course, Lesson, LessonProgress } from "../../lib/supabase";
 import {
   getLocalizedLesson,
+  isCoursePublic,
   loadLocalCourses,
   loadLocalLessons,
   loadLocalLessonProgress,
+  loadUnlockedPrivateCourseIds,
+  saveLocalCourses,
   saveLocalLessonProgress,
+  saveLocalLessons,
   loadLocalEnrollments,
   saveLocalEnrollments,
 } from "../../lib/lms-data";
@@ -38,10 +42,18 @@ function detectCourseLanguage(course: Course | null, courseLessons: Lesson[]): L
   if (lessonLang === "typescript" || lessonLang === "ts") return "typescript";
   if (lessonLang === "cpp" || lessonLang === "c++") return "cpp";
   if (lessonLang === "java") return "java";
+  if (lessonLang === "html") return "html";
   if (lessonLang === "javascript" || lessonLang === "js") return "javascript";
 
   if (!course) return "javascript";
   const haystack = `${course.id} ${course.join_code} ${course.title}`.toUpperCase();
+  if (
+    course.id.includes("html") ||
+    course.join_code.toUpperCase().startsWith("HTML") ||
+    /\bHTML\b/.test(haystack)
+  ) {
+    return "html";
+  }
   if (
     course.id.includes("-ts-") ||
     course.join_code.toUpperCase().startsWith("TS") ||
@@ -100,6 +112,7 @@ function DungeonPlayContent() {
   const [course, setCourse] = useState<Course | null>(null);
   const [courseLessons, setCourseLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isCourseLocked, setIsCourseLocked] = useState<boolean>(false);
   const [hasSession, setHasSession] = useState<boolean>(false);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
 
@@ -139,22 +152,91 @@ function DungeonPlayContent() {
     }
 
     async function fetchCourseData() {
-      const allCourses = loadLocalCourses();
-      const allLessons = loadLocalLessons();
-      const foundCourse = allCourses.find((c) => c.id === courseId) || allCourses[0];
+      const currentSess = getClientSession();
+      setHasSession(Boolean(currentSess));
+
+      let allCourses = loadLocalCourses();
+      let allLessons = loadLocalLessons();
+      let enrolls = loadLocalEnrollments();
+      let foundCourse = allCourses.find((c) => c.id === courseId) || null;
+
+      if (!foundCourse) {
+        try {
+          const res = await fetch(
+            `/api/lms?studentId=${encodeURIComponent(currentSess?.userId || "")}`
+          );
+          const data = await res.json();
+          if (res.ok && Array.isArray(data.courses)) {
+            allCourses = [
+              ...data.courses,
+              ...allCourses.filter(
+                (lc) => !data.courses.some((dc: Course) => dc.id === lc.id)
+              ),
+            ];
+            allLessons = [
+              ...(data.lessons || []),
+              ...allLessons.filter(
+                (ll) => !(data.lessons || []).some((dl: Lesson) => dl.id === ll.id)
+              ),
+            ];
+            saveLocalCourses(allCourses);
+            saveLocalLessons(allLessons);
+            if (currentSess && Array.isArray(data.enrollments)) {
+              enrolls = [...data.enrollments, ...enrolls];
+              saveLocalEnrollments(enrolls);
+            }
+            foundCourse = allCourses.find((c) => c.id === courseId) || null;
+          }
+        } catch {
+          // ignore network error
+        }
+      }
+
       setCourse(foundCourse);
+      if (!foundCourse) {
+        setCourseLessons([]);
+        setLoading(false);
+        return;
+      }
+
+      const unlockedIds = loadUnlockedPrivateCourseIds();
+      const isOwnerOrAdmin = Boolean(
+        currentSess &&
+          (currentSess.role === "admin" ||
+            foundCourse.teacher_id === currentSess.userId ||
+            (foundCourse.teacher_id === "tch-1" &&
+              (currentSess.username.includes("สมชาย") ||
+                currentSess.userId === "tch-1")))
+      );
+      const isEnrolled = Boolean(
+        currentSess &&
+          enrolls.some(
+            (e) =>
+              e.course_id === foundCourse!.id &&
+              e.student_id === currentSess.userId
+          )
+      );
+      const locked =
+        !isCoursePublic(foundCourse) &&
+        !isOwnerOrAdmin &&
+        !isEnrolled &&
+        !unlockedIds.includes(foundCourse.id);
+      setIsCourseLocked(locked);
+      if (locked) {
+        setCourseLessons([]);
+        setLoading(false);
+        return;
+      }
 
       const relevantLessons = allLessons
-        .filter((l) => l.course_id === foundCourse?.id && l.is_published)
+        .filter((l) => l.course_id === foundCourse.id && l.is_published)
         .sort((a, b) => a.order_index - b.order_index);
       const effectiveLessons =
-        relevantLessons.length > 0 ? relevantLessons : [allLessons[0]];
+        relevantLessons.length > 0 ? relevantLessons : [];
       setCourseLessons(effectiveLessons);
 
       // Resume from saved floor & resources (coins, xp, hearts, focus MP)
-      const currentSess = getClientSession();
-      setHasSession(Boolean(currentSess));
-      const runKey = `explain_code_course_run_${foundCourse?.id || courseId}_${currentSess?.userId || "guest"}`;
+      const runKey = `explain_code_course_run_${foundCourse.id}_${currentSess?.userId || "guest"}`;
       try {
         const rawRun = localStorage.getItem(runKey);
         if (rawRun) {
@@ -177,10 +259,9 @@ function DungeonPlayContent() {
         // ignore storage errors
       }
       if (currentSess && floorParam === null && effectiveLessons.length > 0) {
-        const enrolls = loadLocalEnrollments();
         const myEnroll = enrolls.find(
           (e) =>
-            e.course_id === (foundCourse?.id || courseId) &&
+            e.course_id === foundCourse.id &&
             e.student_id === currentSess.userId
         );
         if (myEnroll?.last_accessed_lesson_id) {
@@ -537,6 +618,46 @@ function DungeonPlayContent() {
     return (
       <div className="flex-1 flex items-center justify-center p-12 text-[#ffe27a] pixel-font text-sm">
         GENERATING DUNGEON...
+      </div>
+    );
+  }
+
+  if (isCourseLocked && course) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center gap-4">
+        <h1 className="text-xl font-bold text-[#f4efe6]">
+          {t("🔒 คอร์สนี้เป็นแบบส่วนตัว", "🔒 Private Course")}
+        </h1>
+        <p className="text-xs text-[#c4bdd6] max-w-md">
+          {t(
+            "กรุณากรอกรหัสเข้าร่วมคอร์ส (Join Code) ที่หน้าคอร์สก่อนเข้าสู่ดันเจี้ยนนี้",
+            "Please enter the course Join Code on the course page before entering this dungeon."
+          )}
+        </p>
+        <button
+          type="button"
+          onClick={() => router.push(`/courses/${course.id}`)}
+          className="rounded-xl bg-[#2fbf71] px-4 py-2 text-xs font-extrabold text-[#0b0b14] hover:bg-[#34d37d] cursor-pointer"
+        >
+          {t("ไปหน้าปลดล็อกคอร์ส →", "Unlock Course →")}
+        </button>
+      </div>
+    );
+  }
+
+  if (!course || courseLessons.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center gap-4">
+        <h1 className="text-xl font-bold text-[#f4efe6]">
+          {t("ไม่พบดันเจี้ยนของคอร์สนี้", "Course dungeon not found")}
+        </h1>
+        <button
+          type="button"
+          onClick={() => router.push("/courses")}
+          className="rounded-xl bg-[#2fbf71] px-4 py-2 text-xs font-extrabold text-[#0b0b14] hover:bg-[#34d37d] cursor-pointer"
+        >
+          {t("← กลับไปหน้ารวมคอร์ส", "← Back to Courses")}
+        </button>
       </div>
     );
   }

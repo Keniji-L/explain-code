@@ -1203,7 +1203,7 @@ function CoursesContent() {
     return isCourseForLanguage(c, cLessons, currentLanguage);
   });
 
-  const handleEnrollCourse = async (course: Course) => {
+  const handleEnrollCourse = async (course: Course, joinCode?: string) => {
     const nextUnlocked = unlockPrivateCourseId(course.id);
     setUnlockedPrivateIds(nextUnlocked);
 
@@ -1243,6 +1243,7 @@ function CoursesContent() {
             courseId: course.id,
             studentId: session.userId,
             lastAccessedLessonId: firstLessonId,
+            ...(joinCode ? { joinCode } : {}),
           }),
         });
       } catch {
@@ -1259,9 +1260,24 @@ function CoursesContent() {
     const cleanCode = joinCodeInput.trim().toUpperCase();
     if (!cleanCode) return;
 
-    const matched = courses.find(
-      (c) => c.join_code.toUpperCase() === cleanCode
+    let matched = courses.find(
+      (c) => c.join_code && c.join_code.toUpperCase() === cleanCode
     );
+    if (!matched) {
+      try {
+        const verifyRes = await fetch("/api/lms", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "verify-join-code", joinCode: cleanCode }),
+        });
+        const verifyData = await verifyRes.json();
+        if (verifyRes.ok && verifyData?.course) {
+          matched = verifyData.course as Course;
+        }
+      } catch {
+        // ignore network error
+      }
+    }
     if (!matched) {
       setJoinMsg({
         type: "error",
@@ -1282,7 +1298,7 @@ function CoursesContent() {
         `Unlocked "${matched.title}" — entering course...`
       ),
     });
-    await handleEnrollCourse(matched);
+    await handleEnrollCourse(matched, cleanCode);
   };
 
   // ==========================================================================

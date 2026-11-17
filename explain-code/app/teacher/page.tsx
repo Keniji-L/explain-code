@@ -181,6 +181,50 @@ export default function TeacherLMSDashboardPage() {
           ? prev
           : owned[0]?.id || ""
       );
+
+      void (async () => {
+        try {
+          const res = await fetch(
+            `/api/lms?teacherId=${encodeURIComponent(current.userId)}`
+          );
+          const data = await res.json();
+          if (!res.ok || !Array.isArray(data.courses)) return;
+
+          const mergedCourses: Course[] = [
+            ...data.courses,
+            ...localCourses.filter(
+              (lc) => !data.courses.some((dc: Course) => dc.id === lc.id)
+            ),
+          ];
+          const mergedLessons: Lesson[] = [
+            ...(data.lessons || []),
+            ...localLessons.filter(
+              (ll) =>
+                !(data.lessons || []).some((dl: Lesson) => dl.id === ll.id)
+            ),
+          ];
+          setCourses(mergedCourses);
+          setLessons(mergedLessons);
+          saveLocalCourses(mergedCourses);
+          saveLocalLessons(mergedLessons);
+          if (Array.isArray(data.enrollments) && data.enrollments.length > 0) {
+            setEnrollments(data.enrollments);
+          }
+          if (Array.isArray(data.progress) && data.progress.length > 0) {
+            setProgress(data.progress);
+          }
+          const remoteOwned = mergedCourses.filter((c) =>
+            isOwnerOfCourse(c, current)
+          );
+          setSelectedCourseId((prev) =>
+            prev && remoteOwned.some((c) => c.id === prev)
+              ? prev
+              : remoteOwned[0]?.id || ""
+          );
+        } catch {
+          // ignore network error
+        }
+      })();
     };
 
     syncTeacherState();

@@ -19,7 +19,9 @@ import {
   loadLocalLessonProgress,
   loadLocalLessons,
   loadUnlockedPrivateCourseIds,
+  saveLocalCourses,
   saveLocalEnrollments,
+  saveLocalLessons,
   unlockPrivateCourseId,
 } from "../../lib/lms-data";
 import { PixelSpriteView } from "../../components/dungeon/PixelSpriteView";
@@ -46,22 +48,85 @@ function CourseDetailContent() {
   const [viewMode, setViewMode] = useState<"curriculum" | "dungeon">("curriculum");
 
   useEffect(() => {
+    let active = true;
     const current = getClientSession();
     setSession(current);
 
-    const allCourses = loadLocalCourses();
-    const found = allCourses.find((c) => c.id === courseId) || null;
+    const localCourses = loadLocalCourses();
+    const localLessons = loadLocalLessons();
+    const localEnrolls = loadLocalEnrollments();
+    const found = localCourses.find((c) => c.id === courseId) || null;
     setCourse(found);
 
-    const allLessons = loadLocalLessons()
+    const filteredLocalLessons = localLessons
       .filter((l) => l.course_id === courseId && l.is_published)
       .sort((a, b) => a.order_index - b.order_index);
-    setLessons(allLessons);
+    setLessons(filteredLocalLessons);
 
-    setEnrollments(loadLocalEnrollments());
+    setEnrollments(localEnrolls);
     setProgress(loadLocalLessonProgress());
     setUnlockedPrivateIds(loadUnlockedPrivateCourseIds());
-    setIsLoading(false);
+    if (found) {
+      setIsLoading(false);
+    }
+
+    const syncFromServer = async () => {
+      try {
+        const res = await fetch(
+          `/api/lms?studentId=${encodeURIComponent(current?.userId || "")}`
+        );
+        const data = await res.json();
+        if (!active || !res.ok || !Array.isArray(data.courses)) return;
+
+        const mergedCourses: Course[] = [
+          ...data.courses,
+          ...localCourses.filter(
+            (lc) => !data.courses.some((dc: Course) => dc.id === lc.id)
+          ),
+        ];
+        const mergedLessons: Lesson[] = [
+          ...(data.lessons || []),
+          ...localLessons.filter(
+            (ll) => !(data.lessons || []).some((dl: Lesson) => dl.id === ll.id)
+          ),
+        ];
+        saveLocalCourses(mergedCourses);
+        saveLocalLessons(mergedLessons);
+
+        const remoteCourse =
+          mergedCourses.find((c) => c.id === courseId) || null;
+        setCourse(remoteCourse);
+        setLessons(
+          mergedLessons
+            .filter((l) => l.course_id === courseId && l.is_published)
+            .sort((a, b) => a.order_index - b.order_index)
+        );
+        if (current && Array.isArray(data.enrollments) && data.enrollments.length > 0) {
+          const mergedEnrolls = [
+            ...data.enrollments,
+            ...localEnrolls.filter(
+              (le) =>
+                !data.enrollments.some(
+                  (de: Enrollment) =>
+                    de.course_id === le.course_id &&
+                    de.student_id === le.student_id
+                )
+            ),
+          ];
+          setEnrollments(mergedEnrolls);
+          saveLocalEnrollments(mergedEnrolls);
+        }
+      } catch {
+        // ignore network error
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+
+    void syncFromServer();
+    return () => {
+      active = false;
+    };
   }, [courseId]);
 
   if (isLoading) {
@@ -123,7 +188,26 @@ function CourseDetailContent() {
       setPrivateCodeError(t("กรุณากรอกรหัสเข้าร่วมคอร์ส", "Please enter the course join code"));
       return;
     }
-    if (clean !== course.join_code.toUpperCase()) {
+    let verified = Boolean(
+      course.join_code && clean === course.join_code.toUpperCase()
+    );
+    if (!verified) {
+      try {
+        const res = await fetch("/api/lms", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "verify-join-code",
+            courseId: course.id,
+            joinCode: clean,
+          }),
+        });
+        verified = res.ok;
+      } catch {
+        verified = false;
+      }
+    }
+    if (!verified) {
       setPrivateCodeError(
         t(
           "รหัสเข้าร่วมคอร์สไม่ถูกต้อง กรุณาตรวจสอบกับครูผู้สอนอีกครั้ง",
@@ -156,6 +240,7 @@ function CourseDetailContent() {
             courseId: course.id,
             studentId: session.userId,
             lastAccessedLessonId: firstLessonId,
+            joinCode: clean,
           }),
         });
       } catch {
