@@ -82,6 +82,7 @@ export function LessonDungeonRoom({
   const [hearts, setHearts] = useState<number>(3);
   const [coinsEarned, setCoinsEarned] = useState<number>(0);
   const [xpEarned, setXpEarned] = useState<number>(0);
+  const [focus, setFocus] = useState<number | null>(null);
   const [floorShieldBonus, setFloorShieldBonus] = useState<number>(0);
   const [floorRewardMultiplier, setFloorRewardMultiplier] = useState<number>(1);
   const [screenShake, setScreenShake] = useState<number>(0);
@@ -137,12 +138,48 @@ export function LessonDungeonRoom({
         setSoundEnabled(savedSound === "true");
         dungeonSound.setEnabled(savedSound === "true");
       }
+      if (hasSession) {
+        const currentSess = getClientSession();
+        const runKey = `explain_code_lesson_run_${course.id}_${currentSess?.userId || "guest"}`;
+        const rawRun = localStorage.getItem(runKey);
+        if (rawRun) {
+          const parsed = JSON.parse(rawRun) as {
+            coins?: number;
+            xp?: number;
+            hearts?: number;
+            focus?: number;
+          };
+          if (typeof parsed.coins === "number") setCoinsEarned(parsed.coins);
+          if (typeof parsed.xp === "number") setXpEarned(parsed.xp);
+          if (typeof parsed.hearts === "number" && parsed.hearts > 0) setHearts(parsed.hearts);
+          if (typeof parsed.focus === "number") setFocus(parsed.focus);
+        }
+      }
     } catch {
       // ignore
     }
-  }, [courseSeed, lessonIndex, totalLessons]);
+  }, [courseSeed, lessonIndex, totalLessons, course.id]);
 
   const avatar = useMemo(() => getAvatar(avatarKey), [avatarKey]);
+
+  useEffect(() => {
+    const currentSess = getClientSession();
+    if (!currentSess) return;
+    try {
+      const runKey = `explain_code_lesson_run_${course.id}_${currentSess.userId}`;
+      localStorage.setItem(
+        runKey,
+        JSON.stringify({
+          coins: coinsEarned,
+          xp: xpEarned,
+          hearts,
+          focus: focus ?? avatar.stats.initialMp,
+        })
+      );
+    } catch {
+      // ignore
+    }
+  }, [course.id, coinsEarned, xpEarned, hearts, focus, avatar.stats.initialMp]);
 
   const lessonLang = useMemo(
     () => normalizeLearningLanguage(lesson.programming_language),
@@ -587,8 +624,9 @@ export function LessonDungeonRoom({
           monsterHp={room.entity?.isCompleted ? 0 : Math.max(currentMonster.maxHp, lessonQuestions.length)}
           maxMonsterHp={Math.max(currentMonster.maxHp, lessonQuestions.length)}
           playerHearts={hearts}
-          initialFocus={3}
-          maxFocus={6}
+          avatarKey={avatarKey}
+          initialFocus={focus ?? avatar.stats.initialMp}
+          maxFocus={avatar.stats.maxMp}
           extraShield={floorShieldBonus}
           rewardMultiplier={floorRewardMultiplier}
           courseId={course.id}
@@ -596,6 +634,11 @@ export function LessonDungeonRoom({
           localValidation={shouldUseLocalValidation}
           onCorrectAnswer={handleCorrectAnswer}
           onWrongAnswer={handleWrongAnswer}
+          onProgressChange={(progress) => {
+            if (typeof progress.focus === "number") {
+              setFocus(progress.focus);
+            }
+          }}
           onClose={() => setIsInBattle(false)}
         />
       )}
