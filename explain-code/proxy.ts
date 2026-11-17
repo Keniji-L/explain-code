@@ -9,7 +9,7 @@ import {
 // เส้นทางที่บังคับต้องล็อกอินก่อนเข้าใช้งาน
 const PROTECTED_PREFIXES = ["/my-learning", "/my-history", "/teacher"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
