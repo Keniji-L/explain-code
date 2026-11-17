@@ -6,7 +6,7 @@
 export const GEMINI_MODEL_FALLBACK_CHAIN = [
   "gemini-3.5-flash-lite",
   "gemini-3.6-flash",
-  "gemini-3.7-flash",
+  "gemini-3.8-flash",
 ] as const;
 
 export type GeminiModelName = (typeof GEMINI_MODEL_FALLBACK_CHAIN)[number];
@@ -63,8 +63,15 @@ export async function callGeminiGenerateJson<T = unknown>({
 }: GeminiJsonCallOptions): Promise<GeminiJsonCallResult<T>> {
   let lastStatus: number | undefined;
   let lastError: string | undefined;
+  const overallDeadline = Date.now() + Math.min(25000, Math.max(timeoutMs, 22000));
 
   for (const model of models) {
+    const remainingMs = overallDeadline - Date.now();
+    if (remainingMs < 1500) {
+      lastError = lastError || "Gemini fallback overall deadline reached";
+      break;
+    }
+    const attemptTimeoutMs = Math.min(timeoutMs, remainingMs);
     try {
       const generationConfig: Record<string, unknown> = {
         responseMimeType: "application/json",
@@ -85,7 +92,7 @@ export async function callGeminiGenerateJson<T = unknown>({
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig,
           }),
-          signal: AbortSignal.timeout(timeoutMs),
+          signal: AbortSignal.timeout(attemptTimeoutMs),
         }
       );
 

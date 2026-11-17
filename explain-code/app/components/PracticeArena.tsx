@@ -242,23 +242,37 @@ export function PracticeArena({
         body: JSON.stringify({
           code: topicCode,
           topicTitle,
+          language,
           studentExplanation: freeExplanation,
           studentId: currentStudent?.id || studentId,
         }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        setAiEvalResult({
+          score: 0,
+          passed: false,
+          feedback:
+            data?.error ||
+            t(
+              "ไม่สามารถตรวจคำอธิบายได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง",
+              "Could not evaluate your explanation right now. Please try again."
+            ),
+        });
+        return;
+      }
       setAiEvalResult({
-        score: data.score ?? 80,
+        score: typeof data.score === "number" ? data.score : 0,
         passed: Boolean(data.passed),
         feedback: data.feedback || t("ตรวจคำอธิบายเรียบร้อย", "Explanation evaluated"),
       });
     } catch {
       setAiEvalResult({
-        score: 80,
-        passed: true,
+        score: 0,
+        passed: false,
         feedback: t(
-          "อธิบายแนวคิดการทำงานของโค้ดได้ตรงประเด็นดีมาก!",
-          "Great job explaining the core behavior of the code!"
+          "ไม่สามารถเชื่อมต่อระบบตรวจคำอธิบายได้ กรุณาลองใหม่อีกครั้ง",
+          "Could not reach the evaluation service. Please try again."
         ),
       });
     } finally {

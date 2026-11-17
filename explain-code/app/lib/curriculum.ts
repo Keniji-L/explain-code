@@ -322,8 +322,17 @@ export function runJavaScriptReal(code: string): {
   };
 
   try {
-    const fn = new Function("console", `"use strict";\n${code}`);
-    fn(customConsole);
+    const fn = new Function(
+      "console",
+      "window",
+      "document",
+      "fetch",
+      "localStorage",
+      "sessionStorage",
+      "globalThis",
+      `"use strict";\n${code}`
+    );
+    fn(customConsole, undefined, undefined, undefined, undefined, undefined, undefined);
     return {
       outputs: logs,
       finalOutput: logs.join("\n").trim(),

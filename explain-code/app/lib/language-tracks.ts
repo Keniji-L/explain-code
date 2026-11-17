@@ -4169,9 +4169,16 @@ function evalPythonExpr(expr: string, env: Record<string, any>): any {
   const replaced = t.replace(/len\(\s*([a-zA-Z_]\w*)\s*\)/g, (_, v) =>
     Array.isArray(env[v]) ? String(env[v].length) : "0"
   );
+  if (
+    /\b(window|document|fetch|localStorage|sessionStorage|globalThis|process|require|import|Function|eval)\b/.test(
+      replaced
+    )
+  ) {
+    throw new Error("Unsafe expression");
+  }
   const keys = Object.keys(env);
   const vals = keys.map((k) => env[k]);
-  const fn = new Function(...keys, `return (${replaced});`);
+  const fn = new Function(...keys, `"use strict"; return (${replaced});`);
   return fn(...vals);
 }
 
