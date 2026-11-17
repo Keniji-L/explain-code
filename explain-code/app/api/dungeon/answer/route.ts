@@ -90,9 +90,10 @@ export async function POST(req: NextRequest) {
         explanation = sample.explanation;
         difficulty = sample.difficulty;
       } else {
-        // Default fallback question index 1
-        correctIndex = 1;
-        explanation = "คำตอบถูกต้องตามหลักการทำงานของ Block Model";
+        return NextResponse.json(
+          { error: "ไม่พบข้อมูลคำถามนี้ในระบบ" },
+          { status: 404 }
+        );
       }
     }
 
@@ -132,6 +133,13 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           { error: "ไม่มีสิทธิ์ส่งคำตอบในรอบการเล่นของผู้ใช้อื่น" },
           { status: 403 }
+        );
+      }
+
+      if (runRow.status === "game_over" || runRow.hearts_left <= 0) {
+        return NextResponse.json(
+          { error: "รอบการเล่นนี้จบลงแล้ว (Game Over)" },
+          { status: 400 }
         );
       }
 

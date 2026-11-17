@@ -26,6 +26,15 @@ async function requireTeacherSession(): Promise<{
       ),
     };
   }
+  if (session.role === "teacher" && session.teacherStatus !== "approved") {
+    return {
+      session: null,
+      errorResponse: NextResponse.json(
+        { error: "บัญชีครูผู้สอนของคุณอยู่ระหว่างรอการอนุมัติ" },
+        { status: 403 }
+      ),
+    };
+  }
   return { session, errorResponse: null };
 }
 

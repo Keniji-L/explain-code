@@ -64,6 +64,15 @@ async function requireTeacherSession() {
     };
   }
 
+  if (session.role === "teacher" && session.teacherStatus !== "approved") {
+    return {
+      errorResponse: NextResponse.json(
+        { error: "บัญชีครูผู้สอนของคุณอยู่ระหว่างรอการอนุมัติ" },
+        { status: 403 }
+      ),
+    };
+  }
+
   return { session };
 }
 

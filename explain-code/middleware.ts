@@ -18,6 +18,8 @@ export async function middleware(request: NextRequest) {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() || "";
 
   let supabaseUser = null;
+  let supabaseProfileRole: string | null = null;
+  let supabaseTeacherStatus: string | null = null;
 
   // 1. Refresh Supabase Auth session via @supabase/ssr
   if (url && anonKey && !url.includes("your-project-id")) {
@@ -45,6 +47,21 @@ export async function middleware(request: NextRequest) {
         data: { user },
       } = await supabase.auth.getUser();
       supabaseUser = user;
+      if (
+        user &&
+        (request.nextUrl.pathname === "/teacher" ||
+          request.nextUrl.pathname.startsWith("/teacher/"))
+      ) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("role, teacher_status")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (prof) {
+          supabaseProfileRole = prof.role || "student";
+          supabaseTeacherStatus = prof.teacher_status || "approved";
+        }
+      }
     } catch {
       // Fallback to custom app session cookie if Supabase Auth network is unreachable
     }
@@ -63,10 +80,9 @@ export async function middleware(request: NextRequest) {
   }
 
   const isAuthenticated = Boolean(supabaseUser || appSession?.userId);
-  const userRole =
-    appSession?.role ||
-    (supabaseUser?.user_metadata?.role as string) ||
-    "student";
+  const userRole = appSession?.role || supabaseProfileRole || "student";
+  const teacherStatus =
+    appSession?.teacherStatus || supabaseTeacherStatus || "approved";
 
   const { pathname, search } = request.nextUrl;
 
@@ -85,12 +101,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 4. ตรวจสิทธิ์เฉพาะหน้า /teacher (ต้องเป็น teacher หรือ admin เท่านั้น)
+  // 4. ตรวจสิทธิ์เฉพาะหน้า /teacher (ต้องเป็น teacher ที่ได้รับอนุมัติ หรือ admin เท่านั้น)
   if (
     (pathname === "/teacher" || pathname.startsWith("/teacher/")) &&
     isAuthenticated &&
-    userRole !== "teacher" &&
-    userRole !== "admin"
+    ((userRole !== "teacher" && userRole !== "admin") ||
+      (userRole === "teacher" && teacherStatus !== "approved"))
   ) {
     const homeUrl = request.nextUrl.clone();
     homeUrl.pathname = "/";

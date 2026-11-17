@@ -390,13 +390,17 @@ export async function POST(req: NextRequest) {
                 );
               }
 
+              let effectiveRole: UserRole = "teacher";
               let teacherStatus: TeacherApprovalStatus = "approved";
               try {
                 const { data: prof } = await supabase
                   .from("profiles")
-                  .select("teacher_status")
+                  .select("role, teacher_status")
                   .eq("id", tRow.id)
                   .maybeSingle();
+                if (prof?.role === "admin") {
+                  effectiveRole = "admin";
+                }
                 if (prof?.teacher_status) {
                   teacherStatus = prof.teacher_status as TeacherApprovalStatus;
                 }
@@ -408,13 +412,13 @@ export async function POST(req: NextRequest) {
               const res = NextResponse.json({
                 authenticated: true,
                 source: "supabase",
-                role: "teacher",
+                role: effectiveRole,
                 teacherStatus,
                 teacher: {
                   id: tRow.id,
                   username: tRow.username,
                   displayName: tDisplayName,
-                  role: "teacher",
+                  role: effectiveRole,
                   teacherStatus,
                 },
               });
@@ -422,7 +426,7 @@ export async function POST(req: NextRequest) {
                 userId: tRow.id,
                 username: tRow.username,
                 displayName: tDisplayName,
-                role: "teacher",
+                role: effectiveRole,
                 teacherStatus,
               });
             }
@@ -1158,14 +1162,18 @@ export async function POST(req: NextRequest) {
                 console.warn("classrooms lookup for teacher notice:", e);
               }
 
-              // ตรวจสอบสถานะการอนุมัติครูจาก profiles
+              // ตรวจสอบสถานะการอนุมัติครูและสิทธิ์จาก profiles
+              let effectiveRole: UserRole = "teacher";
               let teacherStatus: TeacherApprovalStatus = "approved";
               try {
                 const { data: prof } = await supabase
                   .from("profiles")
-                  .select("teacher_status")
+                  .select("role, teacher_status")
                   .eq("id", tRow.id)
                   .maybeSingle();
+                if (prof?.role === "admin") {
+                  effectiveRole = "admin";
+                }
                 if (prof?.teacher_status) {
                   teacherStatus = prof.teacher_status as TeacherApprovalStatus;
                 }
@@ -1177,13 +1185,13 @@ export async function POST(req: NextRequest) {
               const res = NextResponse.json({
                 authenticated: true,
                 source: "supabase",
-                role: "teacher",
+                role: effectiveRole,
                 teacherStatus,
                 teacher: {
                   id: tRow.id,
                   username: tRow.username,
                   displayName: tDisplayName,
-                  role: "teacher",
+                  role: effectiveRole,
                   teacherStatus,
                 },
                 classrooms: teacherClassrooms,
@@ -1192,7 +1200,7 @@ export async function POST(req: NextRequest) {
                 userId: tRow.id,
                 username: tRow.username,
                 displayName: tDisplayName,
-                role: "teacher",
+                role: effectiveRole,
                 teacherStatus,
               });
             }
@@ -1256,7 +1264,17 @@ export async function POST(req: NextRequest) {
       const pwd = String(password).trim();
       const dName = (displayName || username).trim();
       const passwordHash = sha256(pwd);
-      const teacherStatus: TeacherApprovalStatus = "approved";
+      const rawInvite =
+        typeof body.inviteCode === "string" ? body.inviteCode.trim() : "";
+      const expectedInvite = getTeacherInviteCode();
+      if (rawInvite && rawInvite !== expectedInvite) {
+        return NextResponse.json(
+          { error: "รหัสเชิญครู (Invite Code) ไม่ถูกต้อง" },
+          { status: 403 }
+        );
+      }
+      const teacherStatus: TeacherApprovalStatus =
+        rawInvite && rawInvite === expectedInvite ? "approved" : "pending";
 
       if (isSupabaseConfigured()) {
         try {
@@ -1293,7 +1311,7 @@ export async function POST(req: NextRequest) {
                   role: "teacher",
                   username: uname,
                   display_name: dName,
-                  teacher_approved: "true",
+                  teacher_approved: teacherStatus === "approved" ? "true" : "false",
                 },
               });
               if (authData?.user?.id) {
