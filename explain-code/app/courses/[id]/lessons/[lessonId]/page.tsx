@@ -69,6 +69,9 @@ function LessonViewContent() {
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
   const [quizScore, setQuizScore] = useState<number | null>(null);
   const [quizShuffleSeed, setQuizShuffleSeed] = useState<number>(0);
+  const [serverQuizResults, setServerQuizResults] = useState<
+    Record<string, { correctIndex: number; explanation: string; isCorrect: boolean }>
+  >({});
 
   useEffect(() => {
     let active = true;
@@ -116,6 +119,7 @@ function LessonViewContent() {
     setRunOutput("");
     setSelectedAnswers({});
     setQuizSubmitted(false);
+    setServerQuizResults({});
     if (foundCourse && foundLesson) {
       setIsLoading(false);
     }
@@ -417,20 +421,28 @@ function LessonViewContent() {
 
   const shuffledQuizQuestions = useMemo(() => {
     const raw = Array.isArray(lesson?.quiz_questions) ? lesson.quiz_questions : [];
-    if (!quizShuffleSeed || raw.length === 0) return raw;
     return raw.map((q) => {
       const len = q.options.length;
-      if (len <= 1 || q.correctIndex < 0 || q.correctIndex >= len) return q;
+      if (!quizShuffleSeed || len <= 1) {
+        return {
+          ...q,
+          originalIndices: Array.from({ length: len }, (_, i) => i),
+        };
+      }
       const indices = shuffleArrayWithSeed(
         Array.from({ length: len }, (_, i) => i),
         `${quizShuffleSeed}:${q.id}`
       );
       const newOptions = indices.map((i) => q.options[i]);
-      const newCorrectIndex = indices.indexOf(q.correctIndex);
+      const newCorrectIndex =
+        q.correctIndex >= 0 && q.correctIndex < len
+          ? indices.indexOf(q.correctIndex)
+          : -1;
       return {
         ...q,
         options: newOptions,
-        correctIndex: newCorrectIndex >= 0 ? newCorrectIndex : q.correctIndex,
+        correctIndex: newCorrectIndex,
+        originalIndices: indices,
       };
     });
   }, [lesson?.quiz_questions, quizShuffleSeed]);
@@ -439,13 +451,73 @@ function LessonViewContent() {
     const questions = shuffledQuizQuestions;
     if (questions.length === 0) return;
 
-    let correctCount = 0;
+    const originalAnswers: Record<string, number> = {};
     for (const q of questions) {
-      if (selectedAnswers[q.id] === q.correctIndex) {
-        correctCount += 1;
+      const pickedShuffled = selectedAnswers[q.id];
+      if (typeof pickedShuffled === "number") {
+        const origIdx = q.originalIndices[pickedShuffled];
+        if (typeof origIdx === "number") {
+          originalAnswers[q.id] = origIdx;
+        }
       }
     }
-    const scorePct = Math.round((correctCount / questions.length) * 100);
+
+    let scorePct: number | null = null;
+    try {
+      const res = await fetch("/api/lms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "grade-lesson-quiz",
+          courseId,
+          lessonId,
+          answers: originalAnswers,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data?.success && data?.results) {
+        const mapped: Record<
+          string,
+          { correctIndex: number; explanation: string; isCorrect: boolean }
+        > = {};
+        for (const q of questions) {
+          const r = data.results[q.id];
+          if (r) {
+            const shuffledCorrect = q.originalIndices.indexOf(r.correctIndex);
+            mapped[q.id] = {
+              correctIndex: shuffledCorrect >= 0 ? shuffledCorrect : r.correctIndex,
+              explanation: r.explanation || "",
+              isCorrect: Boolean(r.isCorrect),
+            };
+          }
+        }
+        setServerQuizResults(mapped);
+        scorePct = typeof data.scorePct === "number" ? data.scorePct : 0;
+      }
+    } catch {
+      // ignore network error and fall back to local if available
+    }
+
+    if (scorePct === null) {
+      let correctCount = 0;
+      const fallbackMap: Record<
+        string,
+        { correctIndex: number; explanation: string; isCorrect: boolean }
+      > = {};
+      for (const q of questions) {
+        const isCorrect =
+          q.correctIndex >= 0 && selectedAnswers[q.id] === q.correctIndex;
+        if (isCorrect) correctCount += 1;
+        fallbackMap[q.id] = {
+          correctIndex: q.correctIndex,
+          explanation: q.explanation || "",
+          isCorrect,
+        };
+      }
+      setServerQuizResults(fallbackMap);
+      scorePct = Math.round((correctCount / questions.length) * 100);
+    }
+
     setQuizScore(scorePct);
     setQuizSubmitted(true);
 
@@ -708,7 +780,9 @@ function LessonViewContent() {
                     <div className="space-y-1.5">
                       {q.options.map((opt, optIdx) => {
                         const isPicked = selectedAnswers[q.id] === optIdx;
-                        const isCorrect = q.correctIndex === optIdx;
+                        const resolvedCorrectIdx =
+                          serverQuizResults[q.id]?.correctIndex ?? q.correctIndex;
+                        const isCorrect = resolvedCorrectIdx === optIdx;
 
                         return (
                           <button
@@ -737,9 +811,9 @@ function LessonViewContent() {
                         );
                       })}
                     </div>
-                    {quizSubmitted && q.explanation && (
+                    {quizSubmitted && (serverQuizResults[q.id]?.explanation || q.explanation) && (
                       <p className="mt-2 rounded-lg border border-[#2f2d45] bg-[#1c1b2b] p-2.5 text-xs text-[#c4bdd6]">
-                        💡 <strong className="text-[#f6c945]">{t("เฉลย:", "Explanation:")}</strong> {q.explanation}
+                        💡 <strong className="text-[#f6c945]">{t("เฉลย:", "Explanation:")}</strong> {serverQuizResults[q.id]?.explanation || q.explanation}
                       </p>
                     )}
                   </div>

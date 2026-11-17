@@ -50,10 +50,34 @@ function sanitizeLmsForClient(
     return { ...c, join_code: "" };
   });
 
-  const sanitizedLessons = lessons.filter((l) => {
-    const cid = l?.course_id;
-    return publicCourseIds.has(cid) || accessiblePrivateIds.has(cid);
-  });
+  const courseById = new Map<string, any>(
+    courses.map((c) => [String(c.id), c])
+  );
+
+  const sanitizedLessons = lessons
+    .filter((l) => {
+      const cid = l?.course_id;
+      return publicCourseIds.has(cid) || accessiblePrivateIds.has(cid);
+    })
+    .map((l) => {
+      const parentCourse = courseById.get(String(l?.course_id || ""));
+      const isTeacherOrAdmin = Boolean(
+        session?.userId &&
+          (session.role === "admin" ||
+            (parentCourse && parentCourse.teacher_id === session.userId))
+      );
+      if (isTeacherOrAdmin || !Array.isArray(l?.quiz_questions)) {
+        return l;
+      }
+      return {
+        ...l,
+        quiz_questions: l.quiz_questions.map((q: any) => ({
+          ...q,
+          correctIndex: -1,
+          explanation: "",
+        })),
+      };
+    });
 
   return { courses: sanitizedCourses, lessons: sanitizedLessons };
 }
@@ -748,6 +772,86 @@ export async function POST(req: NextRequest) {
       }
 
       return NextResponse.json({ success: true, course: matchedCourse });
+    }
+
+    // 5b. ตรวจคำตอบ Quiz ท้ายบทเรียนฝั่งเซิร์ฟเวอร์ (กันดูเฉลยจาก GET /api/lms)
+    if (action === "grade-lesson-quiz") {
+      const targetCourseId =
+        typeof body.courseId === "string" ? body.courseId.trim() : "";
+      const targetLessonId =
+        typeof body.lessonId === "string" ? body.lessonId.trim() : "";
+      const answers =
+        body.answers && typeof body.answers === "object" && !Array.isArray(body.answers)
+          ? (body.answers as Record<string, unknown>)
+          : {};
+
+      if (!targetLessonId) {
+        return NextResponse.json(
+          { error: "ต้องระบุ lessonId" },
+          { status: 400 }
+        );
+      }
+
+      let targetLesson: any =
+        INITIAL_LESSONS.find(
+          (l) =>
+            l.id === targetLessonId &&
+            (!targetCourseId || l.course_id === targetCourseId)
+        ) || null;
+
+      if (!targetLesson && supabase && UUID_REGEX.test(targetLessonId)) {
+        const { data: lRow } = await supabase
+          .from("lessons")
+          .select("id, course_id, quiz_questions")
+          .eq("id", targetLessonId)
+          .maybeSingle();
+        if (lRow) targetLesson = lRow;
+      }
+
+      if (!targetLesson) {
+        return NextResponse.json(
+          { error: "ไม่พบบทเรียนนี้ในระบบ" },
+          { status: 404 }
+        );
+      }
+
+      const rawQuestions = Array.isArray(targetLesson.quiz_questions)
+        ? targetLesson.quiz_questions
+        : [];
+      let correctCount = 0;
+      const results: Record<
+        string,
+        { correctIndex: number; explanation: string; isCorrect: boolean }
+      > = {};
+
+      for (const q of rawQuestions) {
+        const qid = String(q?.id || "");
+        const expectedIdx =
+          typeof q?.correctIndex === "number" ? q.correctIndex : 0;
+        const pickedRaw = answers[qid];
+        const pickedIdx =
+          typeof pickedRaw === "number" ? pickedRaw : Number(pickedRaw);
+        const isCorrect = Number.isFinite(pickedIdx) && pickedIdx === expectedIdx;
+        if (isCorrect) correctCount += 1;
+        results[qid] = {
+          correctIndex: expectedIdx,
+          explanation: typeof q?.explanation === "string" ? q.explanation : "",
+          isCorrect,
+        };
+      }
+
+      const scorePct =
+        rawQuestions.length > 0
+          ? Math.round((correctCount / rawQuestions.length) * 100)
+          : 100;
+
+      return NextResponse.json({
+        success: true,
+        scorePct,
+        correctCount,
+        totalQuestions: rawQuestions.length,
+        results,
+      });
     }
 
     // 5. นักเรียนเข้าร่วมคอร์ส (Enroll)
