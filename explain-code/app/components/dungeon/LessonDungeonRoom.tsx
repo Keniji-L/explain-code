@@ -266,11 +266,16 @@ export function LessonDungeonRoom({
   ]);
 
   const shouldUseLocalValidation = useMemo(() => {
+    // Questions from lesson.quiz_questions are shuffled with shuffleDungeonQuestionChoices,
+    // so always validate against the shuffled question's correctIndex locally.
+    if (Array.isArray(lesson.quiz_questions) && lesson.quiz_questions.length > 0) {
+      return true;
+    }
     if (lessonQuestions.length > 1) return true;
     const first = lessonQuestions[0];
     if (!first) return true;
     return !SAMPLE_DUNGEON_QUESTIONS.some((sq) => sq.id === first.id);
-  }, [lessonQuestions]);
+  }, [lesson.quiz_questions, lessonQuestions]);
 
   const isMimicChest =
     chestModalMode === "side-chest" && Boolean(room.chest?.isMimic);

@@ -3477,8 +3477,8 @@ export const HTML_TOPICS: TopicQuest[] = [
 </main>`,
       changeDescription: "เปลี่ยนข้อความภายในแท็ก <h1> เป็น Crystal Hall",
       changeDescriptionEn: "Change the <h1> text to Crystal Hall",
-      options: ["Crystal Hall | Level 1", "Dungeon Gate | Level 1", "quest | Level 1"],
-      optionsEn: ["Crystal Hall | Level 1", "Dungeon Gate | Level 1", "quest | Level 1"],
+      options: ["Crystal Hall | Level 1", "Dungeon Gate | Level 1", "quest | Level 1", "main | Crystal Hall"],
+      optionsEn: ["Crystal Hall | Level 1", "Dungeon Gate | Level 1", "quest | Level 1", "main | Crystal Hall"],
       explanation: "การแก้ไขเนื้อหาภายใน <h1> จะเปลี่ยนข้อความหัวข้อที่แสดงผลโดยยังคงโครงสร้างเดิม",
       explanationEn: "Updating the <h1> content changes the rendered heading while keeping the structure intact.",
     },
@@ -3503,15 +3503,15 @@ export const HTML_TOPICS: TopicQuest[] = [
 </style>
 <div class="box">Shield 124px</div>`,
     predictPrompt:
-      "ภายใต้ค่าเริ่มต้น (content-box) ความกว้างรวมทั้งหมดของกล่อง .box บนหน้าจอคือเท่าใด?",
+      "เมื่อเรนเดอร์โค้ด HTML/CSS นี้ ข้อความที่ปรากฏบนหน้าเว็บ (พร้อมความกว้างรวมของกล่อง .box ภายใต้ content-box) คือข้อใด?",
     predictPromptEn:
-      "Under the default box-sizing (content-box), what is the total rendered width of .box?",
-    predictOptions: ["124px", "100px", "112px", "120px"],
-    predictOptionsEn: ["124px", "100px", "112px", "120px"],
+      "When this HTML/CSS is rendered under content-box, what text (showing the total width of .box) appears on screen?",
+    predictOptions: ["Shield 124px", "Shield 100px", "Shield 112px", "Shield 120px"],
+    predictOptionsEn: ["Shield 124px", "Shield 100px", "Shield 112px", "Shield 120px"],
     predictExplanation:
-      "100 + padding ซ้ายขวา (10+10) + border ซ้ายขวา (2+2) = 124px",
+      "เบราว์เซอร์แสดงข้อความใน <div> คือ Shield 124px ซึ่งตรงกับความกว้างรวม 100 + padding ซ้ายขวา (10+10) + border ซ้ายขวา (2+2) = 124px",
     predictExplanationEn:
-      "100 + left/right padding (10 + 10) + left/right border (2 + 2) = 124px.",
+      "The browser renders the <div> text 'Shield 124px', matching the total width: 100 + left/right padding (10+10) + left/right border (2+2) = 124px.",
     steps: [
       {
         stepNumber: 1,
@@ -3597,8 +3597,8 @@ export const HTML_TOPICS: TopicQuest[] = [
 <div class="box">Shield 100px</div>`,
       changeDescription: "เพิ่ม box-sizing: border-box และอัปเดตข้อความเป็น Shield 100px",
       changeDescriptionEn: "Add box-sizing: border-box and update text to Shield 100px",
-      options: ["Shield 100px", "Shield 124px", "100px"],
-      optionsEn: ["Shield 100px", "Shield 124px", "100px"],
+      options: ["Shield 100px", "Shield 124px", "100px", "border-box"],
+      optionsEn: ["Shield 100px", "Shield 124px", "100px", "border-box"],
       explanation: "เมื่อใช้ border-box ความกว้างรวมของกล่องจะคงที่ที่ 100px ไม่ล้นเลย์เอาต์",
       explanationEn: "With border-box, the total box width stays at 100px and avoids layout overflow.",
     },
@@ -3626,15 +3626,15 @@ export const HTML_TOPICS: TopicQuest[] = [
 </style>
 <button id="action-btn" class="btn-safe">Save Game</button>`,
     predictPrompt:
-      "จากกฎ CSS ด้านบน สีตัวอักษรของปุ่ม 'Save Game' ที่แสดงบนหน้าเว็บจริงคือสีใด?",
+      "เมื่อเบราว์เซอร์เรนเดอร์โค้ด HTML/CSS ด้านบน ข้อความที่ปรากฏบนปุ่มคือข้อใด?",
     predictPromptEn:
-      "Based on the CSS rules above, what color will the 'Save Game' button text actually be?",
-    predictOptions: ["red", "green", "black", "transparent"],
-    predictOptionsEn: ["red", "green", "black", "transparent"],
+      "When a browser renders the HTML/CSS above, what text appears on the button?",
+    predictOptions: ["Save Game", "action-btn", "btn-safe", "color: red"],
+    predictOptionsEn: ["Save Game", "action-btn", "btn-safe", "color: red"],
     predictExplanation:
-      "#action-btn เป็น ID Selector ที่มี Specificity (1,0,0) ซึ่งสูงกว่า .btn-safe (0,1,0) ดังนั้นปุ่มจึงเป็นสี red",
+      "เบราว์เซอร์แสดงเฉพาะข้อความภายใน <button> คือ 'Save Game' (ส่วนกฎ CSS ใน <style> และชื่อ id/class จะไม่ถูกแสดงเป็นข้อความ โดย #action-btn จะทำให้ปุ่มมีสีแดง)",
     predictExplanationEn:
-      "#action-btn is an ID selector with specificity (1,0,0), beating .btn-safe (0,1,0), so the button text stays red.",
+      "The browser renders only the inner text of <button> ('Save Game'); CSS rules and id/class attributes are not printed as text, while #action-btn styles it red.",
     steps: [
       {
         stepNumber: 1,
@@ -3762,8 +3762,8 @@ export const HTML_TOPICS: TopicQuest[] = [
 <button class="btn-danger btn-safe">Save Game (Green)</button>`,
       changeDescription: "เปลี่ยนจาก #id เป็น .class เพื่อให้ .btn-safe override ได้ตามลำดับ",
       changeDescriptionEn: "Replace #id with .class so .btn-safe overrides by source order",
-      options: ["Save Game (Green)", "Save Game", "red"],
-      optionsEn: ["Save Game (Green)", "Save Game", "red"],
+      options: ["Save Game (Green)", "Save Game", "red", "btn-safe"],
+      optionsEn: ["Save Game (Green)", "Save Game", "red", "btn-safe"],
       explanation: "เมื่อทั้งคู่เป็น Class Selector ที่มีน้ำหนัก (0,1,0) เท่ากัน กฎที่อยู่ด้านล่าง (.btn-safe) จะชนะทันที",
       explanationEn: "With equal (0,1,0) specificity, the later class rule (.btn-safe) wins immediately.",
     },
@@ -3934,8 +3934,8 @@ export const HTML_TOPICS: TopicQuest[] = [
 </form>`,
       changeDescription: "เปลี่ยนข้อความปุ่มเป็น Enter Dungeon",
       changeDescriptionEn: "Change button text to Enter Dungeon",
-      options: ["Player Email | Enter Dungeon", "Player Email | Join Raid", "Enter Dungeon"],
-      optionsEn: ["Player Email | Enter Dungeon", "Player Email | Join Raid", "Enter Dungeon"],
+      options: ["Player Email | Enter Dungeon", "Player Email | Join Raid", "Enter Dungeon", "email | submit"],
+      optionsEn: ["Player Email | Enter Dungeon", "Player Email | Join Raid", "Enter Dungeon", "email | submit"],
       explanation: "ข้อความที่เรนเดอร์จาก <label> และ <button> จะอัปเดตเป็น Player Email | Enter Dungeon",
       explanationEn: "The rendered text from <label> and <button> updates to Player Email | Enter Dungeon.",
     },

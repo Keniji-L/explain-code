@@ -505,14 +505,24 @@ if (score >= 80) {
   status = "ควรทบทวน";
 }
 console.log(status);`,
+    codeEn: `let score = 72;
+let status = "Pending";
+if (score >= 80) {
+  status = "Excellent";
+} else if (score >= 50) {
+  status = "Pass";
+} else {
+  status = "Needs Review";
+}
+console.log(status);`,
     predictPrompt: "ก่อนรันโค้ด: เมื่อ score = 72 โปรแกรมจะพิมพ์ข้อความใดออกมา?",
     predictPromptEn: "Before running: when score = 72, which status string will be printed?",
     predictOptions: ["ผ่านเกณฑ์", "ดีเยี่ยม", "ควรทบทวน", "รอตรวจ"],
-    predictOptionsEn: ["ผ่านเกณฑ์", "ดีเยี่ยม", "ควรทบทวน", "รอตรวจ"],
+    predictOptionsEn: ["Pass", "Excellent", "Needs Review", "Pending"],
     predictExplanation:
       "72 ไม่ถึง 80 จึงข้ามบล็อกแรก มาตรวจเงื่อนไขที่สอง (72 >= 50) ซึ่งเป็นจริง จึงตั้งค่า status = 'ผ่านเกณฑ์' และข้าม else สุดท้าย",
     predictExplanationEn:
-      "72 is less than 80, so the first block is skipped. The second condition (72 >= 50) is true, so status becomes 'ผ่านเกณฑ์' and the final else is skipped.",
+      "72 is less than 80, so the first block is skipped. The second condition (72 >= 50) is true, so status becomes 'Pass' and the final else is skipped.",
     steps: [
       {
         stepNumber: 1,
@@ -638,12 +648,22 @@ if (score >= 80) {
   status = "ควรทบทวน";
 }
 console.log(status);`,
+      suggestedCodeEn: `let score = 85;
+let status = "Pending";
+if (score >= 80) {
+  status = "Excellent";
+} else if (score >= 50) {
+  status = "Pass";
+} else {
+  status = "Needs Review";
+}
+console.log(status);`,
       changeDescription: "เปลี่ยน let score = 72; เป็น let score = 85;",
       changeDescriptionEn: "Change let score = 72; to let score = 85;",
       options: ["ดีเยี่ยม", "ผ่านเกณฑ์", "ควรทบทวน", "รอตรวจ"],
-      optionsEn: ["ดีเยี่ยม", "ผ่านเกณฑ์", "ควรทบทวน", "รอตรวจ"],
+      optionsEn: ["Excellent", "Pass", "Needs Review", "Pending"],
       explanation: "เมื่อ score = 85 เงื่อนไขแรก (85 >= 80) เป็นจริงทันที จึงได้ status = 'ดีเยี่ยม'!",
-      explanationEn: "When score = 85, the first condition (85 >= 80) is immediately true, setting status to 'ดีเยี่ยม'.",
+      explanationEn: "When score = 85, the first condition (85 >= 80) is immediately true, setting status to 'Excellent'.",
     },
     badgeReward: {
       id: "badge-ifelse",

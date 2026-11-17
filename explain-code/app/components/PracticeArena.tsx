@@ -63,11 +63,41 @@ export function PracticeArena({
   currentStudent,
   studentId,
 }: PracticeArenaProps) {
-  const { t } = useUiLanguage();
+  const { uiLang, t } = useUiLanguage();
+  const isEn = uiLang === "en";
   const [primmStep, setPrimmStep] = useState<PrimmStep>(1);
   const [optionShuffleSeed, setOptionShuffleSeed] = useState<string>(() =>
     String(topic.id)
   );
+
+  const topicTitle = isEn ? topic.titleEn || topic.title : topic.title;
+  const topicSubtitle = isEn ? topic.subtitleEn || topic.subtitle : topic.subtitle;
+  const topicAiScenario = isEn ? topic.aiScenarioEn || topic.aiScenario : topic.aiScenario;
+  const topicCode = isEn ? topic.codeEn || topic.code : topic.code;
+  const topicPredictPrompt = isEn ? topic.predictPromptEn || topic.predictPrompt : topic.predictPrompt;
+  const topicPredictOptions = isEn ? topic.predictOptionsEn || topic.predictOptions : topic.predictOptions;
+  const topicPredictExplanation = isEn
+    ? topic.predictExplanationEn || topic.predictExplanation
+    : topic.predictExplanation;
+  const modifyInstruction = isEn
+    ? topic.modifyChallenge.instructionEn || topic.modifyChallenge.instruction
+    : topic.modifyChallenge.instruction;
+  const modifySuggestedCode = isEn
+    ? topic.modifyChallenge.suggestedCodeEn || topic.modifyChallenge.suggestedCode
+    : topic.modifyChallenge.suggestedCode;
+  const modifyChangeDescription = isEn
+    ? topic.modifyChallenge.changeDescriptionEn || topic.modifyChallenge.changeDescription
+    : topic.modifyChallenge.changeDescription;
+  const modifyOptions = isEn
+    ? topic.modifyChallenge.optionsEn || topic.modifyChallenge.options
+    : topic.modifyChallenge.options;
+  const modifyExplanation = isEn
+    ? topic.modifyChallenge.explanationEn || topic.modifyChallenge.explanation
+    : topic.modifyChallenge.explanation;
+  const badgeName = isEn ? topic.badgeReward.nameEn || topic.badgeReward.name : topic.badgeReward.name;
+  const badgeDescription = isEn
+    ? topic.badgeReward.descriptionEn || topic.badgeReward.description
+    : topic.badgeReward.description;
 
   useEffect(() => {
     setOptionShuffleSeed(
@@ -100,7 +130,11 @@ export function PracticeArena({
   } | null>(null);
 
   // ขั้น 4: แก้ค่าแล้วทายใหม่ (Modify)
-  const [modifiedCode, setModifiedCode] = useState<string>(topic.modifyChallenge.suggestedCode);
+  const [modifiedCode, setModifiedCode] = useState<string>(modifySuggestedCode);
+
+  useEffect(() => {
+    setModifiedCode(modifySuggestedCode);
+  }, [topic.id, modifySuggestedCode]);
   const [modifyPrediction, setModifyPrediction] = useState<string>("");
   const [modifyRunResult, setModifyRunResult] = useState<{
     finalOutput: string;
@@ -139,7 +173,7 @@ export function PracticeArena({
   // รันโค้ดจริงในขั้นที่ 2 (เทียบผลรันจริง)
   const handleRunAndCompare = () => {
     if (!predictedAnswer.trim()) return;
-    const exec = runCodeByLanguage(topic.code, language);
+    const exec = runCodeByLanguage(topicCode, language);
     setRealRunResult(exec);
     const isExactMatch = predictedAnswer.trim() === exec.finalOutput.trim();
     // XP ให้ตามความเข้าใจและการมีส่วนร่วมทำนายผล (ไม่มีการหักคะแนน)
@@ -206,8 +240,8 @@ export function PracticeArena({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          code: topic.code,
-          topicTitle: topic.title,
+          code: topicCode,
+          topicTitle,
           studentExplanation: freeExplanation,
           studentId: currentStudent?.id || studentId,
         }),
@@ -237,7 +271,7 @@ export function PracticeArena({
     if (!modifyPrediction.trim()) return;
     const realModified = runCodeByLanguage(modifiedCode, language);
     const targetModified = runCodeByLanguage(
-      topic.modifyChallenge.suggestedCode,
+      modifySuggestedCode,
       language
     );
 
@@ -326,7 +360,7 @@ export function PracticeArena({
     });
   };
 
-  const codeLines = topic.code.split("\n");
+  const codeLines = topicCode.split("\n");
   const activeHighlightedLine =
     primmStep === 3 ? currentTrace?.line : null;
 
@@ -346,7 +380,7 @@ export function PracticeArena({
             </button>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-[20px] font-extrabold text-[#f4efe6]">{topic.title}</h2>
+                <h2 className="text-[20px] font-extrabold text-[#f4efe6]">{topicTitle}</h2>
                 {topic.isBoss && (
                   <span className="px-2.5 py-0.5 rounded-full bg-[#5a2d91] border border-[#9b5de5] text-[#ffe27a] text-[12px] font-extrabold flex items-center gap-1">
                     <Icon name="bug" size={14} />
@@ -354,7 +388,7 @@ export function PracticeArena({
                   </span>
                 )}
               </div>
-              <p className="text-[13px] font-semibold text-[#9a93ad]">{topic.subtitle}</p>
+              <p className="text-[13px] font-semibold text-[#9a93ad]">{topicSubtitle}</p>
             </div>
           </div>
 
@@ -432,7 +466,7 @@ export function PracticeArena({
       </div>
 
       {/* กรณีเป็นบอสด่าน แสดงสถานการณ์โค้ดจาก AI */}
-      {topic.aiScenario && (
+      {topicAiScenario && (
         <div className="bg-[#25193b] border-2 border-[#9b5de5] rounded-2xl p-4 flex items-start gap-3 text-[#e9d5ff]">
           <StatusCircle
             variant="boss"
@@ -446,7 +480,7 @@ export function PracticeArena({
                 "Boss Mission: Catch Bugs in AI-Generated Code"
               )}
             </div>
-            <p className="text-[14px] mt-0.5 text-[#f4efe6]">{topic.aiScenario}</p>
+            <p className="text-[14px] mt-0.5 text-[#f4efe6]">{topicAiScenario}</p>
           </div>
         </div>
       )}
@@ -568,7 +602,7 @@ export function PracticeArena({
                     <span className="font-extrabold text-[#f6c945]">
                       {t("การทำงานในขั้นนี้:", "What happens here:")}{" "}
                     </span>
-                    {currentTrace.explanation}
+                    {isEn ? currentTrace.explanationEn || currentTrace.explanation : currentTrace.explanation}
                   </div>
 
                   {/* ตารางค่าตัวแปรและผลลัพธ์จากการรันจริง */}
@@ -581,7 +615,9 @@ export function PracticeArena({
                         )}
                       </div>
                       <div className="space-y-1.5">
-                        {Object.entries(currentTrace.variables).map(([varName, val]) => (
+                        {Object.entries(
+                          isEn ? currentTrace.variablesEn || currentTrace.variables : currentTrace.variables
+                        ).map(([varName, val]) => (
                           <div
                             key={varName}
                             className="flex items-center justify-between px-2.5 py-1 rounded-lg bg-[#1c1b2b] border border-[#2f2d45] text-[13px]"
@@ -631,12 +667,12 @@ export function PracticeArena({
                 </div>
 
                 <h3 className="text-[18px] font-extrabold text-[#f4efe6]">
-                  {topic.predictPrompt}
+                  {topicPredictPrompt}
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {shuffleArrayWithSeed(
-                    topic.predictOptions,
+                    topicPredictOptions,
                     `${optionShuffleSeed}:predict`
                   ).map((opt) => {
                     const selected = predictedAnswer === opt;
@@ -753,7 +789,7 @@ export function PracticeArena({
                           )}
                     </span>
                   </div>
-                  <p className="text-[14px] mt-1 text-[#f4efe6]">{topic.predictExplanation}</p>
+                  <p className="text-[14px] mt-1 text-[#f4efe6]">{topicPredictExplanation}</p>
                 </div>
 
                 <button
@@ -817,11 +853,12 @@ export function PracticeArena({
                 {/* ตัวคำถาม */}
                 <div className="p-4 rounded-xl bg-[#1c1b2b] border border-[#2f2d45]">
                   <div className="text-[12px] font-bold text-[#c084fc]">
-                    {currentCellMeta.levelName} · {currentCellMeta.dimensionName} (
+                    {isEn ? currentCellMeta.levelNameEn || currentCellMeta.levelName : currentCellMeta.levelName} ·{" "}
+                    {isEn ? currentCellMeta.dimensionNameEn || currentCellMeta.dimensionName : currentCellMeta.dimensionName} (
                     {t(`ดูบรรทัดที่ ${currentQ.targetLine}`, `Line ${currentQ.targetLine}`)})
                   </div>
                   <h3 className="text-[17px] font-extrabold text-[#f4efe6] mt-1">
-                    {currentQ.question}
+                    {isEn ? currentQ.questionEn || currentQ.question : currentQ.question}
                   </h3>
                 </div>
 
@@ -832,10 +869,14 @@ export function PracticeArena({
                       0,
                       currentQ.options.findIndex((o) => o.id === currentQ.correctOptionId)
                     );
-                    const rawTexts = currentQ.options.map((o) => o.text);
+                    const localizedOptions = currentQ.options.map((o) => ({
+                      ...o,
+                      displayText: isEn ? o.textEn || o.text : o.text,
+                    }));
+                    const rawTexts = localizedOptions.map((o) => o.displayText);
                     const metrics = measureChoiceLengthBalance(rawTexts, correctIdx);
                     const balancedOptions = !metrics.balanced
-                      ? currentQ.options.map((o, i) => {
+                      ? localizedOptions.map((o, i) => {
                           if (i !== correctIdx) return o;
                           const targetMax =
                             metrics.maxDistractorLength >= 32
@@ -846,15 +887,15 @@ export function PracticeArena({
                               : Math.max(32, Math.round(metrics.avgDistractorLength * 1.35));
                           return {
                             ...o,
-                            text: condenseProseForChoice(o.text, targetMax),
+                            displayText: condenseProseForChoice(o.displayText, targetMax),
                           };
                         })
-                      : currentQ.options;
+                      : localizedOptions;
                     return shuffleArrayWithSeed(
                       balancedOptions,
                       `${optionShuffleSeed}:${currentQ.id}`
                     );
-                  })().map((opt) => {
+                  })().map((opt, displayIdx) => {
                     const isSelected = currentQState.selectedOptionId === opt.id;
                     const isCorrectOpt = opt.id === currentQ.correctOptionId;
                     const showAsCorrect =
@@ -885,8 +926,10 @@ export function PracticeArena({
                         }`}
                       >
                         <span>
-                          <strong className="mr-2 uppercase">{opt.id}.</strong>
-                          {opt.text}
+                          <strong className="mr-2 uppercase">
+                            {String.fromCharCode(65 + displayIdx)}.
+                          </strong>
+                          {opt.displayText}
                         </span>
                         {showAsCorrect && (
                           <span className="px-2 py-0.5 rounded bg-[#2fbf71] text-[#120f1c] text-[12px] font-extrabold shrink-0">
@@ -909,7 +952,9 @@ export function PracticeArena({
                           "Not quite · Here's a hint (try again, no penalty!)"
                         )}
                       </div>
-                      <p className="text-[14px] mt-1 text-[#f4efe6]">{currentQ.hint}</p>
+                      <p className="text-[14px] mt-1 text-[#f4efe6]">
+                        {isEn ? currentQ.hintEn || currentQ.hint : currentQ.hint}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -946,7 +991,9 @@ export function PracticeArena({
                         +{currentQState.earnedXp} XP
                       </span>
                     </div>
-                    <p className="text-[14px] mt-1.5 text-[#f4efe6]">{currentQ.explanation}</p>
+                    <p className="text-[14px] mt-1.5 text-[#f4efe6]">
+                      {isEn ? currentQ.explanationEn || currentQ.explanation : currentQ.explanation}
+                    </p>
 
                     <div className="mt-3 flex justify-end">
                       {currentQIdx < topic.questions.length - 1 ? (
@@ -1040,11 +1087,11 @@ export function PracticeArena({
 
                 <div className="p-3.5 rounded-xl bg-[#281d08] border border-[#f6c945]/60 text-[#ffe27a]">
                   <div className="font-extrabold text-[15px]">
-                    {t("โจทย์ลองแก้ค่า:", "Modify Challenge:")} {topic.modifyChallenge.instruction}
+                    {t("โจทย์ลองแก้ค่า:", "Modify Challenge:")} {modifyInstruction}
                   </div>
                   <div className="text-[13px] mt-0.5 text-[#f4efe6]">
                     {t("จุดที่เปลี่ยน:", "Target change:")}{" "}
-                    <code className="font-bold text-[#ffe27a]">{topic.modifyChallenge.changeDescription}</code>
+                    <code className="font-bold text-[#ffe27a]">{modifyChangeDescription}</code>
                   </div>
                 </div>
 
@@ -1058,7 +1105,7 @@ export function PracticeArena({
                     </label>
                     <button
                       type="button"
-                      onClick={() => setModifiedCode(topic.modifyChallenge.suggestedCode)}
+                      onClick={() => setModifiedCode(modifySuggestedCode)}
                       className="text-[12px] font-bold text-[#f6c945] underline cursor-pointer"
                     >
                       {t("รีเซ็ตเป็นโค้ดที่แก้ค่าตามโจทย์", "Reset to suggested code")}
@@ -1081,7 +1128,7 @@ export function PracticeArena({
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     {shuffleArrayWithSeed(
-                      topic.modifyChallenge.options,
+                      modifyOptions,
                       `${optionShuffleSeed}:modify`
                     ).map((opt) => (
                       <button
@@ -1143,7 +1190,7 @@ export function PracticeArena({
                           </span>
                           <span>+{modifyXp} XP</span>
                         </div>
-                        <p className="text-[14px] mt-1.5 text-[#f4efe6]">{topic.modifyChallenge.explanation}</p>
+                        <p className="text-[14px] mt-1.5 text-[#f4efe6]">{modifyExplanation}</p>
                         <button
                           type="button"
                           onClick={() => setPrimmStep(5)}
@@ -1181,7 +1228,7 @@ export function PracticeArena({
               {t("ผ่านเควสต์เรียบร้อย!", "Quest Completed!")}
             </span>
             <h2 className="text-[26px] font-extrabold text-[#f4efe6] mt-2">
-              {topic.title}
+              {topicTitle}
             </h2>
             <p className="text-[15px] text-[#9a93ad] mt-1">
               {t(
@@ -1225,10 +1272,10 @@ export function PracticeArena({
                   {t("ได้รับตราใหม่!", "New Badge Unlocked!")}
                 </div>
                 <div className="text-[18px] font-extrabold text-[#ffe27a]">
-                  {topic.badgeReward.name}
+                  {badgeName}
                 </div>
                 <div className="text-[12px] text-[#c4bdd6]">
-                  {topic.badgeReward.description}
+                  {badgeDescription}
                 </div>
               </div>
             </div>
@@ -1261,7 +1308,7 @@ export function PracticeArena({
                       </span>
                     </div>
                     <div className="text-[13px] font-bold text-[#f4efe6] mt-1">
-                      {meta.shortTitle}
+                      {isEn ? meta.shortTitleEn || meta.shortTitle : meta.shortTitle}
                     </div>
                   </div>
                 );

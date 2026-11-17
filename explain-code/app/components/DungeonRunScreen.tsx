@@ -10,6 +10,11 @@ import {
   extractCodeFeatures,
   generateDungeonPlan,
 } from "../lib/dungeon/dungeonPlanner";
+import { shuffleArrayWithSeed } from "../lib/dungeon/questions";
+import {
+  condenseProseForChoice,
+  measureChoiceLengthBalance,
+} from "../lib/question-choice-balance";
 import { BlockCellId } from "../lib/curriculum";
 import { Icon } from "./Icons";
 import { dungeonSound } from "../lib/dungeon/sound";
@@ -1049,7 +1054,34 @@ export function DungeonRunScreen({
 
                 {/* Multiple Choice Options */}
                 <div className="space-y-2.5">
-                  {currentEncounter.options.map((opt) => {
+                  {(() => {
+                    const correctIdx = currentEncounter.options.findIndex((o) => o.isCorrect);
+                    let balanced = currentEncounter.options;
+                    if (correctIdx >= 0 && balanced.length > 1) {
+                      const metrics = measureChoiceLengthBalance(
+                        balanced.map((o) => o.label),
+                        correctIdx
+                      );
+                      if (!metrics.balanced) {
+                        const targetMax =
+                          metrics.maxDistractorLength >= 32
+                            ? Math.min(
+                                metrics.maxDistractorLength,
+                                Math.max(32, Math.round(metrics.avgDistractorLength * 1.35))
+                              )
+                            : Math.max(32, Math.round(metrics.avgDistractorLength * 1.35));
+                        balanced = balanced.map((o, i) =>
+                          i === correctIdx
+                            ? { ...o, label: condenseProseForChoice(o.label, targetMax) }
+                            : o
+                        );
+                      }
+                    }
+                    return shuffleArrayWithSeed(
+                      balanced,
+                      `${runState.id}:${currentEncounter.id}`
+                    );
+                  })().map((opt, displayIdx) => {
                     const isSelected = selectedOptionId === opt.id;
                     const isEliminated = eliminatedOptionId === opt.id;
                     const isAttemptedWrong = attemptedWrongOptionIds.includes(opt.id);
@@ -1099,7 +1131,7 @@ export function DungeonRunScreen({
                               : "border-[#3d395a] text-[#9a93ad]"
                           }`}
                         >
-                          {opt.id.replace("opt-", "")}
+                          {displayIdx + 1}
                         </div>
                         <div className="flex-1">
                           <span>{opt.label}</span>

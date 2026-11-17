@@ -5,6 +5,11 @@ import {
   EncounterSpec,
   RelicItem,
 } from "./types";
+import { shuffleArrayWithSeed } from "./questions";
+import {
+  condenseProseForChoice,
+  measureChoiceLengthBalance,
+} from "../question-choice-balance";
 
 export const CODE_SPELL_PRESETS: CodeSpellPreset[] = [
   {
@@ -3201,6 +3206,41 @@ export function generateDungeonPlan(
       // Arbitrary Custom Code -> Dynamic Tailored Question Synthesis
       rooms = createCustomRooms(code, features);
     }
+  }
+
+  // Distribute correct option positions & balance option lengths across all encounters
+  const seedPrefix = presetId || "custom";
+  for (const room of Object.values(rooms)) {
+    room.encounters = room.encounters.map((enc) => {
+      const correctIdx = enc.options.findIndex((o) => o.isCorrect);
+      let processedOptions = enc.options;
+      if (correctIdx >= 0 && enc.options.length > 1) {
+        const labels = enc.options.map((o) => o.label);
+        const metrics = measureChoiceLengthBalance(labels, correctIdx);
+        if (!metrics.balanced) {
+          const targetMax =
+            metrics.maxDistractorLength >= 32
+              ? Math.min(
+                  metrics.maxDistractorLength,
+                  Math.max(32, Math.round(metrics.avgDistractorLength * 1.35))
+                )
+              : Math.max(32, Math.round(metrics.avgDistractorLength * 1.35));
+          processedOptions = enc.options.map((o, idx) =>
+            idx === correctIdx
+              ? { ...o, label: condenseProseForChoice(o.label, targetMax) }
+              : o
+          );
+        }
+      }
+      const shuffledOptions = shuffleArrayWithSeed(
+        processedOptions,
+        `${seedPrefix}:${enc.id}:${code.length}`
+      );
+      return {
+        ...enc,
+        options: shuffledOptions,
+      };
+    });
   }
 
   const mapFloors: string[][] = [

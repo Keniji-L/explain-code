@@ -440,7 +440,6 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     blockModelCell: "E2",
     hint: "ต้องรู้ตารางก่อนจึงจะกรองแถวได้",
     hintEn: "The engine must load the table before filtering rows.",
-    expectedOutput: "Keyboard (900), Monitor (3500)",
   },
   {
     id: "q-sql-boss",
@@ -457,7 +456,6 @@ const CURATED_DUNGEON_QUESTIONS: DungeonQuestion[] = [
     blockModelCell: "F2",
     hint: "คิดถึงลำดับระหว่าง WHERE -> GROUP BY -> HAVING",
     hintEn: "Remember execution order: WHERE -> GROUP BY -> HAVING.",
-    expectedOutput: "Book: 500",
   },
 
   // ================= TypeScript =================
