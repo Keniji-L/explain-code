@@ -270,3 +270,89 @@ export function mergeRemoteCustomDungeons(
   }
   return merged;
 }
+
+export function encodeCustomDungeonShareToken(
+  dungeon: CustomDungeonPayload
+): string {
+  const payload = {
+    title: dungeon.title,
+    subtitle: dungeon.subtitle,
+    language: dungeon.language,
+    code: dungeon.code,
+    summary: dungeon.summary,
+    keyConcepts: dungeon.keyConcepts,
+    topic: dungeon.topic,
+    questions: dungeon.questions,
+    provider: dungeon.provider,
+  };
+  const json = JSON.stringify(payload);
+  const bytes = new TextEncoder().encode(json);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 1) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const base64url = btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+  return `CD1:${base64url}`;
+}
+
+export function decodeCustomDungeonShareToken(
+  rawInput: string
+): CustomDungeonPayload | null {
+  try {
+    let token = rawInput.trim();
+    if (!token) return null;
+    if (token.includes("shareDungeon=")) {
+      const url = new URL(
+        token.startsWith("http") ? token : `https://example.com/${token.replace(/^\/+/, "")}`
+      );
+      const param = url.searchParams.get("shareDungeon");
+      if (param) token = param.trim();
+    }
+    if (!token.startsWith("CD1:")) return null;
+
+    const base64 = token
+      .slice(4)
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+    const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+    const binary = atob(padded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const parsed = JSON.parse(new TextDecoder().decode(bytes)) as Partial<CustomDungeonPayload>;
+    if (
+      !parsed ||
+      typeof parsed.title !== "string" ||
+      !parsed.topic ||
+      !Array.isArray(parsed.questions) ||
+      parsed.questions.length === 0
+    ) {
+      return null;
+    }
+    const lang: LearningLanguage = SUPPORTED_LANGUAGES.has(
+      parsed.language as LearningLanguage
+    )
+      ? (parsed.language as LearningLanguage)
+      : "javascript";
+
+    return {
+      id: `shared-${Date.now().toString(36)}`,
+      title: parsed.title,
+      subtitle: typeof parsed.subtitle === "string" ? parsed.subtitle : "",
+      language: lang,
+      code: typeof parsed.code === "string" ? parsed.code : "",
+      summary: typeof parsed.summary === "string" ? parsed.summary : "",
+      keyConcepts: Array.isArray(parsed.keyConcepts) ? parsed.keyConcepts : [],
+      topic: parsed.topic,
+      questions: parsed.questions,
+      provider: parsed.provider === "ai-api" ? "ai-api" : "mock-generator",
+      createdAt: new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}

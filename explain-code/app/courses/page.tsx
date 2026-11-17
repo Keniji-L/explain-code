@@ -60,6 +60,9 @@ import {
   setActiveCustomDungeon,
   deleteCustomDungeon,
   mergeRemoteCustomDungeons,
+  saveCustomDungeon,
+  encodeCustomDungeonShareToken,
+  decodeCustomDungeonShareToken,
 } from "../lib/custom-dungeon";
 import {
   DungeonArenaSnapshot,
@@ -251,6 +254,7 @@ function CoursesContent() {
   const rawLangParam = searchParams.get("lang");
   const langParam = isValidLearningLanguage(rawLangParam) ? rawLangParam : null;
   const customDungeonParam = searchParams.get("customDungeon");
+  const shareDungeonParam = searchParams.get("shareDungeon");
   const rawTopicIdParam = searchParams.get("topicId");
   const topicIdParam =
     rawTopicIdParam && rawTopicIdParam.trim() !== ""
@@ -268,6 +272,9 @@ function CoursesContent() {
   const [customDungeons, setCustomDungeons] = useState<CustomDungeonPayload[]>([]);
   const [activeCustomDungeon, setActiveCustomDungeonState] =
     useState<CustomDungeonPayload | null>(null);
+  const [copiedDungeonId, setCopiedDungeonId] = useState<string | null>(null);
+  const [shareImportInput, setShareImportInput] = useState<string>("");
+  const [shareImportError, setShareImportError] = useState<string | null>(null);
 
   // Dungeon Hub merged preferences: Avatar & Leaderboard
   const [selectedAvatarKey, setSelectedAvatarKey] =
@@ -646,6 +653,21 @@ function CoursesContent() {
     if (current?.userId) {
       setCurrentStudentId(current.userId);
       void syncStudentData(current.userId);
+    }
+
+    if (shareDungeonParam) {
+      const decoded = decodeCustomDungeonShareToken(shareDungeonParam);
+      if (decoded) {
+        const uid = current?.userId ?? null;
+        saveCustomDungeon(decoded, uid);
+        const updatedList = loadCustomDungeons(uid);
+        setCustomDungeons(updatedList);
+        setActiveCustomDungeon(decoded, uid);
+        setActiveCustomDungeonState(decoded);
+        setSelectedLanguage(decoded.language);
+        setPlayAttemptNonce((n) => n + 1);
+        setActiveTab("custom-dungeon");
+      }
     }
 
     const localCourses = loadLocalCourses();
@@ -1847,7 +1869,7 @@ function CoursesContent() {
               </section>
 
               {/* Subsection A2: Custom Code Dungeons (from /explain) */}
-              {Boolean(session?.userId) && customDungeons.length > 0 && (
+              {Boolean(session?.userId) && (
                 <section className="flex flex-col gap-3 pb-6 border-b border-[#2f2d45]">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h2 className="text-base sm:text-lg font-extrabold text-[#e9d5ff] flex items-center gap-2">
@@ -1866,57 +1888,131 @@ function CoursesContent() {
                       {t("+ สร้างใหม่จากหน้าอธิบายโค้ด", "+ Create New from Code Explainer")}
                     </Link>
                   </div>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {customDungeons.slice(0, 6).map((cd) => (
-                      <div
-                        key={cd.id}
-                        className="flex flex-col justify-between rounded-2xl border border-[#9b5de5]/40 bg-[#1c1b2b] p-4 gap-3"
-                      >
-                        <div>
-                          <div className="flex items-center justify-between gap-2 mb-1.5">
-                            <span className="rounded-md border border-[#9b5de5]/40 bg-[#5a2d91]/30 px-2 py-0.5 text-xs font-extrabold uppercase text-[#e9d5ff]">
-                              {cd.language}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = deleteCustomDungeon(
-                                  cd.id,
-                                  session?.userId ?? null
-                                );
-                                setCustomDungeons(updated);
-                                if (activeCustomDungeon?.id === cd.id) {
-                                  setActiveCustomDungeonState(null);
-                                }
-                              }}
-                              className="text-[11px] font-semibold text-[#9a93ad] hover:text-[#ff6b81] cursor-pointer"
-                            >
-                              {t("ลบ", "Delete")}
-                            </button>
-                          </div>
-                          <h3 className="text-sm font-extrabold text-[#f4efe6] line-clamp-1">
-                            {cd.title}
-                          </h3>
-                          <p className="mt-1 text-[11px] text-[#9a93ad] line-clamp-2">
-                            {cd.subtitle}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveCustomDungeon(cd, session?.userId ?? null);
-                            setActiveCustomDungeonState(cd);
-                            setPlayAttemptNonce((n) => n + 1);
-                            setActiveTab("custom-dungeon");
-                          }}
-                          className="retro-button w-full rounded-xl bg-[#9b5de5] hover:bg-[#b07af0] px-3 py-2 text-xs font-extrabold text-white flex items-center justify-center gap-1.5 cursor-pointer"
+
+                  {/* นำเข้าด่านที่เพื่อนแชร์มา */}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      setShareImportError(null);
+                      const decoded = decodeCustomDungeonShareToken(shareImportInput);
+                      if (!decoded) {
+                        setShareImportError(
+                          t(
+                            "ลิงก์หรือโค้ดแชร์ด่านไม่ถูกต้อง (ขึ้นต้นด้วย CD1:...)",
+                            "Invalid dungeon share link or token (starts with CD1:...)"
+                          )
+                        );
+                        return;
+                      }
+                      const uid = session?.userId ?? null;
+                      saveCustomDungeon(decoded, uid);
+                      const updatedList = loadCustomDungeons(uid);
+                      setCustomDungeons(updatedList);
+                      setActiveCustomDungeon(decoded, uid);
+                      setActiveCustomDungeonState(decoded);
+                      setShareImportInput("");
+                      setPlayAttemptNonce((n) => n + 1);
+                      setActiveTab("custom-dungeon");
+                    }}
+                    className="flex flex-col sm:flex-row gap-2"
+                  >
+                    <input
+                      type="text"
+                      value={shareImportInput}
+                      onChange={(e) => {
+                        setShareImportInput(e.target.value);
+                        setShareImportError(null);
+                      }}
+                      placeholder={t(
+                        "วางลิงก์หรือโค้ดแชร์ด่าน (CD1:...) เพื่อเล่นด่านของเพื่อน...",
+                        "Paste a friend's share link or token (CD1:...) to play..."
+                      )}
+                      className="flex-1 rounded-xl border border-[#3d395a] bg-[#0d0b14] px-3 py-2 text-xs text-[#f4efe6] placeholder:text-[#7c7491] focus:border-[#9b5de5] focus:outline-hidden"
+                    />
+                    <button
+                      type="submit"
+                      className="shrink-0 rounded-xl border border-[#9b5de5]/60 bg-[#25193b] px-4 py-2 text-xs font-extrabold text-[#e9d5ff] hover:bg-[#332152] cursor-pointer"
+                    >
+                      {t("📥 นำเข้าและเล่น", "📥 Import & Play")}
+                    </button>
+                  </form>
+                  {shareImportError && (
+                    <p className="text-xs font-bold text-[#fca5a5]">{shareImportError}</p>
+                  )}
+
+                  {customDungeons.length > 0 && (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {customDungeons.slice(0, 6).map((cd) => (
+                        <div
+                          key={cd.id}
+                          className="flex flex-col justify-between rounded-2xl border border-[#9b5de5]/40 bg-[#1c1b2b] p-4 gap-3"
                         >
-                          <Icon name="gamepad" size={14} />
-                          <span>{t("ลุยดันเจี้ยนนี้ →", "Play Dungeon →")}</span>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                          <div>
+                            <div className="flex items-center justify-between gap-2 mb-1.5">
+                              <span className="rounded-md border border-[#9b5de5]/40 bg-[#5a2d91]/30 px-2 py-0.5 text-xs font-extrabold uppercase text-[#e9d5ff]">
+                                {cd.language}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const token = encodeCustomDungeonShareToken(cd);
+                                    const shareUrl =
+                                      typeof window !== "undefined"
+                                        ? `${window.location.origin}/courses?lang=${encodeURIComponent(cd.language)}&shareDungeon=${encodeURIComponent(token)}`
+                                        : token;
+                                    navigator.clipboard?.writeText(shareUrl).catch(() => {});
+                                    setCopiedDungeonId(cd.id);
+                                    setTimeout(() => setCopiedDungeonId(null), 2500);
+                                  }}
+                                  className="text-[11px] font-bold text-[#ffe27a] hover:underline cursor-pointer"
+                                >
+                                  {copiedDungeonId === cd.id
+                                    ? t("✓ คัดลอกลิงก์แล้ว", "✓ Copied")
+                                    : t("🔗 แชร์ลิงก์", "🔗 Share")}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = deleteCustomDungeon(
+                                      cd.id,
+                                      session?.userId ?? null
+                                    );
+                                    setCustomDungeons(updated);
+                                    if (activeCustomDungeon?.id === cd.id) {
+                                      setActiveCustomDungeonState(null);
+                                    }
+                                  }}
+                                  className="text-[11px] font-semibold text-[#9a93ad] hover:text-[#ff6b81] cursor-pointer"
+                                >
+                                  {t("ลบ", "Delete")}
+                                </button>
+                              </div>
+                            </div>
+                            <h3 className="text-sm font-extrabold text-[#f4efe6] line-clamp-1">
+                              {cd.title}
+                            </h3>
+                            <p className="mt-1 text-[11px] text-[#9a93ad] line-clamp-2">
+                              {cd.subtitle}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveCustomDungeon(cd, session?.userId ?? null);
+                              setActiveCustomDungeonState(cd);
+                              setPlayAttemptNonce((n) => n + 1);
+                              setActiveTab("custom-dungeon");
+                            }}
+                            className="retro-button w-full rounded-xl bg-[#9b5de5] hover:bg-[#b07af0] px-3 py-2 text-xs font-extrabold text-white flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <Icon name="gamepad" size={14} />
+                            <span>{t("ลุยดันเจี้ยนนี้ →", "Play Dungeon →")}</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </section>
               )}
 
