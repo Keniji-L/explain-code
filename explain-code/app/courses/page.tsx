@@ -72,6 +72,7 @@ import {
   saveUserDungeonProgress,
   mergeRemoteDungeonSaves,
 } from "../lib/dungeon-save";
+import { recordDailyFloorClear } from "../lib/daily-quest";
 import { getQuestionsForTopic } from "../lib/dungeon/questions";
 
 type LearningTab = "quest" | "hero-select" | "practice" | "custom" | "custom-dungeon" | "learn";
@@ -1114,6 +1115,7 @@ function CoursesContent() {
     };
 
     const nextHistory = [newHistoryItem, ...currentStudentSnapshot.history];
+    recordDailyFloorClear(session?.userId ?? null);
 
     const optimisticStudent: StudentRecord = {
       ...currentStudentSnapshot,

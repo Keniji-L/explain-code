@@ -28,6 +28,13 @@ import {
 import { LANGUAGE_TRACKS } from "../lib/language-tracks";
 import { BlockModelGrid } from "../components/BlockModelGrid";
 import { BLOCK_MODEL_CELLS, BlockCellId } from "../lib/curriculum";
+import {
+  DailyQuestState,
+  DAILY_QUEST_BONUS_XP,
+  DAILY_QUEST_TARGET_FLOORS,
+  claimDailyQuestBonus,
+  loadDailyQuestState,
+} from "../lib/daily-quest";
 
 const EMPTY_CELL_SCORES: Record<BlockCellId, number> = {
   T1: 0,
@@ -56,6 +63,13 @@ export default function MyLearningPage() {
   const [cellScores, setCellScores] = useState<Record<BlockCellId, number>>({
     ...EMPTY_CELL_SCORES,
   });
+  const [dailyQuest, setDailyQuest] = useState<DailyQuestState>({
+    lastActiveDate: "",
+    streakDays: 0,
+    dailyFloorsCleared: 0,
+    dailyBonusClaimed: false,
+  });
+  const [dailyClaimNotice, setDailyClaimNotice] = useState<string | null>(null);
 
   useEffect(() => {
     const syncState = () => {
@@ -70,6 +84,7 @@ export default function MyLearningPage() {
       setEnrollments(loadLocalEnrollments());
       setProgress(loadLocalLessonProgress());
       setDungeonSaves(loadUserDungeonSaves(current.userId));
+      setDailyQuest(loadDailyQuestState(current.userId));
       try {
         const rawStudents = localStorage.getItem("explain_code_students_v2");
         if (rawStudents) {
@@ -256,6 +271,93 @@ export default function MyLearningPage() {
             </Link>
           </div>
         </div>
+
+        {/* ==================== Daily Quest & Streak ==================== */}
+        <section className="mb-6">
+          <div className="rounded-2xl border border-[#f6c945]/40 bg-gradient-to-r from-[#22190c] via-[#171324] to-[#141220] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-[#f6c945]/60 bg-[#281d08] px-2.5 py-0.5 text-[11px] font-black text-[#ffe27a]">
+                  🔥 {t(`สตรีคต่อเนื่อง ${dailyQuest.streakDays} วัน`, `${dailyQuest.streakDays}-Day Streak`)}
+                </span>
+                <span className="text-xs font-extrabold text-[#f4efe6]">
+                  {t(
+                    `ภารกิจรายวัน: ผ่าน ${Math.min(dailyQuest.dailyFloorsCleared, DAILY_QUEST_TARGET_FLOORS)}/${DAILY_QUEST_TARGET_FLOORS} ด่านวันนี้`,
+                    `Daily Quest: Clear ${Math.min(dailyQuest.dailyFloorsCleared, DAILY_QUEST_TARGET_FLOORS)}/${DAILY_QUEST_TARGET_FLOORS} floor today`
+                  )}
+                </span>
+              </div>
+              <p className="text-xs text-[#c4bdd6]">
+                {dailyQuest.dailyBonusClaimed
+                  ? t(
+                      `✓ รับโบนัส +${DAILY_QUEST_BONUS_XP} XP ประจำวันนี้แล้ว! กลับมาลุยต่อพรุ่งนี้เพื่อรักษาสตรีค`,
+                      `✓ Claimed today's +${DAILY_QUEST_BONUS_XP} XP bonus! Come back tomorrow to keep your streak.`
+                    )
+                  : dailyQuest.dailyFloorsCleared >= DAILY_QUEST_TARGET_FLOORS
+                  ? t(
+                      `ทำภารกิจวันนี้สำเร็จแล้ว! กดรับโบนัส +${DAILY_QUEST_BONUS_XP} XP ได้เลย`,
+                      `Daily quest complete! Claim your +${DAILY_QUEST_BONUS_XP} XP bonus now.`
+                    )
+                  : t(
+                      `พิชิต 1 ด่านดันเจี้ยนวันนี้เพื่อรับโบนัส +${DAILY_QUEST_BONUS_XP} XP และต่อสตรีค`,
+                      `Clear 1 dungeon floor today for +${DAILY_QUEST_BONUS_XP} XP and extend your streak.`
+                    )}
+              </p>
+              {dailyClaimNotice && (
+                <p className="text-xs font-bold text-[#86efac]">{dailyClaimNotice}</p>
+              )}
+            </div>
+            <div className="shrink-0">
+              {dailyQuest.dailyBonusClaimed ? (
+                <span className="inline-flex items-center gap-1.5 rounded-xl border border-[#2fbf71]/50 bg-[#102a1e] px-4 py-2 text-xs font-extrabold text-[#86efac]">
+                  ✓ {t("รับโบนัสวันนี้แล้ว", "Claimed Today")}
+                </span>
+              ) : dailyQuest.dailyFloorsCleared >= DAILY_QUEST_TARGET_FLOORS ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const res = claimDailyQuestBonus(session.userId);
+                    setDailyQuest(res.state);
+                    if (res.claimed) {
+                      try {
+                        const rawStudents = localStorage.getItem("explain_code_students_v2");
+                        if (rawStudents) {
+                          const parsed = JSON.parse(rawStudents) as Array<{ id?: string; xp?: number }>;
+                          if (Array.isArray(parsed)) {
+                            const updated = parsed.map((s) =>
+                              s.id === session.userId
+                                ? { ...s, xp: (s.xp || 0) + res.bonusXp }
+                                : s
+                            );
+                            localStorage.setItem("explain_code_students_v2", JSON.stringify(updated));
+                          }
+                        }
+                      } catch {
+                        // ignore
+                      }
+                      setDailyClaimNotice(
+                        t(
+                          `รับโบนัส +${res.bonusXp} XP เข้าโปรไฟล์เรียบร้อยแล้ว!`,
+                          `Added +${res.bonusXp} XP bonus to your profile!`
+                        )
+                      );
+                    }
+                  }}
+                  className="rounded-xl bg-[#f6c945] px-4 py-2.5 text-xs font-black text-[#120f1c] hover:bg-[#ffe27a] transition-colors cursor-pointer"
+                >
+                  🎁 {t(`รับโบนัส +${DAILY_QUEST_BONUS_XP} XP`, `Claim +${DAILY_QUEST_BONUS_XP} XP`)}
+                </button>
+              ) : (
+                <Link
+                  href={`/courses?lang=${encodeURIComponent(preferredLang)}`}
+                  className="inline-block rounded-xl bg-[#2fbf71] px-4 py-2.5 text-xs font-black text-[#0b0b14] hover:bg-[#34d37d] transition-colors"
+                >
+                  🚀 {t("ไปลุย 1 ด่านวันนี้ →", "Play 1 Floor Today →")}
+                </Link>
+              )}
+            </div>
+          </div>
+        </section>
 
         {/* ==================== สเตตัส Block Model 12 มิติ & แนะนำด่านแก้จุดอ่อน ==================== */}
         <section className="mb-8 space-y-4">
