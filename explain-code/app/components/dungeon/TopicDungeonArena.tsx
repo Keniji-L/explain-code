@@ -30,6 +30,7 @@ import { GameCanvas } from "./GameCanvas";
 import { MobileDpad } from "./MobileDpad";
 import { BattleOverlay, BattlePhaseResult } from "./BattleOverlay";
 import { CodeChestModal, InRunRewardType } from "./CodeChestModal";
+import { CoinShopModal, ShopItemId } from "./CoinShopModal";
 import { PixelSpriteView } from "./PixelSpriteView";
 import { useUiLanguage } from "../LanguageProvider";
 import { getClientSession } from "../SiteHeader";
@@ -251,6 +252,7 @@ export function TopicDungeonArena({
   );
   const [battleResetNonce, setBattleResetNonce] = useState<number>(0);
   const [isChestOpen, setIsChestOpen] = useState<boolean>(false);
+  const [isShopOpen, setIsShopOpen] = useState<boolean>(false);
   const [chestBonusXp, setChestBonusXp] = useState<number>(
     matchedSnapshot ? matchedSnapshot.chestBonusXp : 0
   );
@@ -834,6 +836,17 @@ export function TopicDungeonArena({
               <span className="text-[#2f2d45]">|</span>
               <span className="text-[#2fbf71]">{xp} XP</span>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setIsShopOpen(true)}
+              disabled={isInBattle || isGameOver}
+              className="flex items-center gap-1 rounded-lg border border-[#f6c945]/50 bg-[#281d08] px-2.5 py-1 text-[11px] font-extrabold text-[#ffe27a] hover:bg-[#3a2a0c] disabled:opacity-50 transition-colors cursor-pointer"
+              title={t("ใช้ Coins ซื้อบัฟก่อนสู้", "Spend Coins on floor buffs")}
+            >
+              <span>🛒</span>
+              <span>{t("ร้านค้า", "Shop")}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1223,6 +1236,38 @@ export function TopicDungeonArena({
         onHealPlayer={() => setHearts((h) => Math.min(maxHearts, h + 1))}
         onBattleComplete={handleBattleComplete}
         onClose={() => setIsInBattle(false)}
+      />
+
+      <CoinShopModal
+        isOpen={isShopOpen}
+        coins={coins}
+        hearts={hearts}
+        maxHearts={maxHearts}
+        focus={battleProgress.focus ?? initialFocusDisplay}
+        maxFocus={maxFocusDisplay}
+        floorShieldBonus={floorShieldBonus}
+        floorRewardMultiplier={floorRewardMultiplier}
+        onBuyItem={(itemId: ShopItemId, cost: number) => {
+          if (coins < cost) return;
+          setCoins((c) => Math.max(0, c - cost));
+          if (itemId === "heal-hp") {
+            setHearts((h) => Math.min(maxHearts, h + 1));
+          } else if (itemId === "restore-mp") {
+            setBattleProgress((prev) => ({
+              ...prev,
+              focus: Math.min(
+                maxFocusDisplay,
+                (prev.focus ?? initialFocusDisplay) + 2
+              ),
+            }));
+          } else if (itemId === "shield-scroll") {
+            setFloorShieldBonus((s) => s + 1);
+          } else if (itemId === "double-reward") {
+            setFloorRewardMultiplier(2);
+          }
+          dungeonSound.playCoin();
+        }}
+        onClose={() => setIsShopOpen(false)}
       />
     </div>
   );
