@@ -238,6 +238,49 @@ export function BattleOverlay({
   const [inBattleSaveNotice, setInBattleSaveNotice] = useState<string | null>(
     null
   );
+  const [selectedCodeLine, setSelectedCodeLine] = useState<number | null>(null);
+  const BOSS_PHASE_TIME_SEC = 45;
+  const [bossTimerSec, setBossTimerSec] = useState<number>(BOSS_PHASE_TIME_SEC);
+
+  useEffect(() => {
+    setSelectedCodeLine(null);
+    setBossTimerSec(BOSS_PHASE_TIME_SEC);
+  }, [phaseIndex, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || monster.type !== "boss" || isSubmitted || playerHearts <= 0) {
+      return;
+    }
+    const timer = window.setInterval(() => {
+      setBossTimerSec((prev) => {
+        if (prev <= 1) {
+          setFlashDamage("player");
+          setTookDamageInBattle(true);
+          dungeonSound.playHurt();
+          if (shieldCharges > 0) {
+            setShieldCharges((s) => Math.max(0, s - 1));
+            setRelicNotice(
+              t(
+                "🛡️ บอสคลั่งหมดเวลา! แต่โล่ช่วยดูดซับดาเมจไว้ได้",
+                "🛡️ Boss Enrage! Your shield absorbed the timeout hit."
+              )
+            );
+          } else {
+            setRelicNotice(
+              t(
+                "⚡ บอสคลั่ง! โจมตี 1 ดาเมจเพราะตอบช้าเกินเวลาในเฟสนี้",
+                "⚡ Boss Enrage! Took 1 damage for running out of time."
+              )
+            );
+            onWrongAnswer();
+          }
+          return BOSS_PHASE_TIME_SEC;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [isOpen, monster.type, isSubmitted, playerHearts, shieldCharges, onWrongAnswer, t]);
 
   const effectivePhaseIndex =
     isSubmitted && isCorrect && phaseIndex < totalPhases - 1
@@ -928,19 +971,103 @@ export function BattleOverlay({
             {displayQuestionText}
           </h4>
 
+          {monster.type === "boss" && !isSubmitted && (
+            <div className="rounded-lg border border-[#c0283a]/40 bg-[#1c0f16] px-3 py-1.5 space-y-1">
+              <div className="flex items-center justify-between text-[11px] font-extrabold">
+                <span className="text-[#fca5a5] flex items-center gap-1">
+                  <span>⏱️</span>
+                  <span>{t("Boss Enrage Timer (เวลาบอสคลั่ง)", "Boss Enrage Timer")}</span>
+                </span>
+                <span
+                  className={`pixel-font tabular-nums ${
+                    bossTimerSec <= 8
+                      ? "text-[#ff4d6d] animate-pulse"
+                      : bossTimerSec <= 15
+                      ? "text-[#f6c945]"
+                      : "text-[#e8e1cf]"
+                  }`}
+                >
+                  {bossTimerSec}s
+                </span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-[#0d0b14] overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-1000 ${
+                    bossTimerSec <= 8
+                      ? "bg-[#ff4d6d]"
+                      : bossTimerSec <= 15
+                      ? "bg-[#f6c945]"
+                      : "bg-[#9b5de5]"
+                  }`}
+                  style={{ width: `${Math.max(0, (bossTimerSec / BOSS_PHASE_TIME_SEC) * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
+
           {(isEn ? activeQuestion.codeSnippetEn || activeQuestion.codeSnippet : activeQuestion.codeSnippet) && (
-            <pre className="p-3 rounded-xl bg-[#0b0b14] border border-[#4a4766] text-[#ffe27a] text-xs font-mono overflow-x-auto leading-relaxed">
-              <code>
-                {(isEn ? activeQuestion.codeSnippetEn || activeQuestion.codeSnippet : activeQuestion.codeSnippet)!.split("\n").map((line, lineIdx) => (
-                  <div key={lineIdx} className="flex items-start gap-3">
-                    <span className="w-6 shrink-0 text-right text-[#6b6580] select-none tabular-nums">
-                      {lineIdx + 1}
-                    </span>
-                    <span className="whitespace-pre">{line || " "}</span>
-                  </div>
-                ))}
-              </code>
-            </pre>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-[10px] text-[#9a93ad]">
+                <span>
+                  {t(
+                    "💡 คลิกที่บรรทัดโค้ดเพื่อปักหมุดวิเคราะห์ (ถ้าโจทย์ถามเลขบรรทัด ระบบจะช่วยเลือกคำตอบให้)",
+                    "💡 Click any code line to pin/inspect it (auto-selects matching line choices)"
+                  )}
+                </span>
+                {selectedCodeLine !== null && (
+                  <span className="font-bold text-[#ffe27a]">
+                    {t(`ปักหมุดบรรทัดที่ ${selectedCodeLine + 1}`, `Pinned Line ${selectedCodeLine + 1}`)}
+                  </span>
+                )}
+              </div>
+              <pre className="p-3 rounded-xl bg-[#0b0b14] border border-[#4a4766] text-[#ffe27a] text-xs font-mono overflow-x-auto leading-relaxed">
+                <code>
+                  {(isEn ? activeQuestion.codeSnippetEn || activeQuestion.codeSnippet : activeQuestion.codeSnippet)!.split("\n").map((line, lineIdx) => {
+                    const isPinned = selectedCodeLine === lineIdx;
+                    return (
+                      <div
+                        key={lineIdx}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => {
+                          setSelectedCodeLine(isPinned ? null : lineIdx);
+                          if (!isSubmitted) {
+                            const lineNum = lineIdx + 1;
+                            const matchIdx = displayChoices.findIndex((c) => {
+                              const lower = c.toLowerCase();
+                              return (
+                                lower.includes(`บรรทัดที่ ${lineNum}`) ||
+                                lower.includes(`บรรทัด ${lineNum}`) ||
+                                new RegExp(`\\bline\\s*${lineNum}\\b`, "i").test(c)
+                              );
+                            });
+                            if (matchIdx >= 0 && !eliminatedChoices.includes(matchIdx)) {
+                              setSelectedChoice(matchIdx);
+                            }
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setSelectedCodeLine(isPinned ? null : lineIdx);
+                          }
+                        }}
+                        className={`flex items-start gap-3 rounded px-1.5 py-0.5 cursor-pointer transition-colors ${
+                          isPinned
+                            ? "bg-[#5a2d91]/45 ring-1 ring-[#f6c945]/70 text-[#fff6cc]"
+                            : "hover:bg-[#1f1c2e]"
+                        }`}
+                      >
+                        <span className="w-6 shrink-0 text-right text-[#6b6580] select-none tabular-nums">
+                          {isPinned ? "🔍" : lineIdx + 1}
+                        </span>
+                        <span className="whitespace-pre">{line || " "}</span>
+                      </div>
+                    );
+                  })}
+                </code>
+              </pre>
+            </div>
           )}
         </div>
 
