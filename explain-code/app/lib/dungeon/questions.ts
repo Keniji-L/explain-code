@@ -728,5 +728,30 @@ export function getChestQuestion(
       : SAMPLE_DUNGEON_QUESTIONS;
 
   const idx = Math.abs(seedIndex) % pool.length;
-  return pool[idx] || SAMPLE_DUNGEON_QUESTIONS[0];
+  const picked = pool[idx] || SAMPLE_DUNGEON_QUESTIONS[0];
+  return picked.id.startsWith("chest-")
+    ? shuffleDungeonQuestionChoices(picked, `${seedIndex}:${picked.id}`)
+    : picked;
+}
+
+export function getMimicChestQuestion(
+  seedIndex: number,
+  language?: LearningLanguage
+): DungeonQuestion {
+  const resolvedLang: LearningLanguage = language || "javascript";
+  const hardLangPool = SAMPLE_DUNGEON_QUESTIONS.filter(
+    (q) => q.language === resolvedLang && q.difficulty === "hard"
+  );
+  const allHardPool = SAMPLE_DUNGEON_QUESTIONS.filter(
+    (q) => q.difficulty === "hard"
+  );
+  const pool =
+    hardLangPool.length > 0
+      ? hardLangPool
+      : allHardPool.length > 0
+      ? allHardPool
+      : SAMPLE_DUNGEON_QUESTIONS;
+  const idx = Math.abs(seedIndex) % pool.length;
+  const picked = pool[idx] || SAMPLE_DUNGEON_QUESTIONS[0];
+  return shuffleDungeonQuestionChoices(picked, `mimic:${seedIndex}:${picked.id}`);
 }

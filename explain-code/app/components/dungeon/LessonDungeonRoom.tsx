@@ -10,6 +10,7 @@ import { getLocalizedMonster, getMonsterDef, MonsterDef } from "../../lib/dungeo
 import {
   getQuestionForFloor,
   getChestQuestion,
+  getMimicChestQuestion,
   SAMPLE_DUNGEON_QUESTIONS,
   DungeonQuestion,
   shuffleDungeonQuestionChoices,
@@ -271,9 +272,15 @@ export function LessonDungeonRoom({
     return !SAMPLE_DUNGEON_QUESTIONS.some((sq) => sq.id === first.id);
   }, [lessonQuestions]);
 
+  const isMimicChest =
+    chestModalMode === "side-chest" && Boolean(room.chest?.isMimic);
+
   const chestQuestion: DungeonQuestion = useMemo(
-    () => getChestQuestion(lessonIndex + courseSeed, lessonLang, lessonQuestions[0]?.id),
-    [lessonIndex, courseSeed, lessonLang, lessonQuestions]
+    () =>
+      isMimicChest
+        ? getMimicChestQuestion(lessonIndex + courseSeed, lessonLang)
+        : getChestQuestion(lessonIndex + courseSeed, lessonLang, lessonQuestions[0]?.id),
+    [isMimicChest, lessonIndex, courseSeed, lessonLang, lessonQuestions]
   );
 
   const dungeonTitle = useMemo(
@@ -606,9 +613,16 @@ export function LessonDungeonRoom({
       {chestModalMode !== null && (
         <CodeChestModal
           question={chestQuestion}
-          xpReward={25}
-          coinReward={20}
+          isMimic={isMimicChest}
+          xpReward={isMimicChest ? 80 : 25}
+          coinReward={isMimicChest ? 60 : 20}
           onSolved={handleChestSolved}
+          onMimicFailed={() => {
+            handleWrongAnswer();
+            setRoom((prev) =>
+              prev.chest ? { ...prev, chest: { ...prev.chest, isOpened: true } } : prev
+            );
+          }}
           onSelectInRunReward={handleSelectInRunReward}
           onClose={() => setChestModalMode(null)}
         />

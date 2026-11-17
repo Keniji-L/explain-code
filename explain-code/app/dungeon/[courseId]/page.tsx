@@ -6,7 +6,7 @@ import { AVATARS, getAvatar, DEFAULT_AVATAR, AvatarKey } from "../../lib/dungeon
 import { hashString, dungeonNameForCourse } from "../../lib/dungeon/seed";
 import { generateDungeonRoom, DungeonRoom } from "../../lib/dungeon/mapgen";
 import { getMonsterDef, MonsterDef } from "../../lib/dungeon/monsters";
-import { getQuestionForFloor, getChestQuestion, DungeonQuestion } from "../../lib/dungeon/questions";
+import { getQuestionForFloor, getChestQuestion, getMimicChestQuestion, DungeonQuestion } from "../../lib/dungeon/questions";
 import { LANGUAGE_TRACKS, LearningLanguage } from "../../lib/language-tracks";
 import { GameCanvas } from "../../components/dungeon/GameCanvas";
 import { DungeonHud } from "../../components/dungeon/DungeonHud";
@@ -387,9 +387,15 @@ function DungeonPlayContent() {
     [floorIndex, isBossFloor, courseLang, course?.id, courseId]
   );
 
+  const isMimicChest =
+    chestModalMode === "side-chest" && Boolean(room.chest?.isMimic);
+
   const chestQuestion: DungeonQuestion = useMemo(
-    () => getChestQuestion(floorIndex + courseSeed, courseLang, currentQuestion.id),
-    [floorIndex, courseSeed, courseLang, currentQuestion.id]
+    () =>
+      isMimicChest
+        ? getMimicChestQuestion(floorIndex + courseSeed, courseLang)
+        : getChestQuestion(floorIndex + courseSeed, courseLang, currentQuestion.id),
+    [isMimicChest, floorIndex, courseSeed, courseLang, currentQuestion.id]
   );
 
   const currentLessonTitle = courseLessons[floorIndex]
@@ -644,9 +650,16 @@ function DungeonPlayContent() {
       {chestModalMode !== null && (
         <CodeChestModal
           question={chestQuestion}
-          xpReward={25}
-          coinReward={20}
+          isMimic={isMimicChest}
+          xpReward={isMimicChest ? 80 : 25}
+          coinReward={isMimicChest ? 60 : 20}
           onSolved={handleChestSolved}
+          onMimicFailed={() => {
+            handleWrongAnswer();
+            setRoom((prev) =>
+              prev.chest ? { ...prev, chest: { ...prev.chest, isOpened: true } } : prev
+            );
+          }}
           onSelectInRunReward={handleSelectInRunReward}
           onClose={() => setChestModalMode(null)}
         />
