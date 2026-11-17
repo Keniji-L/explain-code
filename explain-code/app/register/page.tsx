@@ -531,10 +531,11 @@ function RegisterFormContent() {
               >
                 {/* 1. ชื่อเล่นสมมติ */}
                 <div>
-                  <label className="block text-xs font-bold text-[#c4bdd6] mb-1.5">
+                  <label htmlFor="reg-student-nickname" className="block text-xs font-bold text-[#c4bdd6] mb-1.5">
                     {t("1. ตั้งชื่อเล่นสมมติ", "1. Choose a Nickname")}
                   </label>
                   <input
+                    id="reg-student-nickname"
                     type="text"
                     value={nickname}
                     onChange={(e) => {
@@ -584,7 +585,7 @@ function RegisterFormContent() {
                 {/* 2. รหัส PIN 4 หลัก + ตัวบอกจำนวนหลัก */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-bold text-[#c4bdd6]">
+                    <label htmlFor="reg-student-pin" className="block text-xs font-bold text-[#c4bdd6]">
                       {t(
                         "2. ตั้งรหัส PIN 4 หลัก (ตัวเลข 0–9)",
                         "2. Set a 4-Digit PIN (digits 0–9)"
@@ -606,6 +607,7 @@ function RegisterFormContent() {
                   </div>
                   <div className="relative">
                     <input
+                      id="reg-student-pin"
                       type={showStudentPin ? "text" : "password"}
                       inputMode="numeric"
                       maxLength={4}
@@ -640,7 +642,7 @@ function RegisterFormContent() {
                 {/* 3. ยืนยันรหัส PIN 4 หลัก */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-bold text-[#c4bdd6]">
+                    <label htmlFor="reg-student-confirm-pin" className="block text-xs font-bold text-[#c4bdd6]">
                       {t(
                         "3. ยืนยันรหัส PIN 4 หลักอีกครั้ง",
                         "3. Confirm your 4-Digit PIN"
@@ -676,6 +678,7 @@ function RegisterFormContent() {
                   </div>
                   <div className="relative">
                     <input
+                      id="reg-student-confirm-pin"
                       type={showStudentPin ? "text" : "password"}
                       inputMode="numeric"
                       maxLength={4}
@@ -717,7 +720,7 @@ function RegisterFormContent() {
                 {/* 4. รหัสห้องเรียน (ไม่บังคับ) */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-bold text-[#c4bdd6]">
+                    <label htmlFor="reg-student-room" className="block text-xs font-bold text-[#c4bdd6]">
                       {t(
                         "4. รหัสห้องเรียนจากครู (ไม่บังคับ)",
                         "4. Classroom Code from Teacher (Optional)"
@@ -731,6 +734,7 @@ function RegisterFormContent() {
                     </span>
                   </div>
                   <input
+                    id="reg-student-room"
                     type="text"
                     value={roomCode}
                     onChange={(e) =>
@@ -787,13 +791,14 @@ function RegisterFormContent() {
                 className="space-y-4"
               >
                 <div>
-                  <label className="block text-xs font-bold text-[#c4bdd6] mb-1.5">
+                  <label htmlFor="reg-teacher-username" className="block text-xs font-bold text-[#c4bdd6] mb-1.5">
                     {t(
                       "ตั้งชื่อผู้ใช้ครู (Username · ไม่ต้องใช้อีเมลส่วนตัว)",
                       "Teacher Username (No personal email required)"
                     )}
                   </label>
                   <input
+                    id="reg-teacher-username"
                     type="text"
                     value={username}
                     onChange={(e) => {
@@ -819,13 +824,14 @@ function RegisterFormContent() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#c4bdd6] mb-1.5">
+                  <label htmlFor="reg-teacher-displayname" className="block text-xs font-bold text-[#c4bdd6] mb-1.5">
                     {t(
                       "ชื่อที่แสดงในห้องเรียน (Display Name)",
                       "Classroom Display Name"
                     )}
                   </label>
                   <input
+                    id="reg-teacher-displayname"
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
@@ -839,7 +845,7 @@ function RegisterFormContent() {
 
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-bold text-[#c4bdd6]">
+                    <label htmlFor="reg-teacher-password" className="block text-xs font-bold text-[#c4bdd6]">
                       {t(
                         "ตั้งรหัสผ่าน (อย่างน้อย 4 ตัวอักษร · เข้ารหัส SHA-256)",
                         "Set Password (at least 4 characters · SHA-256 encrypted)"
@@ -864,6 +870,7 @@ function RegisterFormContent() {
                   </div>
                   <div className="relative">
                     <input
+                      id="reg-teacher-password"
                       type={showRegisterPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => {
@@ -899,7 +906,7 @@ function RegisterFormContent() {
 
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-bold text-[#c4bdd6]">
+                    <label htmlFor="reg-teacher-confirm-password" className="block text-xs font-bold text-[#c4bdd6]">
                       {t("ยืนยันรหัสผ่านอีกครั้ง", "Confirm Password")}
                     </label>
                     {confirmPassword.length > 0 && password.length >= 4 && (
@@ -919,6 +926,7 @@ function RegisterFormContent() {
                   </div>
                   <div className="relative">
                     <input
+                      id="reg-teacher-confirm-password"
                       type={showRegisterPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => {

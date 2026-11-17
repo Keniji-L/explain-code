@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
 import { PixelSpriteView } from "./PixelSpriteView";
 import { HEART_SPRITE, COIN_SPRITE } from "../../lib/dungeon/sprites";
@@ -15,6 +15,19 @@ interface PauseModalProps {
 
 export function PauseModal({ isOpen, onResume, onExit }: PauseModalProps) {
   const { t } = useUiLanguage();
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onResume();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, onResume]);
+
   if (!isOpen) return null;
 
   return (

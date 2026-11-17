@@ -305,8 +305,16 @@ export default function MyHistoryPage() {
                 return (
                   <div
                     key={item.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setSelectedItem(item)}
-                    className={`cursor-pointer rounded-2xl border p-4 transition-all ${
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelectedItem(item);
+                      }
+                    }}
+                    className={`cursor-pointer rounded-2xl border p-4 transition-all focus:outline-hidden focus:ring-2 focus:ring-[#f6c945] ${
                       isSelected
                         ? "border-[#f6c945] bg-[#1c1b2b] shadow-lg"
                         : "border-[#2f2d45] bg-[#141220] hover:border-[#3d395a] hover:bg-[#1c1b2b]"

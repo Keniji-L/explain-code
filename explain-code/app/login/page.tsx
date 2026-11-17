@@ -300,7 +300,7 @@ function LoginFormContent() {
             >
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold text-[#c4bdd6]">
+                  <label htmlFor="login-identifier" className="block text-xs font-bold text-[#c4bdd6]">
                     {t(
                       "ชื่อเล่นสมมติ (นักเรียน) หรือ ชื่อผู้ใช้ (ครู)",
                       "Nickname (Student) or Username (Teacher)"
@@ -311,6 +311,7 @@ function LoginFormContent() {
                   </span>
                 </div>
                 <input
+                  id="login-identifier"
                   type="text"
                   value={loginIdentifier}
                   onChange={(e) => {
@@ -337,7 +338,7 @@ function LoginFormContent() {
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold text-[#c4bdd6]">
+                  <label htmlFor="login-secret" className="block text-xs font-bold text-[#c4bdd6]">
                     {t(
                       "รหัส PIN 4 หลัก (นักเรียน) หรือ รหัสผ่าน (ครู)",
                       "4-Digit PIN (Student) or Password (Teacher)"
@@ -362,6 +363,7 @@ function LoginFormContent() {
                 </div>
                 <div className="relative">
                   <input
+                    id="login-secret"
                     type={showLoginSecret ? "text" : "password"}
                     value={loginSecret}
                     onChange={(e) => {
