@@ -294,6 +294,12 @@ function CoursesContent() {
     useState<DungeonSaveRecord | null>(null);
   const [savedArenaSnapshot, setSavedArenaSnapshot] =
     useState<DungeonArenaSnapshot | null>(null);
+  const [carryoverResources, setCarryoverResources] = useState<{
+    hearts: number;
+    coins: number;
+    xp: number;
+    focus?: number;
+  } | null>(null);
   const [snapshotHydrationNonce, setSnapshotHydrationNonce] =
     useState<number>(0);
   const latestArenaSnapshotRef = useRef<DungeonArenaSnapshot | null>(null);
@@ -398,6 +404,7 @@ function CoursesContent() {
 
   const handleStartTopic = (topicId: number) => {
     setGuestNotice(null);
+    setCarryoverResources(null);
     setSelectedTopicId(topicId);
     setActiveTab("hero-select");
   };
@@ -1110,8 +1117,20 @@ function CoursesContent() {
         ? currentLanguageTopics[currentIdx + 1]
         : null;
 
+    const prevSnap = latestArenaSnapshotRef.current;
+    const nextCarryover =
+      nextTopic && prevSnap
+        ? {
+            hearts: prevSnap.hearts,
+            coins: prevSnap.coins,
+            xp: prevSnap.xp,
+            focus: prevSnap.battleFocus,
+          }
+        : null;
+
     if (!session) {
       setGuestProgress(optimisticStudent);
+      setCarryoverResources(nextCarryover);
       setGuestNotice(
         t(
           "คุณผ่านด่านนี้ในโหมดทดลอง (Guest) — ปลดล็อกด่านถัดไปชั่วคราวแล้ว (เข้าสู่ระบบเพื่อบันทึกถาวร)",
@@ -1132,6 +1151,7 @@ function CoursesContent() {
     saveStudentsToStorage(updatedStudents);
     setSavedArenaSnapshot(null);
     latestArenaSnapshotRef.current = null;
+    setCarryoverResources(nextCarryover);
     persistDungeonSave(
       optimisticStudent,
       nextTopic ? nextTopic.id : result.topicId,
@@ -2429,6 +2449,7 @@ function CoursesContent() {
                 onChangeHero={() => setActiveTab("hero-select")}
                 embedded
                 initialSnapshot={savedArenaSnapshot}
+                carryoverResources={carryoverResources}
                 onSnapshotChange={(snap) => {
                   latestArenaSnapshotRef.current = snap;
                 }}

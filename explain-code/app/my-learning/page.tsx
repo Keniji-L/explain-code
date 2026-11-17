@@ -26,6 +26,23 @@ import {
   mergeRemoteDungeonSaves,
 } from "../lib/dungeon-save";
 import { LANGUAGE_TRACKS } from "../lib/language-tracks";
+import { BlockModelGrid } from "../components/BlockModelGrid";
+import { BLOCK_MODEL_CELLS, BlockCellId } from "../lib/curriculum";
+
+const EMPTY_CELL_SCORES: Record<BlockCellId, number> = {
+  T1: 0,
+  T2: 0,
+  T3: 0,
+  T4: 0,
+  E1: 0,
+  E2: 0,
+  E3: 0,
+  E4: 0,
+  F1: 0,
+  F2: 0,
+  F3: 0,
+  F4: 0,
+};
 
 export default function MyLearningPage() {
   const router = useRouter();
@@ -36,6 +53,9 @@ export default function MyLearningPage() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [progress, setProgress] = useState<LessonProgress[]>([]);
   const [dungeonSaves, setDungeonSaves] = useState<DungeonSaveRecord[]>([]);
+  const [cellScores, setCellScores] = useState<Record<BlockCellId, number>>({
+    ...EMPTY_CELL_SCORES,
+  });
 
   useEffect(() => {
     const syncState = () => {
@@ -50,6 +70,23 @@ export default function MyLearningPage() {
       setEnrollments(loadLocalEnrollments());
       setProgress(loadLocalLessonProgress());
       setDungeonSaves(loadUserDungeonSaves(current.userId));
+      try {
+        const rawStudents = localStorage.getItem("explain_code_students_v2");
+        if (rawStudents) {
+          const parsedStudents = JSON.parse(rawStudents) as Array<{
+            id?: string;
+            cellScores?: Partial<Record<BlockCellId, number>>;
+          }>;
+          const matched = Array.isArray(parsedStudents)
+            ? parsedStudents.find((s) => s.id === current.userId)
+            : null;
+          if (matched?.cellScores) {
+            setCellScores({ ...EMPTY_CELL_SCORES, ...matched.cellScores });
+          }
+        }
+      } catch {
+        // ignore storage errors
+      }
     };
 
     syncState();
@@ -107,6 +144,33 @@ export default function MyLearningPage() {
           }
         })
         .catch(() => {});
+
+      fetch(`/api/attempts?studentId=${encodeURIComponent(current.userId)}&limit=30`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((attData) => {
+          if (!attData || !Array.isArray(attData.attempts)) return;
+          const remoteLatest: Partial<Record<BlockCellId, number>> = {};
+          for (const att of attData.attempts) {
+            if (!Array.isArray(att.attempt_cell_scores)) continue;
+            for (const row of att.attempt_cell_scores) {
+              const cid = row?.cell_id as BlockCellId | undefined;
+              const sc = typeof row?.score === "number" ? row.score : null;
+              if (cid && cid in EMPTY_CELL_SCORES && sc !== null && remoteLatest[cid] === undefined) {
+                remoteLatest[cid] = sc;
+              }
+            }
+          }
+          if (Object.keys(remoteLatest).length > 0) {
+            setCellScores((prev) => {
+              const next = { ...prev };
+              (Object.keys(remoteLatest) as BlockCellId[]).forEach((cid) => {
+                next[cid] = Math.max(next[cid] ?? 0, remoteLatest[cid] ?? 0);
+              });
+              return next;
+            });
+          }
+        })
+        .catch(() => {});
     }
 
     window.addEventListener("explain-code-auth-change", syncState);
@@ -124,6 +188,20 @@ export default function MyLearningPage() {
       </div>
     );
   }
+
+  const avgBlockMastery = Math.round(
+    Object.values(cellScores).reduce((sum, val) => sum + val, 0) /
+      Math.max(1, BLOCK_MODEL_CELLS.length)
+  );
+  const cellsByScoreAsc = [...BLOCK_MODEL_CELLS].sort(
+    (a, b) => (cellScores[a.id] ?? 0) - (cellScores[b.id] ?? 0)
+  );
+  const weakestCell = cellsByScoreAsc[0] || BLOCK_MODEL_CELLS[0];
+  const strongestCell = [...BLOCK_MODEL_CELLS].sort(
+    (a, b) => (cellScores[b.id] ?? 0) - (cellScores[a.id] ?? 0)
+  )[0];
+  const preferredLang = dungeonSaves[0]?.language || "javascript";
+  const hasAnyCellProgress = Object.values(cellScores).some((v) => v > 0);
 
   const myEnrollments = enrollments.filter(
     (e) => e.student_id === session.userId
@@ -178,6 +256,87 @@ export default function MyLearningPage() {
             </Link>
           </div>
         </div>
+
+        {/* ==================== สเตตัส Block Model 12 มิติ & แนะนำด่านแก้จุดอ่อน ==================== */}
+        <section className="mb-8 space-y-4">
+          <div className="rounded-2xl border border-[#3d395a] bg-gradient-to-br from-[#171426] to-[#12101d] p-5 shadow-lg space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-extrabold text-[#ffe27a] flex items-center gap-2">
+                  <span>📊</span>
+                  <span>
+                    {t(
+                      "สเตตัสความเข้าใจโค้ด 12 มิติ (Block Model Stats)",
+                      "12-Cell Code Comprehension Stats (Block Model)"
+                    )}
+                  </span>
+                </h2>
+                <p className="text-xs text-[#9a93ad] mt-0.5">
+                  {t(
+                    "คลิกที่ช่องใดก็ได้ในตารางเพื่อวาร์ปไปฝึกด่านที่เน้นทักษะด้านนั้นโดยตรง",
+                    "Click any cell in the grid to jump straight to a dungeon floor targeting that skill."
+                  )}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="rounded-xl border border-[#2fbf71]/50 bg-[#102a1e] px-3 py-1.5 text-xs font-extrabold text-[#86efac]">
+                  {t("ค่าเฉลี่ยรวม", "Avg Mastery")}: {avgBlockMastery}%
+                </span>
+                {hasAnyCellProgress && strongestCell && (
+                  <span className="rounded-xl border border-[#f6c945]/50 bg-[#281d08] px-3 py-1.5 text-xs font-extrabold text-[#ffe27a]">
+                    {t("จุดแข็ง", "Top")}: {strongestCell.id} ({cellScores[strongestCell.id] ?? 0}%)
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* การ์ดแนะนำด่านแก้จุดอ่อนอัตโนมัติ */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-[#9b5de5]/50 bg-[#211638]/70 p-4">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-md bg-[#9b5de5] px-2 py-0.5 text-[10px] font-black text-[#f4efe6]">
+                    {t("แนะนำสำหรับคุณ", "RECOMMENDED DRILL")}
+                  </span>
+                  <span className="text-xs font-extrabold text-[#ffe27a]">
+                    {weakestCell.id} ·{" "}
+                    {uiLang === "en"
+                      ? weakestCell.shortTitleEn || weakestCell.shortTitle
+                      : weakestCell.shortTitle}{" "}
+                    ({cellScores[weakestCell.id] ?? 0}%)
+                  </span>
+                </div>
+                <p className="text-xs text-[#c4bdd6]">
+                  {uiLang === "en"
+                    ? weakestCell.descriptionEn || weakestCell.description
+                    : weakestCell.description}
+                </p>
+              </div>
+              <Link
+                href={`/courses?lang=${encodeURIComponent(preferredLang)}&topicId=${weakestCell.relatedTopicId}`}
+                className="shrink-0 rounded-xl bg-[#f6c945] px-4 py-2.5 text-xs font-black text-[#120f1c] hover:bg-[#ffe27a] transition-colors text-center whitespace-nowrap"
+              >
+                {t(
+                  `🎯 ฝึกด่านแก้จุดอ่อน ${weakestCell.id} ทันที →`,
+                  `🎯 Drill ${weakestCell.id} Now →`
+                )}
+              </Link>
+            </div>
+
+            <BlockModelGrid
+              cellScores={cellScores}
+              title={t("ตารางทักษะ Block Model (4 ระดับ × 3 มิติ)", "Block Model Skill Grid (4 Levels × 3 Dimensions)")}
+              subtitle={t(
+                "กดที่ช่องเพื่อเข้าฝึกด่านที่ตรงกับทักษะนั้น",
+                "Click a cell to train the matching dungeon floor"
+              )}
+              onSelectTopic={(topicId) =>
+                router.push(
+                  `/courses?lang=${encodeURIComponent(preferredLang)}&topicId=${topicId}`
+                )
+              }
+            />
+          </div>
+        </section>
 
         {/* ==================== ความคืบหน้าดันเจี้ยนการเรียนรู้ ==================== */}
         {dungeonSaves.length > 0 && (

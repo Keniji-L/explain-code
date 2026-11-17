@@ -80,6 +80,12 @@ export interface TopicDungeonArenaProps {
   customQuestions?: DungeonQuestion[];
   floorBadgeLabel?: string;
   initialSnapshot?: DungeonArenaSnapshot | null;
+  carryoverResources?: {
+    hearts: number;
+    coins: number;
+    xp: number;
+    focus?: number;
+  } | null;
   onSnapshotChange?: (snapshot: DungeonArenaSnapshot) => void;
   onSaveGame?: (snapshotOverride?: DungeonArenaSnapshot) => void;
 }
@@ -98,6 +104,7 @@ export function TopicDungeonArena({
   customQuestions,
   floorBadgeLabel,
   initialSnapshot = null,
+  carryoverResources = null,
   onSnapshotChange,
   onSaveGame,
 }: TopicDungeonArenaProps) {
@@ -214,12 +221,26 @@ export function TopicDungeonArena({
 
   const maxHearts = avatar.stats.maxHp;
   const [hearts, setHearts] = useState<number>(
-    matchedSnapshot ? matchedSnapshot.hearts : maxHearts
+    matchedSnapshot
+      ? matchedSnapshot.hearts
+      : carryoverResources
+      ? Math.max(1, Math.min(maxHearts, carryoverResources.hearts))
+      : maxHearts
   );
   const [coins, setCoins] = useState<number>(
-    matchedSnapshot ? matchedSnapshot.coins : 0
+    matchedSnapshot
+      ? matchedSnapshot.coins
+      : carryoverResources
+      ? carryoverResources.coins
+      : 0
   );
-  const [xp, setXp] = useState<number>(matchedSnapshot ? matchedSnapshot.xp : 0);
+  const [xp, setXp] = useState<number>(
+    matchedSnapshot
+      ? matchedSnapshot.xp
+      : carryoverResources
+      ? carryoverResources.xp
+      : 0
+  );
   const [screenShake, setScreenShake] = useState<number>(0);
   const [isInBattle, setIsInBattle] = useState<boolean>(() =>
     Boolean(
@@ -261,7 +282,7 @@ export function TopicDungeonArena({
   }>(() => ({
     phaseIndex: matchedSnapshot?.battlePhaseIndex ?? 0,
     phaseResults: matchedSnapshot?.battlePhaseResults ?? [],
-    focus: matchedSnapshot?.battleFocus,
+    focus: matchedSnapshot ? matchedSnapshot.battleFocus : carryoverResources?.focus,
     shieldCharges: matchedSnapshot?.battleShieldCharges,
     accumulatedXp: matchedSnapshot?.battleAccumulatedXp ?? 0,
     accumulatedCoins: matchedSnapshot?.battleAccumulatedCoins ?? 0,
@@ -314,9 +335,13 @@ export function TopicDungeonArena({
       }
       appliedSnapshotRef.current = null;
       hasSubmittedCompletionRef.current = false;
-      setHearts(avatar.stats.maxHp);
-      setCoins(0);
-      setXp(0);
+      setHearts(
+        carryoverResources
+          ? Math.max(1, Math.min(avatar.stats.maxHp, carryoverResources.hearts))
+          : avatar.stats.maxHp
+      );
+      setCoins(carryoverResources ? carryoverResources.coins : 0);
+      setXp(carryoverResources ? carryoverResources.xp : 0);
       setIsInBattle(false);
       setBattleResetNonce((n) => n + 1);
       setIsChestOpen(false);
@@ -329,6 +354,7 @@ export function TopicDungeonArena({
       setBattleProgress({
         phaseIndex: 0,
         phaseResults: [],
+        focus: carryoverResources?.focus,
         accumulatedXp: 0,
         accumulatedCoins: 0,
       });
@@ -789,13 +815,13 @@ export function TopicDungeonArena({
             <div
               className="flex items-center gap-1 bg-[#0d0b14] px-2.5 py-1 rounded-lg border border-[#2f2d45] text-[11px] pixel-font font-bold text-[#c084fc]"
               title={t(
-                `มานา MP เริ่ม ${initialFocusDisplay}/${maxFocusDisplay} (ตอบถูก +${avatar.stats.mpRegenOnCorrect} MP)`,
-                `Focus MP starts ${initialFocusDisplay}/${maxFocusDisplay} (+${avatar.stats.mpRegenOnCorrect} MP per hit)`
+                `มานา MP คงเหลือ ${battleProgress.focus ?? initialFocusDisplay}/${maxFocusDisplay} (ตอบถูก +${avatar.stats.mpRegenOnCorrect} MP)`,
+                `Remaining Focus MP ${battleProgress.focus ?? initialFocusDisplay}/${maxFocusDisplay} (+${avatar.stats.mpRegenOnCorrect} MP per hit)`
               )}
             >
               <Icon name="sparkles" size={13} />
               <span>
-                {initialFocusDisplay}/{maxFocusDisplay} MP
+                {battleProgress.focus ?? initialFocusDisplay}/{maxFocusDisplay} MP
               </span>
             </div>
 
