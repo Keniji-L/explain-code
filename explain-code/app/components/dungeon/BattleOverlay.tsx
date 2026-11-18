@@ -506,7 +506,32 @@ export function BattleOverlay({
     const useLocalOnly = localValidation || isMultiPhase;
 
     if (useLocalOnly) {
-      correct = chosenIndex === activeQuestion.correctIndex;
+      if (activeQuestion.correctIndex < 0 && lessonId) {
+        try {
+          const res = await fetch("/api/lms", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "grade-lesson-quiz",
+              courseId: courseId || "",
+              lessonId,
+              answers: { [activeQuestion.id]: chosenIndex },
+            }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const qRes = data?.results?.[activeQuestion.id];
+            if (qRes) {
+              correct = Boolean(qRes.isCorrect);
+              if (qRes.explanation) explanationText = qRes.explanation;
+            }
+          }
+        } catch {
+          correct = false;
+        }
+      } else {
+        correct = chosenIndex === activeQuestion.correctIndex;
+      }
     } else {
       try {
         const res = await fetch("/api/dungeon/answer", {
