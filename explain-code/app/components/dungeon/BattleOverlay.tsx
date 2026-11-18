@@ -955,17 +955,6 @@ export function BattleOverlay({
                 {activeQuestion.language}
               </span>
             )}
-            {(() => {
-              const cleanedLabel = activeQuestion.phaseLabel
-                ?.replace(/^Phase\s+\d+\s*[·•\-:]?\s*/i, "")
-                .trim();
-              if (!cleanedLabel) return null;
-              return (
-                <span className="text-[10px] font-extrabold text-[#f6c945] bg-[#120f1c] px-2 py-0.5 rounded border border-[#f6c945]/40">
-                  {cleanedLabel}
-                </span>
-              );
-            })()}
           </div>
 
           <h4 className="text-sm sm:text-base font-bold text-[#f4efe6] leading-relaxed">
