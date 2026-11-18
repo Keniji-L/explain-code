@@ -494,7 +494,7 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
         aria-label={t("เมนูนำทางด้านล่างสำหรับมือถือ", "Mobile bottom navigation")}
         className="fixed bottom-3 inset-x-3 z-50 md:hidden"
       >
-        <div className="liquid-glass liquid-glass-scrolled mx-auto max-w-md rounded-2xl p-1.5 grid grid-cols-4 gap-1">
+        <div className="mx-auto max-w-sm rounded-2xl border border-[#3d395a] bg-[#120f1e]/95 backdrop-blur-md p-1.5 grid grid-cols-4 gap-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.65)]">
           {navItems.map((item) => {
             const isActive =
               item.href === "/"
@@ -505,15 +505,17 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-label={item.label}
+                title={item.label}
                 aria-current={isActive ? "page" : undefined}
-                className={`liquid-press min-w-0 flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-xs font-extrabold leading-snug ${
+                className={`liquid-press min-w-0 flex items-center justify-center rounded-xl py-3 px-2 transition-colors ${
                   isActive
-                    ? "liquid-active-nav-item text-[#ffe27a]"
-                    : "text-[#c4bdd6] hover:bg-[#252238] hover:text-[#f4efe6]"
+                    ? "liquid-active-nav-item text-[#ffe27a] drop-shadow-[0_0_8px_rgba(246,201,69,0.45)]"
+                    : "text-[#f4efe6] hover:bg-[#252238] hover:text-[#ffe27a]"
                 }`}
               >
-                <Icon name={item.icon} className="h-5 w-5" />
-                <span className="w-full truncate text-center">{item.label}</span>
+                <Icon name={item.icon} className="h-6 w-6" />
+                <span className="sr-only">{item.label}</span>
               </Link>
             );
           })}
@@ -523,46 +525,52 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
             session.role === "teacher" || session.role === "admin" ? (
               <Link
                 href="/teacher"
+                aria-label={t("แดชบอร์ดครู", "Teacher")}
+                title={t("แดชบอร์ดครู", "Teacher")}
                 aria-current={
                   pathname.startsWith("/teacher") ? "page" : undefined
                 }
-                className={`liquid-press min-w-0 flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-xs font-extrabold leading-snug ${
+                className={`liquid-press min-w-0 flex items-center justify-center rounded-xl py-3 px-2 transition-colors ${
                   pathname.startsWith("/teacher")
-                    ? "liquid-active-nav-item text-[#ffe27a]"
-                    : "text-[#c4bdd6] hover:bg-[#252238] hover:text-[#f4efe6]"
+                    ? "liquid-active-nav-item text-[#ffe27a] drop-shadow-[0_0_8px_rgba(246,201,69,0.45)]"
+                    : "text-[#f4efe6] hover:bg-[#252238] hover:text-[#ffe27a]"
                 }`}
               >
-                <Icon name="users" className="h-5 w-5" />
-                <span className="w-full truncate text-center">{t("แดชบอร์ดครู", "Teacher")}</span>
+                <Icon name="users" className="h-6 w-6" />
+                <span className="sr-only">{t("แดชบอร์ดครู", "Teacher")}</span>
               </Link>
             ) : (
               <Link
                 href="/my-learning"
+                aria-label={t("เรียนของฉัน", "My Learning")}
+                title={t("เรียนของฉัน", "My Learning")}
                 aria-current={
                   pathname.startsWith("/my-learning") ? "page" : undefined
                 }
-                className={`liquid-press min-w-0 flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-xs font-extrabold leading-snug ${
+                className={`liquid-press min-w-0 flex items-center justify-center rounded-xl py-3 px-2 transition-colors ${
                   pathname.startsWith("/my-learning")
-                    ? "liquid-active-nav-item text-[#ffe27a]"
-                    : "text-[#c4bdd6] hover:bg-[#252238] hover:text-[#f4efe6]"
+                    ? "liquid-active-nav-item text-[#ffe27a] drop-shadow-[0_0_8px_rgba(246,201,69,0.45)]"
+                    : "text-[#f4efe6] hover:bg-[#252238] hover:text-[#ffe27a]"
                 }`}
               >
-                <Icon name="award" className="h-5 w-5" />
-                <span className="w-full truncate text-center">{t("เรียนของฉัน", "My Learning")}</span>
+                <Icon name="award" className="h-6 w-6" />
+                <span className="sr-only">{t("เรียนของฉัน", "My Learning")}</span>
               </Link>
             )
           ) : (
             <Link
               href="/login"
+              aria-label={t("บัญชีผู้ใช้", "Account")}
+              title={t("บัญชีผู้ใช้", "Account")}
               aria-current={pathname.startsWith("/login") ? "page" : undefined}
-              className={`liquid-press min-w-0 flex flex-col items-center justify-center gap-1 rounded-xl py-2 px-1 text-xs font-extrabold leading-snug ${
+              className={`liquid-press min-w-0 flex items-center justify-center rounded-xl py-3 px-2 transition-colors ${
                 pathname.startsWith("/login")
-                  ? "liquid-active-nav-item text-[#ffe27a]"
-                  : "text-[#c4bdd6] hover:bg-[#252238] hover:text-[#f4efe6]"
+                  ? "liquid-active-nav-item text-[#ffe27a] drop-shadow-[0_0_8px_rgba(246,201,69,0.45)]"
+                  : "text-[#f4efe6] hover:bg-[#252238] hover:text-[#ffe27a]"
               }`}
             >
-              <Icon name="user" className="h-5 w-5" />
-              <span className="w-full truncate text-center">{t("บัญชีผู้ใช้", "Account")}</span>
+              <Icon name="user" className="h-6 w-6" />
+              <span className="sr-only">{t("บัญชีผู้ใช้", "Account")}</span>
             </Link>
           )}
         </div>
