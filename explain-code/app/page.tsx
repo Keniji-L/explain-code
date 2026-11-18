@@ -259,7 +259,7 @@ export default function ExplainCodeApp() {
               : [...prev, sbStudent];
             try {
               localStorage.setItem(STORAGE_STUDENTS_KEY, JSON.stringify(nextList));
-            } catch {}
+            } catch { }
             return nextList;
           });
           return;
@@ -291,7 +291,7 @@ export default function ExplainCodeApp() {
             const nextList = prev.map((s) => (s.id === synced.id ? synced : s));
             try {
               localStorage.setItem(STORAGE_STUDENTS_KEY, JSON.stringify(nextList));
-            } catch {}
+            } catch { }
             return nextList;
           });
         }
@@ -405,8 +405,8 @@ export default function ExplainCodeApp() {
       const sbStudent: StudentRecord = data.student;
       const merged = students.some((s) => s.nickname === sbStudent.nickname)
         ? students.map((s) =>
-            s.nickname === sbStudent.nickname ? sbStudent : s
-          )
+          s.nickname === sbStudent.nickname ? sbStudent : s
+        )
         : [...students, sbStudent];
       saveStudentsToStorage(merged);
       setCurrentStudentId(sbStudent.id);
@@ -1037,7 +1037,7 @@ export default function ExplainCodeApp() {
             const nextList = prev.map((s) => (s.id === synced.id ? synced : s));
             try {
               localStorage.setItem(STORAGE_STUDENTS_KEY, JSON.stringify(nextList));
-            } catch {}
+            } catch { }
             return nextList;
           });
         }
@@ -1069,7 +1069,7 @@ export default function ExplainCodeApp() {
               const nextList = prev.map((s) => (s.id === synced.id ? synced : s));
               try {
                 localStorage.setItem(STORAGE_STUDENTS_KEY, JSON.stringify(nextList));
-              } catch {}
+              } catch { }
               return nextList;
             });
           }
@@ -1094,23 +1094,23 @@ export default function ExplainCodeApp() {
   // ครอบ handler ของฟอร์ม: กันกดซ้ำ + แสดงสถานะกำลังตรวจสอบ + จับ error เครือข่ายแยกตาม Role
   const runSubmit =
     (fn: (e: React.FormEvent) => Promise<void>, role: "student" | "teacher") =>
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (isSubmitting) return;
-      setIsSubmitting(true);
-      try {
-        await fn(e);
-      } catch {
-        const msg = t(
-          "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่อีกครั้ง",
-          "Cannot connect to server. Please try again."
-        );
-        if (role === "teacher") setTeacherAuthError(msg);
-        else setAuthMessage({ type: "error", text: msg });
-      } finally {
-        setIsSubmitting(false);
-      }
-    };
+      async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        try {
+          await fn(e);
+        } catch {
+          const msg = t(
+            "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่อีกครั้ง",
+            "Cannot connect to server. Please try again."
+          );
+          if (role === "teacher") setTeacherAuthError(msg);
+          else setAuthMessage({ type: "error", text: msg });
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
 
   // ==================== 0. หน้า Landing ("/") แบบ Public (เว็บระบบเปิด) ====================
   if (appMode === "landing") {
@@ -1138,10 +1138,17 @@ export default function ExplainCodeApp() {
 
             <p className="mt-4 text-sm sm:text-base text-[#9a93ad]">
               {t(
-                'เปลี่ยนจาก "เขียนโค้ดได้แต่อธิบายไม่ถูก" เป็น "เข้าใจการทำงานทุกบรรทัด" ผ่านดันเจี้ยน RPG และตัวช่วยอธิบายโค้ด',
-                'Turn "I wrote it, can\'t explain it" into true line-by-line mastery via RPG dungeons & AI code breakdown.'
+                'เปลี่ยนจาก "เขียนโค้ดได้แต่อธิบายไม่ถูก" เป็น "เข้าใจการทำงานทุกบรรทัด"',
+                'Turn "I wrote it, can\'t explain it" into true line-by-line mastery via '
               )}
             </p>
+            <p className="text-sm sm:text-base text-[#9a93ad]">
+              {t(
+                'ผ่านดันเจี้ยน RPG และตัวช่วยอธิบายโค้ด',
+                'RPG dungeons & AI code breakdown.'
+              )}
+            </p>
+
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <Link
                 href="/courses"
@@ -1363,11 +1370,10 @@ export default function ExplainCodeApp() {
                   setAuthMessage(null);
                   setAppMode("student-login");
                 }}
-                className={`py-2.5 px-3 rounded-xl text-[14px] font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${
-                  !isTeacherRole
+                className={`py-2.5 px-3 rounded-xl text-[14px] font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${!isTeacherRole
                     ? "bg-[#5a2d91] text-[#ffe27a] border border-[#f6c945]/75 shadow-sm"
                     : "text-[#9a93ad] hover:text-[#f4efe6]"
-                }`}
+                  }`}
               >
                 <Icon name="user" size={18} />
                 <span>{t("Role: นักเรียน", "Role: Student")}</span>
@@ -1379,11 +1385,10 @@ export default function ExplainCodeApp() {
                   setTeacherAuthError("");
                   setAppMode("teacher-login");
                 }}
-                className={`py-2.5 px-3 rounded-xl text-[14px] font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${
-                  isTeacherRole
+                className={`py-2.5 px-3 rounded-xl text-[14px] font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${isTeacherRole
                     ? "bg-[#5a2d91] text-[#ffe27a] border border-[#f6c945]/75 shadow-sm"
                     : "text-[#9a93ad] hover:text-[#f4efe6]"
-                }`}
+                  }`}
               >
                 <Icon name="users" size={18} />
                 <span>{t("Role: ครูผู้สอน", "Role: Teacher")}</span>
@@ -1415,11 +1420,10 @@ export default function ExplainCodeApp() {
                       setAuthMessage(null);
                       setStudentAuthTab("login");
                     }}
-                    className={`py-2.5 px-3 rounded-xl text-[14px] font-extrabold border-2 transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                      studentAuthTab === "login"
+                    className={`py-2.5 px-3 rounded-xl text-[14px] font-extrabold border-2 transition flex items-center justify-center gap-1.5 cursor-pointer ${studentAuthTab === "login"
                         ? "bg-[#25193b] border-[#9b5de5] text-[#ffe27a]"
                         : "bg-[#1c1b2b] border-[#2f2d45] text-[#9a93ad]"
-                    }`}
+                      }`}
                   >
                     <Icon name="play" size={16} filled={studentAuthTab === "login"} />
                     <span>{t("มีชื่อเล่นแล้ว (เข้าเล่น)", "Login (Have Nickname)")}</span>
@@ -1431,11 +1435,10 @@ export default function ExplainCodeApp() {
                       setAuthMessage(null);
                       setStudentAuthTab("register");
                     }}
-                    className={`py-2.5 px-3 rounded-xl text-[14px] font-extrabold border-2 transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                      studentAuthTab === "register"
+                    className={`py-2.5 px-3 rounded-xl text-[14px] font-extrabold border-2 transition flex items-center justify-center gap-1.5 cursor-pointer ${studentAuthTab === "register"
                         ? "bg-[#281d08] border-[#f6c945] text-[#ffe27a]"
                         : "bg-[#1c1b2b] border-[#2f2d45] text-[#9a93ad]"
-                    }`}
+                      }`}
                   >
                     <Icon name="user" size={16} />
                     <span>{t("สมัครเข้าเล่นใหม่", "Sign Up New")}</span>
@@ -1445,18 +1448,17 @@ export default function ExplainCodeApp() {
                 {authMessage && (
                   <div
                     role="alert"
-                    className={`flex items-start gap-3 p-4 rounded-xl text-[13px] font-bold border-2 shadow-md ${
-                      authMessage.type === "error"
+                    className={`flex items-start gap-3 p-4 rounded-xl text-[13px] font-bold border-2 shadow-md ${authMessage.type === "error"
                         ? "bg-[#2d141c] text-[#fca5a5] border-[#c0283a]"
                         : "bg-[#102a1e] text-[#86efac] border-[#2fbf71]"
-                    }`}
+                      }`}
                   >
                     <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/30 text-sm">
                       <Icon
-                      name={authMessage.type === "error" ? "alert" : "check"}
-                      size={16}
-                      className="shrink-0 mt-0.5"
-                    />
+                        name={authMessage.type === "error" ? "alert" : "check"}
+                        size={16}
+                        className="shrink-0 mt-0.5"
+                      />
                     </span>
                     <div className="flex-1 leading-relaxed">
                       <p className="font-extrabold text-[14px] mb-0.5">
@@ -1621,11 +1623,10 @@ export default function ExplainCodeApp() {
                       setTeacherAuthError("");
                       setTeacherAuthTab("login");
                     }}
-                    className={`py-2.5 px-3 rounded-xl text-[14px] font-extrabold border-2 transition cursor-pointer ${
-                      teacherAuthTab === "login"
+                    className={`py-2.5 px-3 rounded-xl text-[14px] font-extrabold border-2 transition cursor-pointer ${teacherAuthTab === "login"
                         ? "bg-[#25193b] border-[#9b5de5] text-[#ffe27a]"
                         : "bg-[#1c1b2b] border-[#2f2d45] text-[#9a93ad]"
-                    }`}
+                      }`}
                   >
                     {t("เข้าสู่ระบบครู", "Teacher Login")}
                   </button>
@@ -1636,11 +1637,10 @@ export default function ExplainCodeApp() {
                       setTeacherAuthError("");
                       setTeacherAuthTab("register");
                     }}
-                    className={`py-2.5 px-3 rounded-xl text-[14px] font-extrabold border-2 transition cursor-pointer ${
-                      teacherAuthTab === "register"
+                    className={`py-2.5 px-3 rounded-xl text-[14px] font-extrabold border-2 transition cursor-pointer ${teacherAuthTab === "register"
                         ? "bg-[#281d08] border-[#f6c945] text-[#ffe27a]"
                         : "bg-[#1c1b2b] border-[#2f2d45] text-[#9a93ad]"
-                    }`}
+                      }`}
                   >
                     {t("สมัครบัญชีครูใหม่", "Register Teacher")}
                   </button>
@@ -1749,17 +1749,16 @@ export default function ExplainCodeApp() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className={`disabled:opacity-60 w-full py-4 rounded-2xl text-[17px] font-extrabold flex items-center justify-center gap-2 cursor-pointer mt-1 ${
-                      teacherAuthTab === "login" ? "press-teal" : "press-gold"
-                    }`}
+                    className={`disabled:opacity-60 w-full py-4 rounded-2xl text-[17px] font-extrabold flex items-center justify-center gap-2 cursor-pointer mt-1 ${teacherAuthTab === "login" ? "press-teal" : "press-gold"
+                      }`}
                   >
                     <Icon name="users" size={20} />
                     <span>
                       {isSubmitting
                         ? t("กำลังตรวจสอบ...", "Checking...")
                         : teacherAuthTab === "login"
-                        ? t("เข้าสู่ระบบสำหรับครู", "Teacher Login")
-                        : t("สร้างบัญชีครูและเข้าใช้งาน", "Create Teacher Account")}
+                          ? t("เข้าสู่ระบบสำหรับครู", "Teacher Login")
+                          : t("สร้างบัญชีครูและเข้าใช้งาน", "Create Teacher Account")}
                     </span>
                   </button>
                 </form>
@@ -1882,11 +1881,10 @@ export default function ExplainCodeApp() {
                   key={tab.id}
                   type="button"
                   onClick={() => setStudentTab(tab.id)}
-                  className={`px-3 py-1.5 rounded-xl text-[13px] font-extrabold flex items-center gap-1.5 transition cursor-pointer ${
-                    active
+                  className={`px-3 py-1.5 rounded-xl text-[13px] font-extrabold flex items-center gap-1.5 transition cursor-pointer ${active
                       ? "bg-[#5a2d91] text-[#ffe27a] border border-[#f6c945]/80"
                       : "bg-[#1c1b2b] hover:bg-[#252238] text-[#c4bdd6] border border-[#2f2d45]"
-                  }`}
+                    }`}
                 >
                   <Icon name={tab.icon} size={17} />
                   <span>{tab.label}</span>
@@ -2031,11 +2029,10 @@ export default function ExplainCodeApp() {
                 <button
                   type="button"
                   onClick={() => setUnlockAllDemo(!unlockAllDemo)}
-                  className={`px-4 py-2 rounded-xl text-[13px] font-extrabold border-2 transition cursor-pointer ${
-                    unlockAllDemo
+                  className={`px-4 py-2 rounded-xl text-[13px] font-extrabold border-2 transition cursor-pointer ${unlockAllDemo
                       ? "bg-[#102a1e] border-[#2fbf71] text-[#86efac]"
                       : "press-secondary"
-                  }`}
+                    }`}
                 >
                   {unlockAllDemo
                     ? t("✓ ปลดล็อกทุกเรื่องแล้ว", "✓ All Topics Unlocked")
@@ -2054,17 +2051,16 @@ export default function ExplainCodeApp() {
                   return (
                     <div
                       key={topic.id}
-                      className={`rounded-2xl border-2 p-5 flex flex-col justify-between gap-4 transition ${
-                        isBoss
+                      className={`rounded-2xl border-2 p-5 flex flex-col justify-between gap-4 transition ${isBoss
                           ? unlocked
                             ? "bg-[#25193b] border-[#9b5de5] md:col-span-2 lg:col-span-3"
                             : "bg-[#1c1b2b] border-[#2f2d45] md:col-span-2 lg:col-span-3 opacity-80"
                           : isPassed
-                          ? "bg-[#102a1e]/60 border-[#2fbf71]/60"
-                          : unlocked
-                          ? "bg-[#1c1b2b] border-[#f6c945]/75 shadow-sm"
-                          : "bg-[#161426] border-[#2f2d45] opacity-75"
-                      }`}
+                            ? "bg-[#102a1e]/60 border-[#2fbf71]/60"
+                            : unlocked
+                              ? "bg-[#1c1b2b] border-[#f6c945]/75 shadow-sm"
+                              : "bg-[#161426] border-[#2f2d45] opacity-75"
+                        }`}
                     >
                       <div className="flex items-start gap-3.5">
                         <StatusCircle
@@ -2074,10 +2070,10 @@ export default function ExplainCodeApp() {
                                 ? "boss"
                                 : "locked"
                               : isPassed
-                              ? "passed"
-                              : unlocked
-                              ? "current"
-                              : "locked"
+                                ? "passed"
+                                : unlocked
+                                  ? "current"
+                                  : "locked"
                           }
                           size="md"
                           label={topic.title}
@@ -2086,28 +2082,27 @@ export default function ExplainCodeApp() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span
-                              className={`px-2.5 py-0.5 rounded-full text-[12px] font-extrabold ${
-                                isBoss
+                              className={`px-2.5 py-0.5 rounded-full text-[12px] font-extrabold ${isBoss
                                   ? "bg-[#5a2d91] text-[#ffe27a] border border-[#9b5de5]"
                                   : isPassed
-                                  ? "bg-[#102a1e] text-[#86efac] border border-[#2fbf71]/50"
-                                  : unlocked
-                                  ? "bg-[#281d08] text-[#ffe27a] border border-[#f6c945]/50"
-                                  : "bg-[#252238] text-[#9a93ad]"
-                              }`}
+                                    ? "bg-[#102a1e] text-[#86efac] border border-[#2fbf71]/50"
+                                    : unlocked
+                                      ? "bg-[#281d08] text-[#ffe27a] border border-[#f6c945]/50"
+                                      : "bg-[#252238] text-[#9a93ad]"
+                                }`}
                             >
                               {isPassed
                                 ? t("ผ่านแล้ว", "Passed")
                                 : unlocked
-                                ? isBoss
-                                  ? t("บอสด่านพร้อมลุย!", "Boss Ready!")
-                                  : t("พร้อมเข้าเล่น", "Ready")
-                                : isBoss
-                                ? t(
-                                    `ล็อก (ผ่านแล้ว ${currentStudent.completedTopics.length}/4 เรื่อง)`,
-                                    `Locked (${currentStudent.completedTopics.length}/4 done)`
-                                  )
-                                : t("ล็อก", "Locked")}
+                                  ? isBoss
+                                    ? t("บอสด่านพร้อมลุย!", "Boss Ready!")
+                                    : t("พร้อมเข้าเล่น", "Ready")
+                                  : isBoss
+                                    ? t(
+                                      `ล็อก (ผ่านแล้ว ${currentStudent.completedTopics.length}/4 เรื่อง)`,
+                                      `Locked (${currentStudent.completedTopics.length}/4 done)`
+                                    )
+                                    : t("ล็อก", "Locked")}
                             </span>
 
                             <span className="text-[12px] font-bold text-[#9a93ad]">
@@ -2140,13 +2135,12 @@ export default function ExplainCodeApp() {
                             setSelectedTopicId(topic.id);
                             setStudentTab("practice");
                           }}
-                          className={`px-5 py-2.5 rounded-xl text-[15px] font-extrabold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                            isBoss
+                          className={`px-5 py-2.5 rounded-xl text-[15px] font-extrabold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${isBoss
                               ? "press-boss"
                               : isPassed
-                              ? "press-secondary"
-                              : "press-teal"
-                          }`}
+                                ? "press-secondary"
+                                : "press-teal"
+                            }`}
                         >
                           <Icon
                             name={unlocked ? "play" : "lock"}
@@ -2157,8 +2151,8 @@ export default function ExplainCodeApp() {
                             {isPassed
                               ? t("เล่นซ้ำ", "Replay")
                               : unlocked
-                              ? t("เริ่มเล่นด่านนี้", "Start Stage")
-                              : t("ยังไม่ปลดล็อก", "Locked")}
+                                ? t("เริ่มเล่นด่านนี้", "Start Stage")
+                                : t("ยังไม่ปลดล็อก", "Locked")}
                           </span>
                         </button>
                       </div>
@@ -2300,10 +2294,10 @@ export default function ExplainCodeApp() {
                     setPlaygroundOutput(
                       res.success
                         ? res.finalOutput ||
-                            t(
-                              "(โค้ดทำงานสำเร็จแต่ไม่มีคำสั่ง console.log)",
-                              "(Code ran successfully with no console.log output)"
-                            )
+                        t(
+                          "(โค้ดทำงานสำเร็จแต่ไม่มีคำสั่ง console.log)",
+                          "(Code ran successfully with no console.log output)"
+                        )
                         : `${t("ข้อผิดพลาด:", "Error:")} ${res.error}`
                     );
                   }}
@@ -2475,11 +2469,10 @@ export default function ExplainCodeApp() {
                     return (
                       <div
                         key={topicItem.badgeReward.id}
-                        className={`p-3 rounded-xl border flex items-center gap-3 ${
-                          unlocked
+                        className={`p-3 rounded-xl border flex items-center gap-3 ${unlocked
                             ? "bg-[#25193b] border-[#9b5de5] text-[#f4efe6]"
                             : "bg-[#1c1b2b] border-[#2f2d45] text-[#9a93ad] opacity-65"
-                        }`}
+                          }`}
                       >
                         <StatusCircle
                           variant={unlocked ? "badge" : "locked"}
@@ -2510,11 +2503,10 @@ export default function ExplainCodeApp() {
                       return (
                         <div
                           key={sb.id}
-                          className={`p-3 rounded-xl border flex items-center gap-3 ${
-                            unlocked
+                          className={`p-3 rounded-xl border flex items-center gap-3 ${unlocked
                               ? "bg-[#2a1f12] border-[#f6c945] text-[#ffe27a]"
                               : "bg-[#1c1b2b] border-[#2f2d45] text-[#9a93ad] opacity-65"
-                          }`}
+                            }`}
                         >
                           <StatusCircle
                             variant={unlocked ? "badge" : "locked"}
