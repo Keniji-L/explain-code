@@ -244,12 +244,12 @@ export function CodeChestModal({
             </span>
           </div>
 
-          <p className="text-sm font-bold text-[#f4efe6] leading-relaxed">
+          <p className="text-sm font-bold text-[#f4efe6] leading-relaxed break-words">
             {displayQuestion}
           </p>
 
           {(isEn ? question.codeSnippetEn || question.codeSnippet : question.codeSnippet) && (
-            <pre className="p-3 rounded-xl bg-[#0b0b14] border border-[#4a4766] text-[#ffe27a] text-xs font-mono overflow-x-auto leading-relaxed">
+            <pre className="p-3 rounded-xl bg-[#0b0b14] border border-[#4a4766] text-[#ffe27a] text-xs font-mono max-w-full overflow-x-auto leading-relaxed">
               <code>
                 {(isEn ? question.codeSnippetEn || question.codeSnippet : question.codeSnippet)!.split("\n").map((line, lineIdx) => (
                   <div key={lineIdx} className="flex items-start gap-3">
@@ -287,7 +287,7 @@ export function CodeChestModal({
                 type="button"
                 disabled={isSolved || isFailed || isEliminated}
                 onClick={() => handleSelectChoice(idx)}
-                className={`retro-button px-3.5 py-2.5 rounded-xl text-left text-xs sm:text-sm font-semibold flex items-center gap-3 transition-colors ${
+                className={`retro-button px-3.5 py-2.5 rounded-xl text-left text-xs sm:text-sm font-semibold flex items-center gap-3 min-w-0 break-words transition-colors ${
                   isEliminated ? "cursor-not-allowed" : "cursor-pointer"
                 } ${btnClass}`}
               >

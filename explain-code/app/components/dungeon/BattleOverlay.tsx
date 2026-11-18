@@ -964,7 +964,7 @@ export function BattleOverlay({
             )}
           </div>
 
-          <h4 className="text-sm sm:text-base font-bold text-[#f4efe6] leading-relaxed">
+          <h4 className="text-sm sm:text-base font-bold text-[#f4efe6] leading-relaxed break-words">
             {displayQuestionText}
           </h4>
 
@@ -1022,7 +1022,7 @@ export function BattleOverlay({
                   </span>
                 )}
               </div>
-              <pre className="p-3 rounded-xl bg-[#0b0b14] border border-[#4a4766] text-[#ffe27a] text-xs font-mono overflow-x-auto leading-relaxed">
+              <pre className="p-3 rounded-xl bg-[#0b0b14] border border-[#4a4766] text-[#ffe27a] text-xs font-mono max-w-full overflow-x-auto leading-relaxed">
                 <code>
                   {(isEn ? activeQuestion.codeSnippetEn || activeQuestion.codeSnippet : activeQuestion.codeSnippet)!.split("\n").map((line, lineIdx) => {
                     const isPinned = selectedCodeLine === lineIdx;
@@ -1251,7 +1251,7 @@ export function BattleOverlay({
               <div className="font-extrabold text-[#2fbf71]">
                 {t("ผลลัพธ์คอนโซลจำลอง (Test Oracle Output):", "Simulated Console Output (Test Oracle):")}
               </div>
-              <pre className="font-mono text-[11px] bg-[#0b0b14] px-2.5 py-1.5 rounded border border-[#2fbf71]/40 text-[#86efac] overflow-x-auto">
+              <pre className="font-mono text-[11px] bg-[#0b0b14] px-2.5 py-1.5 rounded border border-[#2fbf71]/40 text-[#86efac] max-w-full overflow-x-auto">
                 {revealedOracleOutput}
               </pre>
             </div>
@@ -1294,7 +1294,7 @@ export function BattleOverlay({
                 <span className="pixel-font font-black text-xs px-1.5 py-0.5 rounded bg-[#120f1c] border border-white/20 shrink-0">
                   {idx + 1}
                 </span>
-                <span className="leading-snug flex-1">{choice}</span>
+                <span className="leading-snug flex-1 min-w-0 break-words">{choice}</span>
               </button>
             );
           })}

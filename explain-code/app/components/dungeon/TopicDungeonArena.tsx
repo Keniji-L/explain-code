@@ -856,7 +856,7 @@ export function TopicDungeonArena({
       {/* 2D RPG Dungeon Room */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           {/* Left / Center: 2D Pixel RPG Dungeon Canvas + Controls */}
-          <div className="lg:col-span-7 flex flex-col gap-3">
+          <div className="lg:col-span-7 min-w-0 flex flex-col gap-3">
             <div className="relative">
               <GameCanvas
                 room={room}
@@ -952,7 +952,7 @@ export function TopicDungeonArena({
           <div
             className={`${
               room.isDoorUnlocked ? "flex" : "hidden lg:flex"
-            } lg:col-span-5 flex-col gap-4`}
+            } lg:col-span-5 min-w-0 flex-col gap-4`}
           >
             <div className="rounded-2xl border border-[#2f2d45] bg-[#1c1b2b] p-4 sm:p-5 space-y-4 text-[#f4efe6]">
               {/* Monster Card */}
@@ -1020,7 +1020,7 @@ export function TopicDungeonArena({
                 </div>
 
                 {scrollTab === "code" || !activeTopic.steps?.length ? (
-                  <pre className="p-3 rounded-xl bg-[#0d0b14] border border-[#2f2d45] text-[#ffe27a] text-xs font-mono overflow-x-auto leading-relaxed">
+                  <pre className="p-3 rounded-xl bg-[#0d0b14] border border-[#2f2d45] text-[#ffe27a] text-xs font-mono max-w-full overflow-x-auto leading-relaxed">
                     <code>
                       {displayTopicCode.split("\n").map((line, lineIdx) => (
                         <div key={lineIdx} className="flex items-start gap-3">
