@@ -1147,28 +1147,35 @@ export default function ExplainCodeApp() {
           </div>
 
           {/* Hero Section */}
-          <section className="relative text-center max-w-2xl mx-auto mb-12 hero-fade-in">
-            <h1 className="mt-4 text-3xl sm:text-5xl font-extrabold tracking-tight text-[#f4efe6] leading-tight">
-              <span>{t("เขียนโค้ดได้แล้ว ", "You Can Write Code — ")}</span>
-              <span className="mt-2 block text-[#f6c945] underline decoration-[#9b5de5] underline-offset-8">
-                {t("แต่อธิบายโค้ดได้จริงไหม?", "Can You Explain It?")}
-              </span>
-            </h1>
+          <section className="relative text-center max-w-3xl mx-auto mb-12 py-4 sm:py-10 px-1 sm:px-4 hero-fade-in">
+            {/* Desktop Background Interactive Code Preview (dims behind text, lights up on hover) */}
+            <div className="hidden sm:flex items-center justify-center absolute inset-0 z-0 hover:z-20 focus-within:z-20 pointer-events-auto">
+              <LandingHeroPreview />
+            </div>
 
-            <p className="mt-4 text-sm sm:text-base text-[#9a93ad]">
-              {t(
-                'เปลี่ยนจาก "เขียนโค้ดได้แต่อธิบายไม่ถูก" เป็น "เข้าใจการทำงานทุกบรรทัด"',
-                'Turn "I wrote it, can\'t explain it" into true line-by-line mastery via '
-              )}
-            </p>
-            <p className="text-sm sm:text-base text-[#9a93ad]">
-              {t(
-                'ผ่านดันเจี้ยน RPG และตัวช่วยอธิบายโค้ด',
-                'RPG dungeons & AI code breakdown.'
-              )}
-            </p>
+            <div className="relative z-10 pointer-events-none max-w-2xl mx-auto">
+              <h1 className="mt-2 text-2xl sm:text-5xl font-extrabold tracking-tight text-[#f4efe6] leading-tight break-words">
+                <span>{t("เขียนโค้ดได้แล้ว ", "You Can Write Code — ")}</span>
+                <span className="mt-2 block text-[#f6c945] underline decoration-[#9b5de5] underline-offset-8">
+                  {t("แต่อธิบายโค้ดได้จริงไหม?", "Can You Explain It?")}
+                </span>
+              </h1>
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <p className="mt-4 text-xs sm:text-base text-[#c4bdd6] leading-relaxed break-words px-2 sm:px-0">
+                {t(
+                  'เปลี่ยนจาก "เขียนโค้ดได้แต่อธิบายไม่ถูก" เป็น "เข้าใจการทำงานทุกบรรทัด"',
+                  'Turn "I wrote it, can\'t explain it" into true line-by-line mastery via'
+                )}
+              </p>
+              <p className="mt-1 text-xs sm:text-base text-[#9a93ad] leading-relaxed break-words px-2 sm:px-0">
+                {t(
+                  'ผ่านดันเจี้ยน RPG และตัวช่วยอธิบายโค้ด',
+                  'RPG dungeons & AI code breakdown.'
+                )}
+              </p>
+            </div>
+
+            <div className="relative z-30 mt-6 flex flex-wrap items-center justify-center gap-3 pointer-events-auto">
               <Link
                 href="/courses"
                 className="retro-button inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#f6c945] px-5 py-2.5 text-sm font-extrabold text-[#120f1c] shadow-xs hover:bg-[#ffe27a] transition-colors"
@@ -1185,7 +1192,10 @@ export default function ExplainCodeApp() {
               </Link>
             </div>
 
-            <LandingHeroPreview />
+            {/* Mobile Preview (placed cleanly below buttons without overlapping text) */}
+            <div className="sm:hidden mt-6">
+              <LandingHeroPreview />
+            </div>
           </section>
 
           {/* 2 Core Choices: Learning Dungeon & Explain Code */}
