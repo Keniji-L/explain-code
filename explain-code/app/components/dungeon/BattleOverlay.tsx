@@ -844,11 +844,6 @@ export function BattleOverlay({
                 <h3 className="font-extrabold text-[#f6c945] text-sm truncate">
                   {isEn ? monster.nameEn || monster.name : monster.name}
                 </h3>
-                {isMultiPhase && (
-                  <span className="pixel-font text-[9px] bg-[#5a2d91] text-[#ffe27a] px-1.5 py-0.5 rounded font-black shrink-0">
-                    P{phaseIndex + 1}/{totalPhases}
-                  </span>
-                )}
               </div>
               <div className="text-[11px] text-[#9a93ad] truncate">
                 {isEn ? monster.titleEn || monster.title : monster.title}
@@ -960,11 +955,17 @@ export function BattleOverlay({
                 {activeQuestion.language}
               </span>
             )}
-            {activeQuestion.phaseLabel && (
-              <span className="text-[10px] font-extrabold text-[#f6c945] bg-[#120f1c] px-2 py-0.5 rounded border border-[#f6c945]/40">
-                {activeQuestion.phaseLabel}
-              </span>
-            )}
+            {(() => {
+              const cleanedLabel = activeQuestion.phaseLabel
+                ?.replace(/^Phase\s+\d+\s*[·•\-:]?\s*/i, "")
+                .trim();
+              if (!cleanedLabel) return null;
+              return (
+                <span className="text-[10px] font-extrabold text-[#f6c945] bg-[#120f1c] px-2 py-0.5 rounded border border-[#f6c945]/40">
+                  {cleanedLabel}
+                </span>
+              );
+            })()}
           </div>
 
           <h4 className="text-sm sm:text-base font-bold text-[#f4efe6] leading-relaxed">
