@@ -126,9 +126,20 @@ export function CoinShopModal({
               {t("🛒 ร้านค้าพ่อค้าระหว่างชั้น", "🛒 Floor Merchant Shop")}
             </h2>
           </div>
-          <div className="flex items-center gap-1.5 rounded-xl border border-[#f6c945]/50 bg-[#281d08] px-3 py-1.5 text-xs font-extrabold text-[#ffe27a] pixel-font">
-            <PixelSpriteView sprite={COIN_SPRITE} size={14} />
-            <span>{coins}</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 rounded-xl border border-[#f6c945]/50 bg-[#281d08] px-3 py-1.5 text-xs font-extrabold text-[#ffe27a] pixel-font">
+              <PixelSpriteView sprite={COIN_SPRITE} size={14} />
+              <span>{coins}</span>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t("ปิดร้านค้า (Esc)", "Close shop (Esc)")}
+              title={t("ปิดร้านค้า (Esc)", "Close shop (Esc)")}
+              className="w-8 h-8 rounded-lg bg-[#252238] hover:bg-[#c0283a]/85 border border-[#4a4766] hover:border-[#ff4d6d] text-sm font-black text-[#f4efe6] flex items-center justify-center leading-none transition-colors cursor-pointer shrink-0"
+            >
+              ✕
+            </button>
           </div>
         </div>
 
@@ -180,14 +191,6 @@ export function CoinShopModal({
             </div>
           ))}
         </div>
-
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full rounded-xl border border-[#3d395a] bg-[#1c1b2b] py-2.5 text-xs font-bold text-[#f4efe6] hover:bg-[#252238] cursor-pointer"
-        >
-          {t("ปิดร้านค้าและลุยต่อ (Esc)", "Close & Continue (Esc)")}
-        </button>
       </div>
     </div>
   );
