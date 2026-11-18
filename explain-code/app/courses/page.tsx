@@ -1383,67 +1383,6 @@ function CoursesContent() {
             </p>
           </section>
 
-          {/* Mode Guide Banner: Clarifies each Dungeon / Learning Mode */}
-          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-2xl border border-[#f6c945]/40 bg-[#171422] p-3.5 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#ffe27a]">
-                <span>⚔️</span>
-                <span>{t("โหมดดันเจี้ยน 7 ภาษา", "7-Language Dungeon")}</span>
-              </div>
-              <p className="text-[11px] text-[#9a93ad] leading-relaxed">
-                {t(
-                  "เลือกภาษาด้านล่างแล้วตะลุยด่าน RPG 2D ทีละชั้น พร้อมสกิลฮีโร่และร้านค้า",
-                  "Pick a language below to raid 2D RPG floors with hero skills & merchant shop."
-                )}
-              </p>
-            </div>
-            <Link
-              href="/explain"
-              className="rounded-2xl border border-[#9b5de5]/40 bg-[#171422] p-3.5 space-y-1 hover:border-[#9b5de5] transition-colors"
-            >
-              <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#e9d5ff]">
-                <span>✨</span>
-                <span>{t("ดันเจี้ยนจากโค้ดตัวเอง", "Custom Code Dungeon")}</span>
-              </div>
-              <p className="text-[11px] text-[#9a93ad] leading-relaxed">
-                {t(
-                  "วางโค้ดของคุณในหน้าอธิบายโค้ด แล้วแปลงเป็นด่านส่วนตัว (แชร์ให้เพื่อนเล่นได้)",
-                  "Paste your own code in Explainer & convert it into a shareable dungeon."
-                )}
-              </p>
-            </Link>
-            <Link
-              href="/depths"
-              className="rounded-2xl border border-[#38bdf8]/40 bg-[#171422] p-3.5 space-y-1 hover:border-[#38bdf8] transition-colors"
-            >
-              <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#7dd3fc]">
-                <span>🕳️</span>
-                <span>{t("โหมด Code Depths", "Code Depths Mode")}</span>
-              </div>
-              <p className="text-[11px] text-[#9a93ad] leading-relaxed">
-                {t(
-                  "ตะลุยดันเจี้ยนลึกต่อเนื่องแบบ Roguelike ทดสอบความอึดและวิเคราะห์โค้ด",
-                  "Endless roguelike dungeon descent to test endurance & code analysis."
-                )}
-              </p>
-            </Link>
-            <Link
-              href="/dungeon/trial"
-              className="rounded-2xl border border-[#2fbf71]/40 bg-[#171422] p-3.5 space-y-1 hover:border-[#2fbf71] transition-colors"
-            >
-              <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#86efac]">
-                <span>🧪</span>
-                <span>{t("โหมดทดลองด่วน (Trial)", "Quick Trial Mode")}</span>
-              </div>
-              <p className="text-[11px] text-[#9a93ad] leading-relaxed">
-                {t(
-                  "เข้าลองระบบต่อสู้และคัมภีร์โค้ดได้ทันทีโดยไม่ต้องสร้างบัญชี",
-                  "Jump straight into a quick trial battle without signing up."
-                )}
-              </p>
-            </Link>
-          </section>
-
           {/* 6 Crisp Language Cards */}
           <section className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
             {LANGUAGE_TRACKS.map((track) => {
