@@ -271,7 +271,11 @@ function LoginFormContent() {
               }`}
             >
               <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/30 text-sm">
-                {message.type === "error" ? "⚠️" : "✅"}
+                <Icon
+                  name={message.type === "error" ? "alert" : "check"}
+                  size={16}
+                  className="shrink-0 mt-0.5"
+                />
               </span>
               <div className="flex-1 text-xs leading-relaxed">
                 <p className="font-extrabold text-sm mb-0.5">
@@ -330,7 +334,9 @@ function LoginFormContent() {
                 />
                 {fieldErrors.loginIdentifier && (
                   <p className="mt-1.5 text-xs font-bold text-[#fca5a5] flex items-center gap-1.5">
-                    <span>⚠️</span>
+                    <span>
+                      <Icon name="alert" size={12} />
+                    </span>
                     <span>{fieldErrors.loginIdentifier}</span>
                   </p>
                 )}
@@ -392,7 +398,9 @@ function LoginFormContent() {
                 </div>
                 {fieldErrors.loginSecret && (
                   <p className="mt-1.5 text-xs font-bold text-[#fca5a5] flex items-center gap-1.5">
-                    <span>⚠️</span>
+                    <span>
+                      <Icon name="alert" size={12} />
+                    </span>
                     <span>{fieldErrors.loginSecret}</span>
                   </p>
                 )}

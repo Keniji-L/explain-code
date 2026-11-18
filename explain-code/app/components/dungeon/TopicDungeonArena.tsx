@@ -844,7 +844,9 @@ export function TopicDungeonArena({
               className="flex items-center gap-1 rounded-lg border border-[#f6c945]/50 bg-[#281d08] px-2.5 py-1 text-[11px] font-extrabold text-[#ffe27a] hover:bg-[#3a2a0c] disabled:opacity-50 transition-colors cursor-pointer"
               title={t("ใช้ Coins ซื้อบัฟก่อนสู้", "Spend Coins on floor buffs")}
             >
-              <span>🛒</span>
+              <span>
+                <Icon name="cart" size={12} />
+              </span>
               <span>{t("ร้านค้า", "Shop")}</span>
             </button>
           </div>
@@ -897,8 +899,9 @@ export function TopicDungeonArena({
             {/* Door Unlocked Action Bar (shown only after monster is defeated) */}
             {room.isDoorUnlocked && (
               <div className="rounded-xl border border-[#2f2d45] bg-[#1c1b2b] px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
-                <div className="font-bold text-[#ffe27a]">
-                  {t("🚪 ประตูเปิดแล้ว!", "🚪 Door Unlocked!")}
+                <div className="font-bold text-[#ffe27a] inline-flex items-center gap-1.5">
+                  <Icon name="door" size={14} />
+                  <span>{t("ประตูเปิดแล้ว!", "Door Unlocked!")}</span>
                 </div>
                 <button
                   type="button"
@@ -1009,7 +1012,8 @@ export function TopicDungeonArena({
                             : "text-[#9a93ad] hover:text-[#f4efe6]"
                         }`}
                       >
-                        {t("👣 ไล่ทีละบรรทัด", "👣 Step Trace")}
+                        <Icon name="footprints" size={12} className="inline mr-1" />
+                      {t("ไล่ทีละบรรทัด", "Step Trace")}
                       </button>
                     </div>
                   )}

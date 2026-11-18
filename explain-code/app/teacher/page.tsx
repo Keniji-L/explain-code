@@ -1218,8 +1218,9 @@ export default function TeacherLMSDashboardPage() {
                         <span className="rounded-full border border-[#9b5de5]/60 bg-[#25193b] px-3 py-0.5 text-[11px] font-extrabold text-[#e9d5ff]">
                           {trackMeta.name}
                         </span>
-                        <span className="text-[11px] font-semibold text-[#9a93ad]">
-                          💾 {t("เซฟล่าสุด:", "Last saved:")} {savedTimeText}
+                        <span className="text-[11px] font-semibold text-[#9a93ad] inline-flex items-center gap-1">
+                          <Icon name="save" size={11} />
+                          <span>{t("เซฟล่าสุด:", "Last saved:")} {savedTimeText}</span>
                         </span>
                       </div>
 
@@ -1231,14 +1232,17 @@ export default function TeacherLMSDashboardPage() {
                         · {save.currentTopicTitle}
                       </h3>
                       <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-[#c4bdd6]">
-                        <span className="rounded-md border border-[#9b5de5]/60 bg-[#25193b] px-2 py-0.5 text-[11px] font-bold text-[#ffe27a]">
-                          ⚔️ {t("เฟสคำถามที่", "Question Phase")}{" "}
-                          {save.currentPhaseNumber ||
-                            (save.arenaSnapshot?.battlePhaseIndex ?? 0) + 1}
-                          /
-                          {save.totalPhases ||
-                            save.arenaSnapshot?.battleTotalPhases ||
-                            3}
+                        <span className="rounded-md border border-[#9b5de5]/60 bg-[#25193b] px-2 py-0.5 text-[11px] font-bold text-[#ffe27a] inline-flex items-center gap-1">
+                          <Icon name="sword" size={11} />
+                          <span>
+                            {t("เฟสคำถามที่", "Question Phase")}{" "}
+                            {save.currentPhaseNumber ||
+                              (save.arenaSnapshot?.battlePhaseIndex ?? 0) + 1}
+                            /
+                            {save.totalPhases ||
+                              save.arenaSnapshot?.battleTotalPhases ||
+                              3}
+                          </span>
                         </span>
                         <span>
                           {t(
@@ -1396,7 +1400,8 @@ export default function TeacherLMSDashboardPage() {
                             {t("รหัส:", "Code:")} {course.join_code}
                           </span>
                           <span className="text-[11px] font-bold text-[#ffe27a]">
-                            💾 {t("ด่านล่าสุด:", "Latest Stage:")}{" "}
+                            <Icon name="save" size={11} className="inline mr-1" />
+                          {t("ด่านล่าสุด:", "Latest Stage:")}{" "}
                             {t(`ด่านที่ ${currentFloorNum}/${totalCourseFloors}`, `Stage ${currentFloorNum}/${totalCourseFloors}`)}
                           </span>
                         </div>
@@ -1465,8 +1470,9 @@ export default function TeacherLMSDashboardPage() {
         {/* Teacher Approval Banner if Pending */}
         {!isApproved && (
           <div className="mb-6 rounded-2xl border border-[#f6c945]/40 bg-[#281d08] p-6 shadow-lg">
-            <h2 className="text-base font-bold text-[#f6c945]">
-              ⏳ {t("บัญชีครูของคุณอยู่ในสถานะรออนุมัติ (teacher_status: pending)", "Your teacher account is pending approval (teacher_status: pending)")}
+            <h2 className="text-base font-bold text-[#f6c945] flex items-center gap-2">
+              <Icon name="clock" size={16} />
+              <span>{t("บัญชีครูของคุณอยู่ในสถานะรออนุมัติ (teacher_status: pending)", "Your teacher account is pending approval (teacher_status: pending)")}</span>
             </h2>
             <p className="mt-1 text-xs text-[#ffe27a]">
               {t(
@@ -1513,8 +1519,9 @@ export default function TeacherLMSDashboardPage() {
             }`}
           >
             <div>
-              <div className="text-xs sm:text-sm font-extrabold">
-                📚 {t("จัดการคอร์ส & ดันเจี้ยน", "Manage Courses & Dungeons")}
+              <div className="text-xs sm:text-sm font-extrabold flex items-center gap-1.5">
+                <Icon name="book" size={15} className="text-[#f6c945]" />
+                <span>{t("จัดการคอร์ส & ดันเจี้ยน", "Manage Courses & Dungeons")}</span>
               </div>
               <div className="hidden sm:block text-[11px] opacity-80 mt-0.5">
                 {t("สร้างคอร์ส เพิ่มบทเรียน และโจทย์ดันเจี้ยน", "Create courses, add lessons, and dungeon questions")}
@@ -1535,8 +1542,9 @@ export default function TeacherLMSDashboardPage() {
             }`}
           >
             <div>
-              <div className="text-xs sm:text-sm font-extrabold">
-                🏫 {t("ห้องเรียน & Block Model 12 ช่อง", "Classrooms & 12-Cell Block Model")}
+              <div className="text-xs sm:text-sm font-extrabold flex items-center gap-1.5">
+                <Icon name="users" size={15} className="text-[#2fbf71]" />
+                <span>{t("ห้องเรียน & Block Model 12 ช่อง", "Classrooms & 12-Cell Block Model")}</span>
               </div>
               <div className="hidden sm:block text-[11px] opacity-80 mt-0.5">
                 {t("สร้างห้อง แจกรหัสห้อง และดู Heatmap จุดอ่อนของห้อง", "Create rooms, share codes, and inspect class weakness heatmaps")}
@@ -1667,9 +1675,17 @@ export default function TeacherLMSDashboardPage() {
                               : "border-[#9b5de5]/50 bg-[#25193b] text-[#e9d5ff]"
                           }`}
                         >
-                          {isCoursePublic(course)
-                            ? t("🌐 สาธารณะ (ขึ้นในดันเจี้ยน)", "🌐 Public (Listed in Dungeon)")
-                            : t("🔒 ส่วนตัว (ใช้รหัสเข้าเรียน)", "🔒 Private (Join Code Required)")}
+                          {isCoursePublic(course) ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Icon name="globe" size={11} />
+                              <span>{t("สาธารณะ (ขึ้นในดันเจี้ยน)", "Public (Listed in Dungeon)")}</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1">
+                              <Icon name="lock" size={11} />
+                              <span>{t("ส่วนตัว (ใช้รหัสเข้าเรียน)", "Private (Join Code Required)")}</span>
+                            </span>
+                          )}
                         </span>
                         <span className="font-mono text-[11px] font-bold text-[#f6c945]">
                           {t("รหัส:", "Code:")} {course.join_code}
@@ -1696,9 +1712,17 @@ export default function TeacherLMSDashboardPage() {
                             onClick={() => handleTogglePublishCourse(course)}
                             className="rounded-lg border border-[#3d395a] bg-[#141220] px-2 py-1 font-semibold text-[#f4efe6] hover:border-[#f6c945] hover:bg-[#252238] transition-colors cursor-pointer whitespace-nowrap"
                           >
-                            {isCoursePublic(course)
-                              ? t("สลับเป็นส่วนตัว 🔒", "Switch to Private 🔒")
-                              : t("สลับเป็นสาธารณะ 🌐", "Switch to Public 🌐")}
+                            {isCoursePublic(course) ? (
+                              <span className="inline-flex items-center gap-1">
+                                <span>{t("สลับเป็นส่วนตัว", "Switch to Private")}</span>
+                                <Icon name="lock" size={11} />
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1">
+                                <span>{t("สลับเป็นสาธารณะ", "Switch to Public")}</span>
+                                <Icon name="globe" size={11} />
+                              </span>
+                            )}
                           </button>
                           <button
                             type="button"
@@ -1740,9 +1764,17 @@ export default function TeacherLMSDashboardPage() {
                             : "border-[#9b5de5]/60 bg-[#25193b] text-[#e9d5ff]"
                         }`}
                       >
-                        {isCoursePublic(selectedCourse)
-                          ? t("🌐 โหมดสาธารณะ: แสดงในดันเจี้ยนการเรียนรู้ทันที", "🌐 Public Mode: Listed in Learning Dungeon immediately")
-                          : t(`🔒 โหมดส่วนตัว: นักเรียนต้องใส่รหัส ${selectedCourse.join_code} เพื่อเข้าเรียน`, `🔒 Private Mode: Students need code ${selectedCourse.join_code} to join`)}
+                        {isCoursePublic(selectedCourse) ? (
+                          <span className="inline-flex items-center gap-1">
+                            <Icon name="globe" size={12} />
+                            <span>{t("โหมดสาธารณะ: แสดงในดันเจี้ยนการเรียนรู้ทันที", "Public Mode: Listed in Learning Dungeon immediately")}</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1">
+                            <Icon name="lock" size={12} />
+                            <span>{t(`โหมดส่วนตัว: นักเรียนต้องใส่รหัส ${selectedCourse.join_code} เพื่อเข้าเรียน`, `Private Mode: Students need code ${selectedCourse.join_code} to join`)}</span>
+                          </span>
+                        )}
                       </span>
                       <Link
                         href={`/courses/${selectedCourse.id}`}
@@ -1771,7 +1803,10 @@ export default function TeacherLMSDashboardPage() {
                                 : "text-[#9a93ad] hover:text-[#f4efe6]"
                             }`}
                           >
-                            {t("🌐 สาธารณะ (ขึ้นในดันเจี้ยนเลย)", "🌐 Public (Listed in Dungeon)")}
+                            <span className="inline-flex items-center gap-1">
+                              <Icon name="globe" size={11} />
+                              <span>{t("สาธารณะ (ขึ้นในดันเจี้ยนเลย)", "Public (Listed in Dungeon)")}</span>
+                            </span>
                           </button>
                           <button
                             type="button"
@@ -1784,7 +1819,10 @@ export default function TeacherLMSDashboardPage() {
                                 : "text-[#9a93ad] hover:text-[#f4efe6]"
                             }`}
                           >
-                            {t(`🔒 ส่วนตัว (ใส่โค้ด ${selectedCourse.join_code} เพื่อเรียน)`, `🔒 Private (Code ${selectedCourse.join_code} required)`)}
+                            <span className="inline-flex items-center gap-1">
+                              <Icon name="lock" size={11} />
+                              <span>{t(`ส่วนตัว (ใส่โค้ด ${selectedCourse.join_code} เพื่อเรียน)`, `Private (Code ${selectedCourse.join_code} required)`)}</span>
+                            </span>
                           </button>
                         </div>
                       </div>
@@ -1932,7 +1970,10 @@ export default function TeacherLMSDashboardPage() {
                             onClick={handleExportStudentsCsv}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-[#2fbf71]/50 bg-[#102a1e] px-3 py-1.5 text-xs font-bold text-[#86efac] hover:bg-[#1a3d2d] cursor-pointer"
                           >
-                            <span>📥 Export CSV</span>
+                            <span className="inline-flex items-center gap-1">
+                          <Icon name="download" size={12} />
+                          <span>Export CSV</span>
+                        </span>
                           </button>
                         </div>
 
@@ -2361,8 +2402,9 @@ export default function TeacherLMSDashboardPage() {
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-extrabold text-[#86efac]">
-                        {t("🌐 แบบสาธารณะ (Public)", "🌐 Public")}
+                      <span className="text-xs font-extrabold text-[#86efac] inline-flex items-center gap-1">
+                        <Icon name="globe" size={12} />
+                        <span>{t("แบบสาธารณะ (Public)", "Public")}</span>
                       </span>
                       {(editingCourse.visibility !== undefined
                         ? editingCourse.visibility === "public"
@@ -2400,8 +2442,9 @@ export default function TeacherLMSDashboardPage() {
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-extrabold text-[#e9d5ff]">
-                        {t("🔒 แบบส่วนตัว (Private)", "🔒 Private")}
+                      <span className="text-xs font-extrabold text-[#e9d5ff] inline-flex items-center gap-1">
+                        <Icon name="lock" size={12} />
+                        <span>{t("แบบส่วนตัว (Private)", "Private")}</span>
                       </span>
                       {!(editingCourse.visibility !== undefined
                         ? editingCourse.visibility === "public"
@@ -2603,11 +2646,14 @@ export default function TeacherLMSDashboardPage() {
                   {/* AI Question Generator Bar (Block Model + Misconception-Driven) */}
                   <div className="rounded-xl border border-[#9b5de5]/40 bg-[#141220] p-3 space-y-2">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-[11px] font-bold text-[#c4b5fd]">
-                        {t(
-                          "✨ ให้ AI ช่วยสร้างคำถาม Quiz จากโค้ดบทเรียน (เจาะจุดอ่อน Block Model)",
-                          "✨ AI Quiz Generator from Lesson Code (Targets Block Model Weaknesses)"
-                        )}
+                      <span className="text-[11px] font-bold text-[#c4b5fd] inline-flex items-center gap-1.5">
+                        <Icon name="sparkles" size={13} />
+                        <span>
+                          {t(
+                            "ให้ AI ช่วยสร้างคำถาม Quiz จากโค้ดบทเรียน (เจาะจุดอ่อน Block Model)",
+                            "AI Quiz Generator from Lesson Code (Targets Block Model Weaknesses)"
+                          )}
+                        </span>
                       </span>
                       <div className="flex flex-wrap items-center gap-2">
                         <select
@@ -2633,7 +2679,14 @@ export default function TeacherLMSDashboardPage() {
                           onClick={() => void handleGenerateAiQuestion("lesson")}
                           className="rounded-lg bg-[#9b5de5] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#8b4cd6] disabled:opacity-60 cursor-pointer"
                         >
-                          {aiGenLoading ? t("กำลังสร้างโจทย์...", "Generating...") : t("✨ สร้างคำถามด้วย AI", "✨ Generate with AI")}
+                          {aiGenLoading ? (
+                            t("กำลังสร้างโจทย์...", "Generating...")
+                          ) : (
+                            <span className="inline-flex items-center gap-1">
+                              <Icon name="sparkles" size={12} />
+                              <span>{t("สร้างคำถามด้วย AI", "Generate with AI")}</span>
+                            </span>
+                          )}
                         </button>
                       </div>
                     </div>
@@ -2793,8 +2846,11 @@ export default function TeacherLMSDashboardPage() {
               {/* AI Question Generator Bar for Dungeon */}
               <div className="rounded-xl border border-[#9b5de5]/40 bg-[#1c1b2b] p-3 space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-[11px] font-bold text-[#c4b5fd]">
-                    {t("✨ ให้ AI ช่วยสร้างคำถาม Dungeon จากโค้ดบทเรียน", "✨ AI Dungeon Question Generator from Lesson Code")}
+                  <span className="text-[11px] font-bold text-[#c4b5fd] inline-flex items-center gap-1.5">
+                    <Icon name="sparkles" size={13} />
+                    <span>
+                      {t("ให้ AI ช่วยสร้างคำถาม Dungeon จากโค้ดบทเรียน", "AI Dungeon Question Generator from Lesson Code")}
+                    </span>
                   </span>
                   <div className="flex flex-wrap items-center gap-2">
                     <select
@@ -2820,7 +2876,14 @@ export default function TeacherLMSDashboardPage() {
                       onClick={() => void handleGenerateAiQuestion("dungeon")}
                       className="rounded-lg bg-[#9b5de5] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#8b4cd6] disabled:opacity-60 cursor-pointer"
                     >
-                      {aiGenLoading ? t("กำลังสร้างโจทย์...", "Generating...") : t("✨ สร้างโจทย์ดันเจี้ยนด้วย AI", "✨ Generate Dungeon Question")}
+                      {aiGenLoading ? (
+                        t("กำลังสร้างโจทย์...", "Generating...")
+                      ) : (
+                        <span className="inline-flex items-center gap-1">
+                          <Icon name="sparkles" size={12} />
+                          <span>{t("สร้างโจทย์ดันเจี้ยนด้วย AI", "Generate Dungeon Question")}</span>
+                        </span>
+                      )}
                     </button>
                   </div>
                 </div>

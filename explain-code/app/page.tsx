@@ -1452,7 +1452,11 @@ export default function ExplainCodeApp() {
                     }`}
                   >
                     <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/30 text-sm">
-                      {authMessage.type === "error" ? "⚠️" : "✅"}
+                      <Icon
+                      name={authMessage.type === "error" ? "alert" : "check"}
+                      size={16}
+                      className="shrink-0 mt-0.5"
+                    />
                     </span>
                     <div className="flex-1 leading-relaxed">
                       <p className="font-extrabold text-[14px] mb-0.5">
@@ -1648,7 +1652,7 @@ export default function ExplainCodeApp() {
                     className="flex items-start gap-3 p-4 rounded-xl bg-[#2d141c] text-[#fca5a5] border-2 border-[#c0283a] text-[13px] font-bold shadow-md"
                   >
                     <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/30 text-sm">
-                      ⚠️
+                      <Icon name="alert" size={14} className="shrink-0" />
                     </span>
                     <div className="flex-1 leading-relaxed">
                       <p className="font-extrabold text-[14px] mb-0.5">

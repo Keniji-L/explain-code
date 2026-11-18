@@ -10,6 +10,7 @@ import {
 import { dungeonSound } from "../../lib/dungeon/sound";
 import { PixelSpriteView } from "./PixelSpriteView";
 import { useUiLanguage } from "../LanguageProvider";
+import { Icon, IconName } from "../Icons";
 
 export type InRunRewardType = "heal_hp" | "add_shield" | "double_rewards";
 
@@ -203,8 +204,8 @@ export function CodeChestModal({
             <div>
               <span className={`pixel-font text-[10px] font-black uppercase ${isMimic ? "text-[#ff6b81]" : "text-[#f6c945]"}`}>
                 {isMimic
-                  ? t("⚠️ กล่องลับ MIMIC · ห้ามใช้สกิล/AI ช่วย", "⚠️ SECRET MIMIC CHEST · NO AI/SKILLS")
-                  : t("📦 หีบปริศนาโค้ด (CODE CHEST)", "📦 CODE CHEST EVENT")}
+                  ? t("กล่องลับ MIMIC · ห้ามใช้สกิล/AI ช่วย", "SECRET MIMIC CHEST · NO AI/SKILLS")
+                  : t("หีบปริศนาโค้ด (CODE CHEST)", "CODE CHEST EVENT")}
               </span>
               <h3 className="text-sm sm:text-base font-extrabold text-[#ffe27a]">
                 {isSolved
@@ -212,7 +213,7 @@ export function CodeChestModal({
                     ? t("ปราบ Mimic สำเร็จ! รับรางวัลพิเศษ", "Mimic Defeated! Special Loot")
                     : t("เปิดหีบสำเร็จ! รับสมบัติเลย", "Chest Unlocked!")
                   : isFailed
-                  ? t("พ่ายแพ้ต่อกับดัก Mimic! (-1 ❤️)", "Defeated by the Mimic Trap! (-1 ❤️)")
+                  ? t("พ่ายแพ้ต่อกับดัก Mimic! (-1 HP)", "Defeated by the Mimic Trap! (-1 HP)")
                   : isMimic
                   ? t("โจทย์ระดับยากมาก! วิเคราะห์ด้วยตัวเองล้วนๆ", "Hard Challenge — Solve without AI or Skills!")
                   : t("ตอบคำถามสั้นๆ เพื่อไขรหัสเปิดหีบ", "Solve the Predict/Trace puzzle to open")}
@@ -301,15 +302,17 @@ export function CodeChestModal({
 
         {/* Feedback */}
         {feedbackError && !isSolved && (
-          <div className="p-3 rounded-xl border border-[#c0283a] bg-[#7d1d10]/30 text-xs text-[#fca5a5]">
-            💡 {feedbackError}
+          <div className="p-3 rounded-xl border border-[#c0283a] bg-[#7d1d10]/30 text-xs text-[#fca5a5] flex items-center gap-1.5">
+            <Icon name="bulb" size={13} className="shrink-0" />
+            <span>{feedbackError}</span>
           </div>
         )}
 
         {isFailed && (
           <div className="p-3.5 rounded-xl border-2 border-[#c0283a] bg-[#2d141c] text-xs space-y-2.5">
-            <div className="font-extrabold text-[#fca5a5]">
-              {t("💀 แพ้กล่องลับ Mimic! คำตอบที่ถูกต้องคือ:", "💀 Defeated by Mimic! Correct Answer:")}{" "}
+            <div className="font-extrabold text-[#fca5a5] flex flex-wrap items-center gap-1.5">
+              <Icon name="skull" size={13} className="shrink-0" />
+              <span>{t("แพ้กล่องลับ Mimic! คำตอบที่ถูกต้องคือ:", "Defeated by Mimic! Correct Answer:")}</span>
               <span className="text-[#86efac]">{displayChoices[question.correctIndex]}</span>
             </div>
             <p className="text-[#f4efe6] leading-relaxed">
@@ -332,11 +335,14 @@ export function CodeChestModal({
 
             {isMimic && (
               <div className="rounded-lg border border-[#f6c945]/60 bg-[#281d08]/80 px-3 py-2 text-[#ffe27a] space-y-0.5">
-                <div className="font-extrabold">
-                  {t(
-                    "🎁 ของรางวัลระดับแรร์จาก Mimic (ส่วนนี้ยังไม่เสร็จ / กำลังพัฒนา)",
-                    "🎁 Rare Mimic Loot (Work in Progress / Coming Soon)"
-                  )}
+                <div className="font-extrabold flex items-center gap-1.5">
+                  <Icon name="gift" size={13} className="shrink-0" />
+                  <span>
+                    {t(
+                      "ของรางวัลระดับแรร์จาก Mimic (ส่วนนี้ยังไม่เสร็จ / กำลังพัฒนา)",
+                      "Rare Mimic Loot (Work in Progress / Coming Soon)"
+                    )}
+                  </span>
                 </div>
                 <p className="text-[11px] text-[#e8e1cf]">
                   {t(
@@ -349,29 +355,32 @@ export function CodeChestModal({
 
             {enableInRunRewardPicker && (
               <div className="pt-2 border-t border-[#2fbf71]/40 space-y-2">
-                <div className="font-extrabold text-[#ffe27a] text-[11px]">
-                  {selectedInRunReward
-                    ? t("✓ เลือกรางวัลประจำชั้นแล้ว:", "✓ Floor Reward Selected:")
-                    : t("🎁 เลือกรางวัลเสริมเฉพาะชั้นนี้ (1 อย่าง):", "🎁 Pick 1 Floor In-Run Reward:")}
+                <div className="font-extrabold text-[#ffe27a] text-[11px] flex items-center gap-1.5">
+                  <Icon name={selectedInRunReward ? "check" : "gift"} size={12} />
+                  <span>
+                    {selectedInRunReward
+                      ? t("เลือกรางวัลประจำชั้นแล้ว:", "Floor Reward Selected:")
+                      : t("เลือกรางวัลเสริมเฉพาะชั้นนี้ (1 อย่าง):", "Pick 1 Floor In-Run Reward:")}
+                  </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {(
                     [
                       {
                         id: "heal_hp" as InRunRewardType,
-                        icon: "❤️",
+                        icon: "heart" as IconName,
                         title: "+1 HP",
                         desc: t("ฟื้นหัวใจ +1 ดวง", "Heal +1 Heart"),
                       },
                       {
                         id: "add_shield" as InRunRewardType,
-                        icon: "🛡️",
+                        icon: "shield" as IconName,
                         title: "+1 Shield",
                         desc: t("โล่กันดาเมจ +1 ครั้ง", "+1 Battle Shield"),
                       },
                       {
                         id: "double_rewards" as InRunRewardType,
-                        icon: "⚡",
+                        icon: "zap" as IconName,
                         title: "XP & Coins ×2",
                         desc: t("คูณ 2 เฉพาะชั้นนี้", "2× Rewards This Floor"),
                       },
@@ -392,8 +401,9 @@ export function CodeChestModal({
                             : "bg-[#120f1c] border-[#4a4766] hover:border-[#f6c945] text-[#f4efe6] cursor-pointer"
                         }`}
                       >
-                        <span className="font-black text-xs">
-                          {opt.icon} {opt.title}
+                        <span className="font-black text-xs inline-flex items-center gap-1.5">
+                          <Icon name={opt.icon} size={13} />
+                          <span>{opt.title}</span>
                         </span>
                         <span className="text-[10px] text-[#9a93ad]">{opt.desc}</span>
                       </button>

@@ -1445,11 +1445,14 @@ function CoursesContent() {
                     {trackSave && (
                       <div className="rounded-xl border border-[#2fbf71]/40 bg-[#102a1e]/80 p-2.5 space-y-1.5">
                         <div className="flex items-center justify-between gap-2 text-[11px] font-bold">
-                          <span className="text-[#ffe27a] truncate">
-                            {t(
-                              `💾 ด่านล่าสุด: ด่านที่ ${trackSave.currentFloorNumber}/${trackSave.totalFloors}`,
-                              `💾 Last Floor: ${trackSave.currentFloorNumber}/${trackSave.totalFloors}`
-                            )}
+                          <span className="text-[#ffe27a] truncate inline-flex items-center gap-1">
+                            <Icon name="save" size={11} className="shrink-0" />
+                            <span>
+                              {t(
+                                `ด่านล่าสุด: ด่านที่ ${trackSave.currentFloorNumber}/${trackSave.totalFloors}`,
+                                `Last Floor: ${trackSave.currentFloorNumber}/${trackSave.totalFloors}`
+                              )}
+                            </span>
                           </span>
                           <span className="text-[#2fbf71] shrink-0">
                             {trackProgressPct}%
@@ -1572,9 +1575,17 @@ function CoursesContent() {
                                   : "bg-[#25193b] border-[#9b5de5]/50 text-[#e9d5ff]"
                               }`}
                             >
-                              {isPublic
-                                ? t("🌐 สาธารณะ", "🌐 Public")
-                                : t("🔒 ส่วนตัว (ปลดล็อกแล้ว)", "🔒 Private (Unlocked)")}
+                              {isPublic ? (
+                                <span className="inline-flex items-center gap-1">
+                                  <Icon name="globe" size={11} />
+                                  <span>{t("สาธารณะ", "Public")}</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1">
+                                  <Icon name="lock" size={11} />
+                                  <span>{t("ส่วนตัว (ปลดล็อกแล้ว)", "Private (Unlocked)")}</span>
+                                </span>
+                              )}
                             </span>
                             <span className="rounded-full bg-[#141220] border border-[#2f2d45] px-2.5 py-0.5 text-xs font-bold text-[#c4bdd6]">
                               {courseLessons.length} {t("บทเรียน", "lessons")}
@@ -1716,8 +1727,8 @@ function CoursesContent() {
                     >
                       {savedDungeonRecord
                         ? t(
-                            `💾 เล่นต่อด่านที่ ${savedDungeonRecord.currentFloorNumber}/${savedDungeonRecord.totalFloors} (เฟส ${savedDungeonRecord.currentPhaseNumber || 1}/${savedDungeonRecord.totalPhases || 3}) →`,
-                            `💾 Resume Floor ${savedDungeonRecord.currentFloorNumber}/${savedDungeonRecord.totalFloors} (Phase ${savedDungeonRecord.currentPhaseNumber || 1}/${savedDungeonRecord.totalPhases || 3}) →`
+                            `เล่นต่อด่านที่ ${savedDungeonRecord.currentFloorNumber}/${savedDungeonRecord.totalFloors} (เฟส ${savedDungeonRecord.currentPhaseNumber || 1}/${savedDungeonRecord.totalPhases || 3}) →`,
+                            `Resume Floor ${savedDungeonRecord.currentFloorNumber}/${savedDungeonRecord.totalFloors} (Phase ${savedDungeonRecord.currentPhaseNumber || 1}/${savedDungeonRecord.totalPhases || 3}) →`
                           )
                         : t("ลุยชั้นถัดไป →", "Play Next Floor →")}
                     </button>
@@ -1727,8 +1738,9 @@ function CoursesContent() {
                 {session && savedDungeonRecord && (
                   <div className="rounded-2xl border border-[#2fbf71]/50 bg-[#102a1e]/90 p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
                     <div className="flex flex-wrap items-center gap-2 text-[#e8e1cf]">
-                      <span className="rounded-lg bg-[#2fbf71] px-2 py-0.5 text-xs font-black text-[#0b0b14]">
-                        💾 {t("จุดเซฟล่าสุด", "Latest Save")}
+                      <span className="rounded-lg bg-[#2fbf71] px-2 py-0.5 text-xs font-black text-[#0b0b14] inline-flex items-center gap-1">
+                        <Icon name="save" size={11} />
+                        <span>{t("จุดเซฟล่าสุด", "Latest Save")}</span>
                       </span>
                       <span className="font-extrabold text-[#ffe27a]">
                         {t(
@@ -1935,7 +1947,8 @@ function CoursesContent() {
                       type="submit"
                       className="shrink-0 rounded-xl border border-[#9b5de5]/60 bg-[#25193b] px-4 py-2 text-xs font-extrabold text-[#e9d5ff] hover:bg-[#332152] cursor-pointer"
                     >
-                      {t("📥 นำเข้าและเล่น", "📥 Import & Play")}
+                      <Icon name="download" size={13} className="inline mr-1" />
+                      {t("นำเข้าและเล่น", "Import & Play")}
                     </button>
                   </form>
                   {shareImportError && (
@@ -1969,9 +1982,14 @@ function CoursesContent() {
                                   }}
                                   className="text-[11px] font-bold text-[#ffe27a] hover:underline cursor-pointer"
                                 >
-                                  {copiedDungeonId === cd.id
-                                    ? t("✓ คัดลอกลิงก์แล้ว", "✓ Copied")
-                                    : t("🔗 แชร์ลิงก์", "🔗 Share")}
+                                  {copiedDungeonId === cd.id ? (
+                                    <span>{t("✓ คัดลอกลิงก์แล้ว", "✓ Copied")}</span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1">
+                                      <Icon name="link" size={11} />
+                                      <span>{t("แชร์ลิงก์", "Share")}</span>
+                                    </span>
+                                  )}
                                 </button>
                                 <button
                                   type="button"
@@ -2094,9 +2112,17 @@ function CoursesContent() {
                                     : "bg-[#25193b] border-[#9b5de5]/50 text-[#e9d5ff]"
                                 }`}
                               >
-                                {isCoursePublic(course)
-                                  ? t("🌐 สาธารณะ", "🌐 Public")
-                                  : t("🔒 ส่วนตัว (ปลดล็อกแล้ว)", "🔒 Private (Unlocked)")}
+                                {isCoursePublic(course) ? (
+                                  <span className="inline-flex items-center gap-1">
+                                    <Icon name="globe" size={11} />
+                                    <span>{t("สาธารณะ", "Public")}</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1">
+                                    <Icon name="lock" size={11} />
+                                    <span>{t("ส่วนตัว (ปลดล็อกแล้ว)", "Private (Unlocked)")}</span>
+                                  </span>
+                                )}
                               </span>
                               <span className="rounded-full bg-[#141220] border border-[#2f2d45] px-2.5 py-0.5 text-[11px] font-extrabold text-[#c4bdd6]">
                                 {courseLessons.length} {t("บทเรียน", "lessons")}
@@ -2392,13 +2418,15 @@ function CoursesContent() {
                           <div className="rounded-lg bg-[#0d0b14] border border-[#2f2d45] px-1.5 py-1.5">
                             <span className="text-xs text-[#9a93ad] block">HP</span>
                             <span className="pixel-font text-xs font-black text-[#ff4d6d]">
-                              ❤️ {av.stats.maxHp}
+                              <Icon name="heart" size={11} filled className="inline mr-0.5 text-[#ff4d6d]" />
+                          {av.stats.maxHp}
                             </span>
                           </div>
                           <div className="rounded-lg bg-[#0d0b14] border border-[#2f2d45] px-1.5 py-1.5">
                             <span className="text-xs text-[#9a93ad] block">MP</span>
                             <span className="pixel-font text-xs font-black text-[#38bdf8]">
-                              💧 {av.stats.initialMp}/{av.stats.maxMp}
+                              <Icon name="droplet" size={11} className="inline mr-0.5 text-[#38bdf8]" />
+                          {av.stats.initialMp}/{av.stats.maxMp}
                             </span>
                           </div>
                           <div className="rounded-lg bg-[#0d0b14] border border-[#2f2d45] px-1.5 py-1.5">
@@ -2496,11 +2524,14 @@ function CoursesContent() {
                   </span>
                   {savedDungeonRecord &&
                     savedDungeonRecord.currentTopicId === activeTopic.id && (
-                      <span className="rounded-md border border-[#2fbf71]/50 bg-[#102a1e] px-2 py-0.5 text-[11px] font-bold text-[#86efac]">
-                        {t(
-                          `💾 เซฟล่าสุด: ด่าน ${savedDungeonRecord.currentFloorNumber}/${savedDungeonRecord.totalFloors} · เฟส ${savedDungeonRecord.currentPhaseNumber || 1}/${savedDungeonRecord.totalPhases || 3}`,
-                          `💾 Saved: Floor ${savedDungeonRecord.currentFloorNumber}/${savedDungeonRecord.totalFloors} · Phase ${savedDungeonRecord.currentPhaseNumber || 1}/${savedDungeonRecord.totalPhases || 3}`
-                        )}
+                      <span className="rounded-md border border-[#2fbf71]/50 bg-[#102a1e] px-2 py-0.5 text-[11px] font-bold text-[#86efac] inline-flex items-center gap-1">
+                        <Icon name="save" size={11} />
+                        <span>
+                          {t(
+                            `เซฟล่าสุด: ด่าน ${savedDungeonRecord.currentFloorNumber}/${savedDungeonRecord.totalFloors} · เฟส ${savedDungeonRecord.currentPhaseNumber || 1}/${savedDungeonRecord.totalPhases || 3}`,
+                            `Saved: Floor ${savedDungeonRecord.currentFloorNumber}/${savedDungeonRecord.totalFloors} · Phase ${savedDungeonRecord.currentPhaseNumber || 1}/${savedDungeonRecord.totalPhases || 3}`
+                          )}
+                        </span>
                       </span>
                     )}
                 </div>
@@ -2510,7 +2541,7 @@ function CoursesContent() {
                     onClick={() => handleSaveDungeonGame()}
                     className="px-3.5 py-1.5 rounded-xl text-xs font-extrabold border border-[#2fbf71]/70 bg-[#102a1e] text-[#86efac] hover:bg-[#153827] transition cursor-pointer flex items-center gap-1.5"
                   >
-                    <span>💾</span>
+                    <Icon name="save" size={12} />
                     <span>{t("เซฟเกมไว้", "Save Game")}</span>
                   </button>
                 ) : (

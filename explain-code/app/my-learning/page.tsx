@@ -277,8 +277,9 @@ export default function MyLearningPage() {
           <div className="rounded-2xl border border-[#f6c945]/40 bg-gradient-to-r from-[#22190c] via-[#171324] to-[#141220] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-[#f6c945]/60 bg-[#281d08] px-2.5 py-0.5 text-[11px] font-black text-[#ffe27a]">
-                  🔥 {t(`สตรีคต่อเนื่อง ${dailyQuest.streakDays} วัน`, `${dailyQuest.streakDays}-Day Streak`)}
+                <span className="rounded-full border border-[#f6c945]/60 bg-[#281d08] px-2.5 py-0.5 text-[11px] font-black text-[#ffe27a] inline-flex items-center gap-1">
+                  <Icon name="flame" size={12} filled />
+                  <span>{t(`สตรีคต่อเนื่อง ${dailyQuest.streakDays} วัน`, `${dailyQuest.streakDays}-Day Streak`)}</span>
                 </span>
                 <span className="text-xs font-extrabold text-[#f4efe6]">
                   {t(
@@ -343,16 +344,18 @@ export default function MyLearningPage() {
                       );
                     }
                   }}
-                  className="rounded-xl bg-[#f6c945] px-4 py-2.5 text-xs font-black text-[#120f1c] hover:bg-[#ffe27a] transition-colors cursor-pointer"
+                  className="rounded-xl bg-[#f6c945] px-4 py-2.5 text-xs font-black text-[#120f1c] hover:bg-[#ffe27a] transition-colors cursor-pointer inline-flex items-center gap-1.5"
                 >
-                  🎁 {t(`รับโบนัส +${DAILY_QUEST_BONUS_XP} XP`, `Claim +${DAILY_QUEST_BONUS_XP} XP`)}
+                  <Icon name="gift" size={13} />
+                  <span>{t(`รับโบนัส +${DAILY_QUEST_BONUS_XP} XP`, `Claim +${DAILY_QUEST_BONUS_XP} XP`)}</span>
                 </button>
               ) : (
                 <Link
                   href={`/courses?lang=${encodeURIComponent(preferredLang)}`}
-                  className="inline-block rounded-xl bg-[#2fbf71] px-4 py-2.5 text-xs font-black text-[#0b0b14] hover:bg-[#34d37d] transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#2fbf71] px-4 py-2.5 text-xs font-black text-[#0b0b14] hover:bg-[#34d37d] transition-colors"
                 >
-                  🚀 {t("ไปลุย 1 ด่านวันนี้ →", "Play 1 Floor Today →")}
+                  <Icon name="play" size={13} filled />
+                  <span>{t("ไปลุย 1 ด่านวันนี้ →", "Play 1 Floor Today →")}</span>
                 </Link>
               )}
             </div>
@@ -365,7 +368,7 @@ export default function MyLearningPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-extrabold text-[#ffe27a] flex items-center gap-2">
-                  <span>📊</span>
+                  <Icon name="chart" size={18} className="text-[#ffe27a]" />
                   <span>
                     {t(
                       "สเตตัสความเข้าใจโค้ด 12 มิติ (Block Model Stats)",
@@ -415,12 +418,15 @@ export default function MyLearningPage() {
               </div>
               <Link
                 href={`/courses?lang=${encodeURIComponent(preferredLang)}&topicId=${weakestCell.relatedTopicId}`}
-                className="shrink-0 rounded-xl bg-[#f6c945] px-4 py-2.5 text-xs font-black text-[#120f1c] hover:bg-[#ffe27a] transition-colors text-center whitespace-nowrap"
+                className="shrink-0 rounded-xl bg-[#f6c945] px-4 py-2.5 text-xs font-black text-[#120f1c] hover:bg-[#ffe27a] transition-colors text-center whitespace-nowrap inline-flex items-center justify-center gap-1.5"
               >
-                {t(
-                  `🎯 ฝึกด่านแก้จุดอ่อน ${weakestCell.id} ทันที →`,
-                  `🎯 Drill ${weakestCell.id} Now →`
-                )}
+                <Icon name="target" size={13} />
+                <span>
+                  {t(
+                    `ฝึกด่านแก้จุดอ่อน ${weakestCell.id} ทันที →`,
+                    `Drill ${weakestCell.id} Now →`
+                  )}
+                </span>
               </Link>
             </div>
 
@@ -491,8 +497,9 @@ export default function MyLearningPage() {
                         <span className="rounded-full border border-[#9b5de5]/60 bg-[#25193b] px-3 py-0.5 text-[11px] font-extrabold text-[#e9d5ff]">
                           {trackMeta.name}
                         </span>
-                        <span className="text-[11px] font-semibold text-[#9a93ad]">
-                          💾 {t("เซฟล่าสุด:", "Last saved:")} {savedTimeText}
+                        <span className="text-[11px] font-semibold text-[#9a93ad] inline-flex items-center gap-1">
+                          <Icon name="save" size={11} />
+                          <span>{t("เซฟล่าสุด:", "Last saved:")} {savedTimeText}</span>
                         </span>
                       </div>
 
@@ -504,14 +511,17 @@ export default function MyLearningPage() {
                         · {save.currentTopicTitle}
                       </h3>
                       <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-[#c4bdd6]">
-                        <span className="rounded-md border border-[#9b5de5]/60 bg-[#25193b] px-2 py-0.5 text-[11px] font-bold text-[#ffe27a]">
-                          ⚔️ {t("เฟสคำถามที่", "Phase")}{" "}
+                        <span className="rounded-md border border-[#9b5de5]/60 bg-[#25193b] px-2 py-0.5 text-[11px] font-bold text-[#ffe27a] inline-flex items-center gap-1">
+                          <Icon name="sword" size={11} />
+                          <span>
+                            {t("เฟสคำถามที่", "Phase")}{" "}
                           {save.currentPhaseNumber ||
                             (save.arenaSnapshot?.battlePhaseIndex ?? 0) + 1}
                           /
                           {save.totalPhases ||
                             save.arenaSnapshot?.battleTotalPhases ||
                             3}
+                          </span>
                         </span>
                         <span>
                           {t(

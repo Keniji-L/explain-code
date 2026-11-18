@@ -458,7 +458,11 @@ function RegisterFormContent() {
               }`}
             >
               <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/30 text-sm">
-                {message.type === "error" ? "⚠️" : "✅"}
+                <Icon
+                  name={message.type === "error" ? "alert" : "check"}
+                  size={16}
+                  className="shrink-0 mt-0.5"
+                />
               </span>
               <div className="flex-1 text-xs leading-relaxed">
                 <p className="font-extrabold text-sm mb-0.5">
@@ -558,7 +562,9 @@ function RegisterFormContent() {
                   />
                   {fieldErrors.nickname && (
                     <p className="mt-1.5 text-xs font-bold text-[#fca5a5] flex items-center gap-1.5">
-                      <span>⚠️</span>
+                      <span>
+                      <Icon name="alert" size={12} />
+                    </span>
                       <span>{fieldErrors.nickname}</span>
                     </p>
                   )}
@@ -576,7 +582,7 @@ function RegisterFormContent() {
                               "✓ ผ่านเกณฑ์ PDPA พ.ศ. 2562: ชื่อเล่นสมมติปลอดภัย ไม่มีข้อมูลระบุตัวตนจริง",
                               "✓ PDPA Safe: Nickname contains no personally identifiable information"
                             )
-                          : `⚠️ ${nicknamePdpaCheck.reason}`}
+                          : nicknamePdpaCheck.reason}
                       </span>
                     </p>
                   )}
@@ -633,7 +639,9 @@ function RegisterFormContent() {
                   </div>
                   {fieldErrors.pin && (
                     <p className="mt-1.5 text-xs font-bold text-[#fca5a5] flex items-center gap-1.5">
-                      <span>⚠️</span>
+                      <span>
+                      <Icon name="alert" size={12} />
+                    </span>
                       <span>{fieldErrors.pin}</span>
                     </p>
                   )}
@@ -711,7 +719,9 @@ function RegisterFormContent() {
                   </div>
                   {fieldErrors.confirmPin && (
                     <p className="mt-1.5 text-xs font-bold text-[#fca5a5] flex items-center gap-1.5">
-                      <span>⚠️</span>
+                      <span>
+                      <Icon name="alert" size={12} />
+                    </span>
                       <span>{fieldErrors.confirmPin}</span>
                     </p>
                   )}
@@ -817,7 +827,9 @@ function RegisterFormContent() {
                   />
                   {fieldErrors.username && (
                     <p className="mt-1.5 text-xs font-bold text-[#fca5a5] flex items-center gap-1.5">
-                      <span>⚠️</span>
+                      <span>
+                      <Icon name="alert" size={12} />
+                    </span>
                       <span>{fieldErrors.username}</span>
                     </p>
                   )}
@@ -898,7 +910,9 @@ function RegisterFormContent() {
                   </div>
                   {fieldErrors.password && (
                     <p className="mt-1.5 text-xs font-bold text-[#fca5a5] flex items-center gap-1.5">
-                      <span>⚠️</span>
+                      <span>
+                      <Icon name="alert" size={12} />
+                    </span>
                       <span>{fieldErrors.password}</span>
                     </p>
                   )}
@@ -960,7 +974,9 @@ function RegisterFormContent() {
                   </div>
                   {fieldErrors.confirmPassword && (
                     <p className="mt-1.5 text-xs font-bold text-[#fca5a5] flex items-center gap-1.5">
-                      <span>⚠️</span>
+                      <span>
+                      <Icon name="alert" size={12} />
+                    </span>
                       <span>{fieldErrors.confirmPassword}</span>
                     </p>
                   )}

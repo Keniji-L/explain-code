@@ -367,11 +367,14 @@ export default function AiUsageLogPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs sm:text-sm">
                 <div className="rounded-xl bg-[#2d141c] border border-[#c0283a]/50 p-4 text-[#fca5a5]">
                   <div className="font-extrabold flex items-center gap-1.5 mb-1">
-                    <span>
-                      {t(
-                        "⚠️ ปัญหา/ข้อจำกัดที่พบจากผลลัพธ์ของ AI:",
-                        "⚠️ Issues / Limitations Found in AI Output:"
-                      )}
+                    <span className="inline-flex items-center gap-1.5">
+                      <Icon name="alert" size={13} />
+                      <span>
+                        {t(
+                          "ปัญหา/ข้อจำกัดที่พบจากผลลัพธ์ของ AI:",
+                          "Issues / Limitations Found in AI Output:"
+                        )}
+                      </span>
                     </span>
                   </div>
                   <p className="text-[#f4efe6]/90 leading-relaxed break-words">{log.problemFound}</p>
@@ -379,11 +382,14 @@ export default function AiUsageLogPage() {
 
                 <div className="rounded-xl bg-[#102a1e] border border-[#2fbf71]/50 p-4 text-[#86efac]">
                   <div className="font-extrabold flex items-center gap-1.5 mb-1">
-                    <span>
-                      {t(
-                        "🛠️ วิธีการที่ทีมปรับปรุงแก้ไขและพัฒนาต่อ:",
-                        "🛠️ Team Refinements & Fixes Applied:"
-                      )}
+                    <span className="inline-flex items-center gap-1.5">
+                      <Icon name="wrench" size={13} />
+                      <span>
+                        {t(
+                          "วิธีการที่ทีมปรับปรุงแก้ไขและพัฒนาต่อ:",
+                          "Team Refinements & Fixes Applied:"
+                        )}
+                      </span>
                     </span>
                   </div>
                   <p className="text-[#f4efe6]/90 leading-relaxed break-words">{log.solutionApplied}</p>
@@ -392,11 +398,14 @@ export default function AiUsageLogPage() {
 
               {/* Code Structure & Explanation (Rubric Part 4: 10 points) */}
               <div className="rounded-xl bg-[#1c1b2b] border border-[#3d395a] p-4 text-xs sm:text-sm">
-                <div className="font-extrabold text-[#ffe27a] mb-1">
-                  {t(
-                    "🔍 คำอธิบายโครงสร้างและการทำงานของโค้ด (Code Structure & Execution Flow):",
-                    "🔍 Code Structure & Execution Flow:"
-                  )}
+                <div className="font-extrabold text-[#ffe27a] mb-1 inline-flex items-center gap-1.5">
+                  <Icon name="search" size={13} />
+                  <span>
+                    {t(
+                      "คำอธิบายโครงสร้างและการทำงานของโค้ด (Code Structure & Execution Flow):",
+                      "Code Structure & Execution Flow:"
+                    )}
+                  </span>
                 </div>
                 <p className="text-[#c4bdd6] leading-relaxed break-words">{log.codeExplanation}</p>
                 <div className="mt-2.5 flex min-w-0 flex-wrap items-center gap-1.5">

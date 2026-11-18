@@ -278,8 +278,9 @@ function LessonViewContent() {
       <div className="min-h-screen bg-[#0d0b14] text-[#f4efe6]">
         <SiteHeader />
         <main className="mx-auto max-w-lg px-4 py-12 text-center space-y-4">
-          <h1 className="text-xl font-bold text-[#f4efe6]">
-            {t("🔒 คอร์สนี้เป็นแบบส่วนตัว", "🔒 Private Course")}
+          <h1 className="text-xl font-bold text-[#f4efe6] inline-flex items-center gap-2">
+            <Icon name="lock" size={20} className="text-[#9b5de5]" />
+            <span>{t("คอร์สนี้เป็นแบบส่วนตัว", "Private Course")}</span>
           </h1>
           <p className="text-xs text-[#c4bdd6]">
             {t(
@@ -732,7 +733,8 @@ function LessonViewContent() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-lg border border-[#3d395a] bg-[#141220] px-3.5 py-2 text-xs font-bold text-[#f6c945] hover:border-[#f6c945] hover:bg-[#252238] transition-colors whitespace-nowrap"
                 >
-                  {t("🔗 เอกสารอ้างอิงเพิ่มเติม ↗", "🔗 External Reference ↗")}
+                  <Icon name="link" size={12} />
+                  <span>{t("เอกสารอ้างอิงเพิ่มเติม ↗", "External Reference ↗")}</span>
                 </a>
               )}
               {lesson.video_url && (
@@ -742,7 +744,8 @@ function LessonViewContent() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-lg border border-[#3d395a] bg-[#141220] px-3.5 py-2 text-xs font-bold text-[#f6c945] hover:border-[#f6c945] hover:bg-[#252238] transition-colors whitespace-nowrap"
                 >
-                  {t("🎬 วิดีโอประกอบบทเรียน ↗", "🎬 Lesson Video ↗")}
+                  <Icon name="play" size={12} />
+                  <span>{t("วิดีโอประกอบบทเรียน ↗", "Lesson Video ↗")}</span>
                 </a>
               )}
             </div>
@@ -812,8 +815,12 @@ function LessonViewContent() {
                       })}
                     </div>
                     {quizSubmitted && (serverQuizResults[q.id]?.explanation || q.explanation) && (
-                      <p className="mt-2 rounded-lg border border-[#2f2d45] bg-[#1c1b2b] p-2.5 text-xs text-[#c4bdd6]">
-                        💡 <strong className="text-[#f6c945]">{t("เฉลย:", "Explanation:")}</strong> {serverQuizResults[q.id]?.explanation || q.explanation}
+                      <p className="mt-2 rounded-lg border border-[#2f2d45] bg-[#1c1b2b] p-2.5 text-xs text-[#c4bdd6] flex items-start gap-1.5">
+                        <Icon name="bulb" size={14} className="text-[#f6c945] shrink-0 mt-0.5" />
+                        <span>
+                          <strong className="text-[#f6c945]">{t("เฉลย:", "Explanation:")}</strong>{" "}
+                          {serverQuizResults[q.id]?.explanation || q.explanation}
+                        </span>
                       </p>
                     )}
                   </div>

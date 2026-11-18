@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import { PixelSpriteView } from "./PixelSpriteView";
 import { COIN_SPRITE } from "../../lib/dungeon/sprites";
 import { useUiLanguage } from "../LanguageProvider";
+import { Icon, IconName } from "../Icons";
 
 export type ShopItemId = "heal-hp" | "restore-mp" | "shield-scroll" | "double-reward";
 
@@ -50,7 +51,8 @@ export function CoinShopModal({
 
   const items: {
     id: ShopItemId;
-    icon: string;
+    icon: IconName;
+    iconColor: string;
     name: string;
     desc: string;
     cost: number;
@@ -59,7 +61,8 @@ export function CoinShopModal({
   }[] = [
     {
       id: "heal-hp",
-      icon: "❤️",
+      icon: "heart",
+      iconColor: "text-[#ff4d6d]",
       name: t("ยาฟื้นหัวใจ (+1 HP)", "Healing Potion (+1 HP)"),
       desc: t("ฟื้นพลังชีวิต 1 ดวงทันที", "Instantly restores 1 Heart."),
       cost: 15,
@@ -73,7 +76,8 @@ export function CoinShopModal({
     },
     {
       id: "restore-mp",
-      icon: "✨",
+      icon: "sparkles",
+      iconColor: "text-[#c084fc]",
       name: t("น้ำยามานา (+2 MP)", "Focus Elixir (+2 MP)"),
       desc: t("เติม Focus MP สำหรับใช้สกิลตอนสู้", "Restores 2 Focus MP for battle skills."),
       cost: 12,
@@ -87,7 +91,8 @@ export function CoinShopModal({
     },
     {
       id: "shield-scroll",
-      icon: "🛡️",
+      icon: "shield",
+      iconColor: "text-[#7dd3fc]",
       name: t("คัมภีร์โล่ (+1 Shield)", "Aegis Scroll (+1 Shield)"),
       desc: t("กันดาเมจจากการตอบผิดได้ 1 ครั้งในชั้นนี้", "Blocks 1 wrong-answer hit on this floor."),
       cost: 20,
@@ -96,7 +101,8 @@ export function CoinShopModal({
     },
     {
       id: "double-reward",
-      icon: "🪙",
+      icon: "coin",
+      iconColor: "text-[#ffe27a]",
       name: t("เครื่องรางโชคลาภ (2x รางวัล)", "Fortune Charm (2x Rewards)"),
       desc: t("คูณ 2 XP และ Coins จากการสู้ในชั้นนี้", "Doubles XP & Coins earned on this floor."),
       cost: 25,
@@ -122,8 +128,9 @@ export function CoinShopModal({
             <span className="pixel-font text-[10px] text-[#ffe27a]">
               DUNGEON MERCHANT
             </span>
-            <h2 className="text-lg font-black text-[#f4efe6]">
-              {t("🛒 ร้านค้าพ่อค้าระหว่างชั้น", "🛒 Floor Merchant Shop")}
+            <h2 className="text-lg font-black text-[#f4efe6] flex items-center gap-2">
+              <Icon name="cart" size={18} className="text-[#ffe27a]" />
+              <span>{t("ร้านค้าพ่อค้าระหว่างชั้น", "Floor Merchant Shop")}</span>
             </h2>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -143,20 +150,32 @@ export function CoinShopModal({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-[#c4bdd6]">
-          <span>❤️ {hearts}/{maxHearts}</span>
+        <div className="flex flex-wrap items-center gap-2.5 text-[11px] font-bold text-[#c4bdd6]">
+          <span className="inline-flex items-center gap-1">
+            <Icon name="heart" size={13} filled className="text-[#ff4d6d]" />
+            <span>{hearts}/{maxHearts}</span>
+          </span>
           <span>•</span>
-          <span>✨ {focus}/{maxFocus} MP</span>
+          <span className="inline-flex items-center gap-1">
+            <Icon name="sparkles" size={13} className="text-[#c084fc]" />
+            <span>{focus}/{maxFocus} MP</span>
+          </span>
           {floorShieldBonus > 0 && (
             <>
               <span>•</span>
-              <span className="text-[#7dd3fc]">🛡️ +{floorShieldBonus}</span>
+              <span className="inline-flex items-center gap-1 text-[#7dd3fc]">
+                <Icon name="shield" size={13} />
+                <span>+{floorShieldBonus}</span>
+              </span>
             </>
           )}
           {floorRewardMultiplier > 1 && (
             <>
               <span>•</span>
-              <span className="text-[#ffe27a]">🔥 {floorRewardMultiplier}x</span>
+              <span className="inline-flex items-center gap-1 text-[#ffe27a]">
+                <Icon name="flame" size={13} filled />
+                <span>{floorRewardMultiplier}x</span>
+              </span>
             </>
           )}
         </div>
@@ -169,7 +188,7 @@ export function CoinShopModal({
             >
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm font-extrabold text-[#f4efe6] flex items-center gap-1.5">
-                  <span>{item.icon}</span>
+                  <Icon name={item.icon} size={15} className={`shrink-0 ${item.iconColor}`} />
                   <span className="truncate">{item.name}</span>
                 </p>
                 <p className="text-[11px] text-[#9a93ad] mt-0.5">{item.desc}</p>
@@ -186,7 +205,7 @@ export function CoinShopModal({
               >
                 {item.disabledReason
                   ? item.disabledReason
-                  : t(`ซื้อ ${item.cost} 🪙`, `Buy ${item.cost} 🪙`)}
+                  : t(`ซื้อ ${item.cost} เหรียญ`, `Buy ${item.cost} Coins`)}
               </button>
             </div>
           ))}

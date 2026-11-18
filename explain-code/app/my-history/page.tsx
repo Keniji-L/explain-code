@@ -203,8 +203,9 @@ export default function MyHistoryPage() {
                         <span className="rounded-full border border-[#9b5de5]/60 bg-[#25193b] px-3 py-0.5 text-[11px] font-extrabold text-[#e9d5ff]">
                           {trackMeta.name}
                         </span>
-                        <span className="text-[11px] font-semibold text-[#9a93ad]">
-                          💾 {t("เซฟล่าสุด:", "Last saved:")} {savedTimeText}
+                        <span className="text-[11px] font-semibold text-[#9a93ad] inline-flex items-center gap-1">
+                          <Icon name="save" size={11} />
+                          <span>{t("เซฟล่าสุด:", "Last saved:")} {savedTimeText}</span>
                         </span>
                       </div>
 
@@ -216,8 +217,9 @@ export default function MyHistoryPage() {
                         · {save.currentTopicTitle}
                       </h3>
                       <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-[#c4bdd6]">
-                        <span className="rounded-md border border-[#9b5de5]/60 bg-[#25193b] px-2 py-0.5 text-[11px] font-bold text-[#ffe27a]">
-                          ⚔️ {t("เฟสคำถามที่", "Phase")}{" "}
+                        <span className="rounded-md border border-[#9b5de5]/60 bg-[#25193b] px-2 py-0.5 text-[11px] font-bold text-[#ffe27a] inline-flex items-center gap-1">
+                          <Icon name="sword" size={11} />
+                          <span>{t("เฟสคำถามที่", "Phase")}</span>{" "}
                           {save.currentPhaseNumber ||
                             (save.arenaSnapshot?.battlePhaseIndex ?? 0) + 1}
                           /

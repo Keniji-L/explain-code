@@ -954,11 +954,19 @@ export function TeacherDashboard({
                   {/* สรุปจุดแข็งและจุดที่ควรทบทวน */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[13px]">
                     <div className="rounded-xl bg-[#d8efdc] border border-[#0f766e]/30 px-3.5 py-2.5 font-bold text-[#14532d]">
-                      🌟 {t("ด้านที่เก่ง:", "Strength:")} {t("ช่อง", "Cell")} {stuTop.id} ({stuTop.shortTitle}{" "}
+                      <span className="inline-flex items-center gap-1">
+                        <Icon name="star" size={12} filled className="text-[#ffe27a]" />
+                        <span>{t("ด้านที่เก่ง:", "Strength:")}</span>
+                      </span>{" "}
+                      {t("ช่อง", "Cell")} {stuTop.id} ({stuTop.shortTitle}{" "}
                       {inspectingStudent.cellScores[stuTop.id]}%)
                     </div>
                     <div className="rounded-xl bg-[#f8d9d4] border border-[#7d1d10]/30 px-3.5 py-2.5 font-bold text-[#7d1d10]">
-                      💡 {t("ควรทบทวน:", "Needs Review:")} {t("ช่อง", "Cell")} {stuWeak.id} ({stuWeak.shortTitle}{" "}
+                      <span className="inline-flex items-center gap-1">
+                        <Icon name="bulb" size={12} className="text-[#f6c945]" />
+                        <span>{t("ควรทบทวน:", "Needs Review:")}</span>
+                      </span>{" "}
+                      {t("ช่อง", "Cell")} {stuWeak.id} ({stuWeak.shortTitle}{" "}
                       {inspectingStudent.cellScores[stuWeak.id]}%)
                     </div>
                   </div>

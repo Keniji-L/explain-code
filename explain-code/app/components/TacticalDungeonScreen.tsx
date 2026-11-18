@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { Icon } from "./Icons";
 import {
   BattleSnapshot,
   CodeRune,
@@ -431,8 +432,8 @@ export function TacticalDungeonScreen({
           {/* Top Enemy Status Banner with Code X-Ray Button */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-xl">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-600 to-amber-600 flex items-center justify-center text-2xl font-black shadow-lg shadow-rose-500/20">
-                {currentMonster.tier === "boss" ? "👑" : "⚔"}
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-600 to-amber-600 flex items-center justify-center text-white shadow-lg shadow-rose-500/20">
+                <Icon name={currentMonster.tier === "boss" ? "crown" : "sword"} size={24} />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -479,8 +480,9 @@ export function TacticalDungeonScreen({
                 onClick={() => setInspectEnemyModalOpen(true)}
                 className="px-4 py-2.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500 text-indigo-300 text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
               >
-                <span>
-                  {t("🔍 สแกนโค้ดศัตรู (Code X-Ray)", "🔍 Code X-Ray Enemy Script")}
+                <span className="inline-flex items-center gap-1.5">
+                  <Icon name="search" size={13} />
+                  <span>{t("สแกนโค้ดศัตรู (Code X-Ray)", "Code X-Ray Enemy Script")}</span>
                 </span>
               </button>
             </div>
@@ -650,8 +652,8 @@ export function TacticalDungeonScreen({
             return (
               <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl flex flex-col gap-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-indigo-600 flex items-center justify-center text-3xl shrink-0 shadow-lg shadow-amber-500/20">
-                    📜
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-indigo-600 flex items-center justify-center text-white shrink-0 shadow-lg shadow-amber-500/20">
+                    <Icon name="book" size={26} />
                   </div>
                   <div>
                     <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
@@ -728,8 +730,8 @@ export function TacticalDungeonScreen({
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 sm:p-10 shadow-2xl text-center">
             {gameState === "victory" ? (
               <>
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-yellow-600 mx-auto flex items-center justify-center text-3xl shadow-xl shadow-amber-500/20 mb-4 animate-bounce">
-                  👑
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-yellow-600 mx-auto flex items-center justify-center text-white shadow-xl shadow-amber-500/20 mb-4 animate-bounce">
+                  <Icon name="crown" size={34} />
                 </div>
                 <span className="text-xs font-bold uppercase tracking-widest text-amber-400">
                   Mission Accomplished
@@ -749,8 +751,8 @@ export function TacticalDungeonScreen({
               </>
             ) : (
               <>
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-rose-600 to-red-800 mx-auto flex items-center justify-center text-3xl shadow-xl shadow-rose-500/20 mb-4">
-                  💀
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-rose-600 to-red-800 mx-auto flex items-center justify-center text-white shadow-xl shadow-rose-500/20 mb-4">
+                  <Icon name="skull" size={34} />
                 </div>
                 <span className="text-xs font-bold uppercase tracking-widest text-rose-400">
                   Player Defeated
@@ -827,13 +829,15 @@ export function TacticalDungeonScreen({
               </pre>
             </div>
 
-            <div className="bg-indigo-950/30 p-3 rounded-xl border border-indigo-800/40 text-xs text-indigo-300">
-              💡{" "}
-              <strong>{t("คำแนะนำเชิงกลยุทธ์:", "Tactical Tip:")}</strong>{" "}
-              {t(
-                "ตรวจดูเงื่อนไข `if` ของศัตรู แล้วปรับค่า `spell.element` หรือ `spell.armorPiercing` ในฟังก์ชันของคุณเพื่อหลบการดูดซับ",
-                "Inspect the enemy's `if` conditions, then adjust `spell.element` or `spell.armorPiercing` in your function to bypass absorption."
-              )}
+            <div className="bg-indigo-950/30 p-3 rounded-xl border border-indigo-800/40 text-xs text-indigo-300 flex items-start gap-1.5">
+              <Icon name="bulb" size={14} className="shrink-0 mt-0.5 text-amber-300" />
+              <div>
+                <strong>{t("คำแนะนำเชิงกลยุทธ์:", "Tactical Tip:")}</strong>{" "}
+                {t(
+                  "ตรวจดูเงื่อนไข `if` ของศัตรู แล้วปรับค่า `spell.element` หรือ `spell.armorPiercing` ในฟังก์ชันของคุณเพื่อหลบการดูดซับ",
+                  "Inspect the enemy's `if` conditions, then adjust `spell.element` or `spell.armorPiercing` in your function to bypass absorption."
+                )}
+              </div>
             </div>
 
             <button

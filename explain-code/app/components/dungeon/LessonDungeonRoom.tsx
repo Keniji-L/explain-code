@@ -467,13 +467,15 @@ export function LessonDungeonRoom({
       {(floorShieldBonus > 0 || floorRewardMultiplier > 1) && (
         <div className="w-full max-w-[640px] flex flex-wrap items-center justify-center gap-2 text-[11px]">
           {floorShieldBonus > 0 && (
-            <span className="px-2.5 py-1 rounded-lg border border-[#38bdf8]/60 bg-[#38bdf8]/15 text-[#7dd3fc] font-bold">
-              🛡️ +{floorShieldBonus} Shield ({t("เฉพาะชั้นนี้", "This Floor")})
+            <span className="px-2.5 py-1 rounded-lg border border-[#38bdf8]/60 bg-[#38bdf8]/15 text-[#7dd3fc] font-bold inline-flex items-center gap-1">
+              <Icon name="shield" size={12} />
+              <span>+{floorShieldBonus} Shield ({t("เฉพาะชั้นนี้", "This Floor")})</span>
             </span>
           )}
           {floorRewardMultiplier > 1 && (
-            <span className="px-2.5 py-1 rounded-lg border border-[#f6c945]/60 bg-[#f6c945]/15 text-[#ffe27a] font-bold">
-              ⚡ XP &amp; Coins ×{floorRewardMultiplier} ({t("เฉพาะชั้นนี้", "This Floor")})
+            <span className="px-2.5 py-1 rounded-lg border border-[#f6c945]/60 bg-[#f6c945]/15 text-[#ffe27a] font-bold inline-flex items-center gap-1">
+              <Icon name="zap" size={12} />
+              <span>XP &amp; Coins ×{floorRewardMultiplier} ({t("เฉพาะชั้นนี้", "This Floor")})</span>
             </span>
           )}
         </div>
@@ -514,13 +516,16 @@ export function LessonDungeonRoom({
 
         {/* Compact status & quick battle action */}
         <div className="w-full max-w-[640px] flex flex-wrap items-center justify-between gap-2 text-xs text-[#9a93ad]">
-          <span className="text-[#ffe27a] font-bold">
-            {room.isDoorUnlocked
-              ? t("🚪 พิชิตห้องนี้สำเร็จแล้ว!", "🚪 Room cleared!")
-              : t(
-                  `⚔️ ${getLocalizedMonster(currentMonster, uiLang).name} (${lessonQuestions.length} ข้อ)`,
-                  `⚔️ ${getLocalizedMonster(currentMonster, uiLang).name} (${lessonQuestions.length} phase${lessonQuestions.length > 1 ? "s" : ""})`
-                )}
+          <span className="text-[#ffe27a] font-bold inline-flex items-center gap-1.5">
+            <Icon name={room.isDoorUnlocked ? "door" : "sword"} size={14} />
+            <span>
+              {room.isDoorUnlocked
+                ? t("พิชิตห้องนี้สำเร็จแล้ว!", "Room cleared!")
+                : t(
+                    `${getLocalizedMonster(currentMonster, uiLang).name} (${lessonQuestions.length} ข้อ)`,
+                    `${getLocalizedMonster(currentMonster, uiLang).name} (${lessonQuestions.length} phase${lessonQuestions.length > 1 ? "s" : ""})`
+                  )}
+            </span>
           </span>
           <div className="flex items-center gap-2">
             {onSwitchToContent && (
@@ -538,7 +543,8 @@ export function LessonDungeonRoom({
                 onClick={handleEncounterEntity}
                 className="px-3 py-1 rounded-lg bg-[#9b5de5] hover:bg-[#b07af0] text-white font-bold text-xs cursor-pointer transition-colors"
               >
-                {t("⚔️ สู้เลย", "⚔️ Battle")}
+                <Icon name="sword" size={13} className="inline mr-1" />
+            {t("สู้เลย", "Battle")}
               </button>
             )}
           </div>

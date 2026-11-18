@@ -31,6 +31,7 @@ import {
 } from "../../lib/lms-data";
 import { getClientSession } from "../../components/SiteHeader";
 import { useUiLanguage } from "../../components/LanguageProvider";
+import { Icon } from "../../components/Icons";
 
 function detectCourseLanguage(course: Course | null, courseLessons: Lesson[]): LearningLanguage {
   const lessonLang = courseLessons
@@ -625,8 +626,9 @@ function DungeonPlayContent() {
   if (isCourseLocked && course) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center gap-4">
-        <h1 className="text-xl font-bold text-[#f4efe6]">
-          {t("🔒 คอร์สนี้เป็นแบบส่วนตัว", "🔒 Private Course")}
+        <h1 className="text-xl font-bold text-[#f4efe6] inline-flex items-center gap-2">
+          <Icon name="lock" size={20} className="text-[#9b5de5]" />
+          <span>{t("คอร์สนี้เป็นแบบส่วนตัว", "Private Course")}</span>
         </h1>
         <p className="text-xs text-[#c4bdd6] max-w-md">
           {t(
@@ -697,7 +699,7 @@ function DungeonPlayContent() {
             onClick={() => persistCourseDungeonProgress(floorIndex, false, true)}
             className="px-3 py-1 rounded-lg text-xs font-extrabold border border-[#2fbf71]/70 bg-[#102a1e] text-[#86efac] hover:bg-[#153827] transition cursor-pointer flex items-center gap-1"
           >
-            <span>💾</span>
+            <Icon name="save" size={13} />
             <span>{t("เซฟเกมไว้", "Save Game")}</span>
           </button>
         )}
@@ -713,13 +715,15 @@ function DungeonPlayContent() {
       {(floorShieldBonus > 0 || floorRewardMultiplier > 1) && (
         <div className="w-full max-w-[640px] flex flex-wrap items-center justify-center gap-2 text-[11px]">
           {floorShieldBonus > 0 && (
-            <span className="px-2.5 py-1 rounded-lg border border-[#38bdf8]/60 bg-[#38bdf8]/15 text-[#7dd3fc] font-bold">
-              🛡️ +{floorShieldBonus} Shield ({t("เฉพาะชั้นนี้", "This Floor")})
+            <span className="px-2.5 py-1 rounded-lg border border-[#38bdf8]/60 bg-[#38bdf8]/15 text-[#7dd3fc] font-bold inline-flex items-center gap-1">
+              <Icon name="shield" size={12} />
+              <span>+{floorShieldBonus} Shield ({t("เฉพาะชั้นนี้", "This Floor")})</span>
             </span>
           )}
           {floorRewardMultiplier > 1 && (
-            <span className="px-2.5 py-1 rounded-lg border border-[#f6c945]/60 bg-[#f6c945]/15 text-[#ffe27a] font-bold">
-              ⚡ XP &amp; Coins ×{floorRewardMultiplier} ({t("เฉพาะชั้นนี้", "This Floor")})
+            <span className="px-2.5 py-1 rounded-lg border border-[#f6c945]/60 bg-[#f6c945]/15 text-[#ffe27a] font-bold inline-flex items-center gap-1">
+              <Icon name="zap" size={12} />
+              <span>XP &amp; Coins ×{floorRewardMultiplier} ({t("เฉพาะชั้นนี้", "This Floor")})</span>
             </span>
           )}
         </div>

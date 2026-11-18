@@ -256,7 +256,8 @@ function CourseDetailContent() {
         <main className="mx-auto max-w-lg px-4 py-12">
           <div className="rounded-2xl border border-[#9b5de5]/60 bg-[#141220] p-6 sm:p-8 text-center shadow-xl space-y-4">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#9b5de5]/60 bg-[#25193b] px-3 py-1 text-xs font-extrabold text-[#e9d5ff]">
-              {t("🔒 คอร์สเรียนแบบส่วนตัว (Private Course)", "🔒 Private Course")}
+              <Icon name="lock" size={12} />
+              <span>{t("คอร์สเรียนแบบส่วนตัว (Private Course)", "Private Course")}</span>
             </span>
             <h1 className="text-xl font-bold text-[#f4efe6]">{localizedCourse.title}</h1>
             <p className="text-xs text-[#c4bdd6] leading-relaxed">
@@ -379,7 +380,17 @@ function CourseDetailContent() {
                     : "border-[#9b5de5]/60 bg-[#25193b] text-[#e9d5ff]"
                 }`}
               >
-                {isPublic ? t("🌐 คอร์สสาธารณะ", "🌐 Public Course") : t("🔒 คอร์สส่วนตัว", "🔒 Private Course")}
+                {isPublic ? (
+                  <span className="inline-flex items-center gap-1">
+                    <Icon name="globe" size={12} />
+                    <span>{t("คอร์สสาธารณะ", "Public Course")}</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1">
+                    <Icon name="lock" size={12} />
+                    <span>{t("คอร์สส่วนตัว", "Private Course")}</span>
+                  </span>
+                )}
               </span>
               <span className="rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-3 py-1 text-xs font-bold text-[#f6c945]">
                 {t("รหัสคอร์ส:", "Course Code:")} {course.join_code}

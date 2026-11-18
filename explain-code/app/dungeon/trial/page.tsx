@@ -13,6 +13,7 @@ import { BattleOverlay } from "../../components/dungeon/BattleOverlay";
 import { MobileDpad } from "../../components/dungeon/MobileDpad";
 import { PauseModal, GameOverModal, VictoryModal } from "../../components/dungeon/GameModals";
 import { dungeonSound } from "../../lib/dungeon/sound";
+import { Icon } from "../../components/Icons";
 import { useUiLanguage } from "../../components/LanguageProvider";
 
 const TRIAL_SEED = 12345678;
@@ -132,11 +133,14 @@ export default function DungeonTrialPage() {
         <h1 className="text-xs sm:text-sm font-extrabold text-[#ffe27a]">
           {t("โหมดทดลองเล่นดันเจี้ยน (Guest Trial)", "Dungeon Guest Trial Mode")}
         </h1>
-        <span>
-          {t(
-            "⌨️ กด WASD หรือปุ่มลูกศรเพื่อเดินเข้าหามอนสเตอร์ · กด Space เพื่อโต้ตอบ",
-            "⌨️ Press WASD or Arrow keys to approach the monster · Space to interact"
-          )}
+        <span className="inline-flex items-center gap-1.5">
+          <Icon name="keyboard" size={13} className="text-[#ffe27a] shrink-0" />
+          <span>
+            {t(
+              "กด WASD หรือปุ่มลูกศรเพื่อเดินเข้าหามอนสเตอร์ · กด Space เพื่อโต้ตอบ",
+              "Press WASD or Arrow keys to approach the monster · Space to interact"
+            )}
+          </span>
         </span>
       </div>
 

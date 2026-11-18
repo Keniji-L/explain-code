@@ -261,15 +261,15 @@ export function BattleOverlay({
             setShieldCharges((s) => Math.max(0, s - 1));
             setRelicNotice(
               t(
-                "🛡️ บอสคลั่งหมดเวลา! แต่โล่ช่วยดูดซับดาเมจไว้ได้",
-                "🛡️ Boss Enrage! Your shield absorbed the timeout hit."
+                "บอสคลั่งหมดเวลา! แต่โล่ช่วยดูดซับดาเมจไว้ได้",
+                "Boss Enrage! Your shield absorbed the timeout hit."
               )
             );
           } else {
             setRelicNotice(
               t(
-                "⚡ บอสคลั่ง! โจมตี 1 ดาเมจเพราะตอบช้าเกินเวลาในเฟสนี้",
-                "⚡ Boss Enrage! Took 1 damage for running out of time."
+                "บอสคลั่ง! โจมตี 1 ดาเมจเพราะตอบช้าเกินเวลาในเฟสนี้",
+                "Boss Enrage! Took 1 damage for running out of time."
               )
             );
             onWrongAnswer();
@@ -600,8 +600,8 @@ export function BattleOverlay({
         setShieldCharges((prev) => Math.max(0, prev - 1));
         setRelicNotice(
           t(
-            "🛡️ โล่ป้องกันทำงาน! ดูดซับดาเมจสำเร็จ ไม่เสียหัวใจ",
-            "🛡️ Shield Blocked! Absorbed damage without losing a heart."
+            "โล่ป้องกันทำงาน! ดูดซับดาเมจสำเร็จ ไม่เสียหัวใจ",
+            "Shield Blocked! Absorbed damage without losing a heart."
           )
         );
       } else {
@@ -767,8 +767,9 @@ export function BattleOverlay({
         {/* Top Bar: Encounter Label + Save + Close Button */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="pixel-font text-[10px] font-black tracking-wider text-[#9a93ad] uppercase">
-              {t("⚔️ การปะทะในดันเจี้ยน", "⚔️ Dungeon Encounter")}
+            <span className="pixel-font text-[10px] font-black tracking-wider text-[#9a93ad] uppercase inline-flex items-center gap-1.5">
+              <Icon name="sword" size={12} className="text-[#ffe27a]" />
+              <span>{t("การปะทะในดันเจี้ยน", "Dungeon Encounter")}</span>
             </span>
             {isMultiPhase && (
               <span className="rounded-md border border-[#9b5de5]/60 bg-[#25193b] px-2 py-0.5 text-[10px] font-extrabold text-[#ffe27a]">
@@ -806,7 +807,9 @@ export function BattleOverlay({
                 className="px-2.5 py-1.5 rounded-lg text-[11px] font-extrabold border border-[#2fbf71]/70 bg-[#102a1e] text-[#86efac] hover:bg-[#153827] transition cursor-pointer flex items-center gap-1 shrink-0"
                 title={t("เซฟด่านและเฟสปัจจุบัน", "Save current floor and phase")}
               >
-                <span>💾</span>
+                <span>
+                  <Icon name="save" size={12} />
+                </span>
                 <span>{t("เซฟเกมไว้", "Save Game")}</span>
               </button>
             )}
@@ -880,10 +883,11 @@ export function BattleOverlay({
                 </span>
                 {shieldCharges > 0 && (
                   <span
-                    className="pixel-font text-[9px] px-1.5 py-0.5 rounded bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/50 shrink-0"
+                    className="pixel-font text-[9px] px-1.5 py-0.5 rounded bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/50 shrink-0 inline-flex items-center gap-1"
                     title={t("โล่ป้องกันความเสียหาย", "Damage Shield Charges")}
                   >
-                    🛡️×{shieldCharges}
+                    <Icon name="shield" size={10} />
+                    <span>×{shieldCharges}</span>
                   </span>
                 )}
               </div>
@@ -903,8 +907,9 @@ export function BattleOverlay({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="pixel-font text-[10px] font-black text-[#38bdf8] shrink-0">
-                  💧 MP {focus}/{computedMaxFocus}
+                <span className="pixel-font text-[10px] font-black text-[#38bdf8] shrink-0 inline-flex items-center gap-1">
+                  <Icon name="droplet" size={11} />
+                  <span>MP {focus}/{computedMaxFocus}</span>
                 </span>
                 <div className="flex-1 h-2.5 bg-[#0b0a12] rounded-full overflow-hidden border border-[#38bdf8]/40">
                   <div
@@ -925,22 +930,24 @@ export function BattleOverlay({
             {t("เควสเสริม:", "Side-Quests:")}
           </span>
           <span
-            className={`px-2 py-0.5 rounded-full border font-bold ${
+            className={`px-2 py-0.5 rounded-full border font-bold inline-flex items-center gap-1 ${
               !tookDamageInBattle && phaseResults.every((r) => r.isCorrectFirstTry)
                 ? "bg-[#2fbf71]/15 border-[#2fbf71]/50 text-[#86efac]"
                 : "bg-[#1c1b2b] border-[#2f2d45] text-[#6b6580] line-through"
             }`}
           >
-            🛡️ {t("No-Hit Clear (+15 XP)", "No-Hit Clear (+15 XP)")}
+            <Icon name="shield" size={11} />
+            <span>{t("No-Hit Clear (+15 XP)", "No-Hit Clear (+15 XP)")}</span>
           </span>
           <span
-            className={`px-2 py-0.5 rounded-full border font-bold ${
+            className={`px-2 py-0.5 rounded-full border font-bold inline-flex items-center gap-1 ${
               !hasUsedAnySkill
                 ? "bg-[#f6c945]/15 border-[#f6c945]/50 text-[#ffe27a]"
                 : "bg-[#1c1b2b] border-[#2f2d45] text-[#6b6580] line-through"
             }`}
           >
-            ⚔️ {t("No-Skill Purist (+15 XP)", "No-Skill Purist (+15 XP)")}
+            <Icon name="sword" size={11} />
+            <span>{t("No-Skill Purist (+15 XP)", "No-Skill Purist (+15 XP)")}</span>
           </span>
         </div>
 
@@ -965,7 +972,9 @@ export function BattleOverlay({
             <div className="rounded-lg border border-[#c0283a]/40 bg-[#1c0f16] px-3 py-1.5 space-y-1">
               <div className="flex items-center justify-between text-[11px] font-extrabold">
                 <span className="text-[#fca5a5] flex items-center gap-1">
-                  <span>⏱️</span>
+                  <span>
+                    <Icon name="clock" size={12} />
+                  </span>
                   <span>{t("Boss Enrage Timer (เวลาบอสคลั่ง)", "Boss Enrage Timer")}</span>
                 </span>
                 <span
@@ -998,11 +1007,14 @@ export function BattleOverlay({
           {(isEn ? activeQuestion.codeSnippetEn || activeQuestion.codeSnippet : activeQuestion.codeSnippet) && (
             <div className="space-y-1">
               <div className="flex items-center justify-between text-[10px] text-[#9a93ad]">
-                <span>
-                  {t(
-                    "💡 คลิกที่บรรทัดโค้ดเพื่อปักหมุดวิเคราะห์ (ถ้าโจทย์ถามเลขบรรทัด ระบบจะช่วยเลือกคำตอบให้)",
-                    "💡 Click any code line to pin/inspect it (auto-selects matching line choices)"
-                  )}
+                <span className="inline-flex items-center gap-1">
+                  <Icon name="bulb" size={11} className="text-[#ffe27a] shrink-0" />
+                  <span>
+                    {t(
+                      "คลิกที่บรรทัดโค้ดเพื่อปักหมุดวิเคราะห์ (ถ้าโจทย์ถามเลขบรรทัด ระบบจะช่วยเลือกคำตอบให้)",
+                      "Click any code line to pin/inspect it (auto-selects matching line choices)"
+                    )}
+                  </span>
                 </span>
                 {selectedCodeLine !== null && (
                   <span className="font-bold text-[#ffe27a]">
@@ -1048,8 +1060,8 @@ export function BattleOverlay({
                             : "hover:bg-[#1f1c2e]"
                         }`}
                       >
-                        <span className="w-6 shrink-0 text-right text-[#6b6580] select-none tabular-nums">
-                          {isPinned ? "🔍" : lineIdx + 1}
+                        <span className="w-6 shrink-0 text-right text-[#6b6580] select-none tabular-nums inline-flex items-center justify-end">
+                          {isPinned ? <Icon name="search" size={11} className="text-[#ffe27a]" /> : lineIdx + 1}
                         </span>
                         <span className="whitespace-pre">{line || " "}</span>
                       </div>
@@ -1073,8 +1085,9 @@ export function BattleOverlay({
                 )}
               </span>
             </span>
-            <span className="pixel-font text-[10px] text-[#ffe27a]">
-              💧 {focus}/{computedMaxFocus} MP
+            <span className="pixel-font text-[10px] text-[#ffe27a] inline-flex items-center gap-1">
+              <Icon name="droplet" size={11} />
+              <span>{focus}/{computedMaxFocus} MP</span>
             </span>
           </div>
 
@@ -1122,8 +1135,9 @@ export function BattleOverlay({
                       </span>
                       <div className="flex items-center gap-1 shrink-0">
                         {isOnCooldown ? (
-                          <span className="pixel-font text-[9px] px-1.5 py-0.5 rounded bg-[#f97316]/20 text-[#fdba74] border border-[#f97316]/50">
-                            ⏳ CD {cooldownRemaining}
+                          <span className="pixel-font text-[9px] px-1.5 py-0.5 rounded bg-[#f97316]/20 text-[#fdba74] border border-[#f97316]/50 inline-flex items-center gap-1">
+                            <Icon name="clock" size={9} />
+                            <span>CD {cooldownRemaining}</span>
                           </span>
                         ) : (
                           <span
@@ -1147,8 +1161,8 @@ export function BattleOverlay({
                           )
                         : isOnCooldown
                         ? t(
-                            `⏳ ติดคูลดาวน์อีก ${cooldownRemaining} เฟส`,
-                            `⏳ Cooldown: ${cooldownRemaining} phase(s)`
+                            `ติดคูลดาวน์อีก ${cooldownRemaining} เฟส`,
+                            `Cooldown: ${cooldownRemaining} phase(s)`
                           )
                         : `${isEn ? skill.descriptionEn : skill.description} · CD ${skill.cooldownPhases}`}
                     </div>
@@ -1302,8 +1316,9 @@ export function BattleOverlay({
                   : t("ตอบผิด! เสีย 1 หัวใจ", "Miss! -1 Heart")}
               </span>
               {isCorrect && (
-                <span className="px-2 py-0.5 rounded bg-[#0c4a6e]/70 border border-[#38bdf8]/60 text-[#38bdf8] pixel-font text-[10px] font-black">
-                  💧 +{heroStats.mpRegenOnCorrect} MP!
+                <span className="px-2 py-0.5 rounded bg-[#0c4a6e]/70 border border-[#38bdf8]/60 text-[#38bdf8] pixel-font text-[10px] font-black inline-flex items-center gap-1">
+                  <Icon name="droplet" size={10} />
+                  <span>+{heroStats.mpRegenOnCorrect} MP!</span>
                 </span>
               )}
               {isCorrect && isMonsterDefeated && (
@@ -1320,11 +1335,14 @@ export function BattleOverlay({
                   <strong>{t("คำอธิบายแนวคิด:", "Concept Guidance:")}</strong>{" "}
                   {buildFallbackHint(activeQuestion, isEn)}
                 </p>
-                <p className="text-[11px] text-[#fca5a5]">
-                  {t(
-                    "💡 ลองวิเคราะห์โค้ดและตัวเลือกที่เหลืออีกครั้ง (ระบบตัดข้อที่ตอบผิดออกให้แล้ว)",
-                    "💡 Analyze the code and remaining choices again (your wrong pick has been eliminated)."
-                  )}
+                <p className="text-[11px] text-[#fca5a5] flex items-center gap-1">
+                  <Icon name="bulb" size={12} className="shrink-0" />
+                  <span>
+                    {t(
+                      "ลองวิเคราะห์โค้ดและตัวเลือกที่เหลืออีกครั้ง (ระบบตัดข้อที่ตอบผิดออกให้แล้ว)",
+                      "Analyze the code and remaining choices again (your wrong pick has been eliminated)."
+                    )}
+                  </span>
                 </p>
               </div>
             )}
