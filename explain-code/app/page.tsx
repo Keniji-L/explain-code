@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { SiteHeader } from "./components/SiteHeader";
+import { LandingHeroPreview } from "./components/LandingHeroEffects";
 import { useUiLanguage } from "./components/LanguageProvider";
 import {
   TOPICS,
@@ -1126,9 +1127,27 @@ export default function ExplainCodeApp() {
       <div className="min-h-screen bg-[#0d0b14] text-[#f4efe6] flex flex-col">
         <SiteHeader onOpenClassicPortal={openClassicPortal} />
 
-        <main className="mx-auto flex-1 max-w-5xl w-full px-4 py-10 sm:px-6 sm:py-16">
+        <main className="relative overflow-hidden mx-auto flex-1 max-w-5xl w-full px-4 py-10 sm:px-6 sm:py-16">
+          {/* Ambient Hero Glow & Floating Code Tokens */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 h-72 w-[560px] rounded-full bg-[#9b5de5]/20 blur-3xl"
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none hidden sm:block absolute top-14 left-6 font-mono text-xs font-bold text-[#9b5de5]/35 ambient-float select-none"
+          >
+            {"{ code => mastery }"}
+          </div>
+          <div
+            aria-hidden="true"
+            className="pointer-events-none hidden sm:block absolute top-24 right-8 font-mono text-xs font-bold text-[#f6c945]/30 ambient-float select-none"
+          >
+            {"if (understand) levelUp();"}
+          </div>
+
           {/* Hero Section */}
-          <section className="text-center max-w-2xl mx-auto mb-12">
+          <section className="relative text-center max-w-2xl mx-auto mb-12 hero-fade-in">
             <h1 className="mt-4 text-3xl sm:text-5xl font-extrabold tracking-tight text-[#f4efe6] leading-tight">
               <span>{t("เขียนโค้ดได้แล้ว ", "You Can Write Code — ")}</span>
               <span className="mt-2 block text-[#f6c945] underline decoration-[#9b5de5] underline-offset-8">
@@ -1165,10 +1184,12 @@ export default function ExplainCodeApp() {
                 <span>{t("อธิบายโค้ด", "Explain Code")}</span>
               </Link>
             </div>
+
+            <LandingHeroPreview />
           </section>
 
           {/* 2 Core Choices: Learning Dungeon & Explain Code */}
-          <section className="grid grid-cols-1 gap-6 md:grid-cols-2 mb-12">
+          <section className="grid grid-cols-1 gap-6 md:grid-cols-2 mb-12 hero-fade-in-delay-1">
             {/* Card 1: Learning Dungeon */}
             <div className="group flex flex-col justify-between rounded-2xl border border-[#2f2d45] bg-[#141220] p-6 sm:p-7 transition-all hover:border-[#f6c945]/60 shadow-lg">
               <div>

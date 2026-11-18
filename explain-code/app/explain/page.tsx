@@ -129,6 +129,24 @@ export default function ExplainCodePage() {
   const [savedNotice, setSavedNotice] = useState<boolean>(false);
   const [isCreatingDungeon, setIsCreatingDungeon] = useState<boolean>(false);
   const [dungeonError, setDungeonError] = useState<string | null>(null);
+  const [spotlightIdx, setSpotlightIdx] = useState<number | null>(null);
+  const [isAutoStepping, setIsAutoStepping] = useState<boolean>(false);
+  const [copiedSummary, setCopiedSummary] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isAutoStepping || !result?.lineByLine?.length) return;
+    const total = result.lineByLine.length;
+    const timer = window.setInterval(() => {
+      setSpotlightIdx((prev) => {
+        if (prev === null || prev >= total - 1) {
+          setIsAutoStepping(false);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 2200);
+    return () => window.clearInterval(timer);
+  }, [isAutoStepping, result]);
 
   useEffect(() => {
     setSession(getClientSession());
@@ -359,6 +377,19 @@ export default function ExplainCodePage() {
                 placeholder={t("วางโค้ดของคุณที่นี่...", "Paste your code here...")}
                 className="w-full rounded-xl border border-[#3d395a] bg-[#120f1c] p-4 font-mono text-xs leading-relaxed text-[#f4efe6] placeholder:text-[#9a93ad]/60 focus:border-[#f6c945] focus:ring-1 focus:ring-[#f6c945] focus:outline-hidden"
               />
+              <div className="mt-2 flex items-center justify-between text-[11px] text-[#9a93ad]">
+                <span>
+                  {t(
+                    `${code ? code.split("\n").length : 0} บรรทัด · ${code.length} ตัวอักษร`,
+                    `${code ? code.split("\n").length : 0} lines · ${code.length} chars`
+                  )}
+                </span>
+                {code.trim().length > 0 && (
+                  <span className="text-[#2fbf71] font-semibold">
+                    {t("พร้อมวิเคราะห์", "Ready to analyze")}
+                  </span>
+                )}
+              </div>
 
               {error && (
                 <div className="mt-4 rounded-xl border border-[#c0283a]/50 bg-[#2d141c] p-3.5 text-xs font-medium text-[#fca5a5]">
@@ -434,9 +465,23 @@ export default function ExplainCodePage() {
                       <Icon name="book" className="h-4 w-4 text-[#f6c945]" />
                       <span>{t("สรุปภาพรวมการทำงาน", "Code Summary")}</span>
                     </h2>
-                    <span className="rounded-lg border border-[#9b5de5]/40 bg-[#5a2d91]/30 px-2.5 py-1 text-[11px] font-bold uppercase text-[#ffe27a]">
-                      {result.language}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard?.writeText(result.summary).catch(() => {});
+                          setCopiedSummary(true);
+                          window.setTimeout(() => setCopiedSummary(false), 2000);
+                        }}
+                        className="inline-flex items-center gap-1 rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-2.5 py-1 text-[11px] font-bold text-[#c4bdd6] hover:border-[#f6c945] hover:text-[#ffe27a] transition-colors cursor-pointer"
+                      >
+                        <Icon name={copiedSummary ? "check" : "clipboard"} size={12} />
+                        <span>{copiedSummary ? t("คัดลอกแล้ว", "Copied") : t("คัดลอกสรุป", "Copy")}</span>
+                      </button>
+                      <span className="rounded-lg border border-[#9b5de5]/40 bg-[#5a2d91]/30 px-2.5 py-1 text-[11px] font-bold uppercase text-[#ffe27a]">
+                        {result.language}
+                      </span>
+                    </div>
                   </div>
                   <p className="text-sm leading-relaxed text-[#e8e1cf]">
                     {result.summary}
@@ -509,33 +554,93 @@ export default function ExplainCodePage() {
                   </ul>
                 </div>
 
-                {/* 3. คำอธิบายทีละบรรทัด */}
+                {/* 3. คำอธิบายทีละบรรทัด (Interactive Walkthrough) */}
                 <div className="rounded-2xl border border-[#2f2d45] bg-[#141220] p-6 shadow-lg">
-                  <h3 className="text-sm font-bold text-[#f4efe6] mb-3 flex items-center gap-2">
-                    <Icon name="code" className="h-4 w-4 text-[#f6c945]" />
-                    <span>{t("แกะโค้ดทีละบรรทัด (Line-by-Line Explanation)", "Line-by-Line Explanation")}</span>
-                  </h3>
-                  <div className="space-y-3">
-                    {result.lineByLine.map((item) => (
-                      <div
-                        key={item.lineNumber}
-                        className="rounded-xl border border-[#2f2d45] bg-[#1c1b2b] p-3.5 transition-all hover:border-[#9b5de5]"
-                      >
-                        <div className="flex items-start gap-2.5">
-                          <span className="inline-flex h-6 min-w-7 items-center justify-center rounded-md border border-[#9b5de5]/50 bg-[#5a2d91] px-1.5 font-mono text-[11px] font-bold text-[#ffe27a]">
-                            L{item.lineNumber}
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-sm font-bold text-[#f4efe6] flex items-center gap-2">
+                      <Icon name="code" className="h-4 w-4 text-[#f6c945]" />
+                      <span>{t("แกะโค้ดทีละบรรทัด (Line-by-Line Explanation)", "Line-by-Line Explanation")}</span>
+                    </h3>
+                    {result.lineByLine.length > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isAutoStepping) {
+                              setIsAutoStepping(false);
+                            } else {
+                              setSpotlightIdx(0);
+                              setIsAutoStepping(true);
+                            }
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-[#f6c945]/50 bg-[#281d08] px-2.5 py-1 text-[11px] font-extrabold text-[#ffe27a] hover:bg-[#3a2a0c] cursor-pointer"
+                        >
+                          <Icon name={isAutoStepping ? "pause" : "play"} size={11} />
+                          <span>
+                            {isAutoStepping
+                              ? t("หยุดไล่", "Pause")
+                              : t("ไล่ทีละบรรทัด", "Step Play")}
                           </span>
-                          <div className="flex-1 overflow-x-auto rounded-lg border border-[#2f2d45] bg-[#120f1c] px-2.5 py-1">
-                            <code className="font-mono text-xs font-semibold text-[#f4efe6]">
-                              {item.code}
-                            </code>
-                          </div>
-                        </div>
-                        <p className="mt-2 pl-9 text-xs leading-relaxed text-[#c4bdd6]">
-                          → {item.explanation}
-                        </p>
+                        </button>
+                        {spotlightIdx !== null && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAutoStepping(false);
+                              setSpotlightIdx(null);
+                            }}
+                            className="rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-2 py-1 text-[11px] font-bold text-[#9a93ad] hover:text-[#f4efe6] cursor-pointer"
+                          >
+                            {t("แสดงทั้งหมด", "Show All")}
+                          </button>
+                        )}
                       </div>
-                    ))}
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    {result.lineByLine.map((item, idx) => {
+                      const isFocused = spotlightIdx === idx;
+                      const isDimmed = spotlightIdx !== null && !isFocused;
+                      return (
+                        <div
+                          key={item.lineNumber}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => {
+                            setIsAutoStepping(false);
+                            setSpotlightIdx(isFocused ? null : idx);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setIsAutoStepping(false);
+                              setSpotlightIdx(isFocused ? null : idx);
+                            }
+                          }}
+                          className={`rounded-xl border p-3.5 transition-all cursor-pointer ${
+                            isFocused
+                              ? "border-[#f6c945] bg-[#251f3a] ring-1 ring-[#f6c945]/60 scale-[1.01]"
+                              : isDimmed
+                              ? "border-[#2f2d45] bg-[#141220] opacity-45 hover:opacity-85"
+                              : "border-[#2f2d45] bg-[#1c1b2b] hover:border-[#9b5de5]"
+                          }`}
+                        >
+                          <div className="flex items-start gap-2.5">
+                            <span className="inline-flex h-6 min-w-7 items-center justify-center rounded-md border border-[#9b5de5]/50 bg-[#5a2d91] px-1.5 font-mono text-[11px] font-bold text-[#ffe27a]">
+                              L{item.lineNumber}
+                            </span>
+                            <div className="flex-1 overflow-x-auto rounded-lg border border-[#2f2d45] bg-[#120f1c] px-2.5 py-1">
+                              <code className="font-mono text-xs font-semibold text-[#f4efe6]">
+                                {item.code}
+                              </code>
+                            </div>
+                          </div>
+                          <p className="mt-2 pl-9 text-xs leading-relaxed text-[#c4bdd6]">
+                            → {item.explanation}
+                          </p>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
