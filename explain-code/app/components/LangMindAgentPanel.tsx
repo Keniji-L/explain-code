@@ -527,21 +527,33 @@ export function LangMindAgentPanel({
       }
     >
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-2.5 shrink-0">
+      <div
+        className={
+          compact
+            ? "flex items-center justify-between gap-1.5 shrink-0"
+            : "flex flex-wrap items-start justify-between gap-2.5 shrink-0"
+        }
+      >
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#9b5de5]/50 bg-[#25193b] px-2.5 py-1 text-[11px] font-extrabold text-[#e9d5ff]">
-              <Icon name="sparkles" size={13} className="text-[#f6c945]" />
+            <span
+              className={
+                compact
+                  ? "inline-flex items-center gap-1 rounded-full border border-[#9b5de5]/50 bg-[#25193b] px-2 py-0.5 text-[11px] font-extrabold text-[#e9d5ff] whitespace-nowrap"
+                  : "inline-flex items-center gap-1.5 rounded-full border border-[#9b5de5]/50 bg-[#25193b] px-2.5 py-1 text-[11px] font-extrabold text-[#e9d5ff]"
+              }
+            >
+              <Icon name="sparkles" size={12} className="text-[#f6c945]" />
               <span>{compact ? "LangMind Copilot" : "LangMind × CODE COOL AI Agent"}</span>
             </span>
 
             {liveConfigured ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-[#2fbf71]/50 bg-[#102a1e] px-2 py-0.5 text-[10px] font-bold text-[#86efac]">
+              <span className="inline-flex items-center gap-1 rounded-full border border-[#2fbf71]/50 bg-[#102a1e] px-1.5 py-0.5 text-[10px] font-bold text-[#86efac] whitespace-nowrap">
                 <Icon name="globe" size={10} />
                 <span>{compact ? "Live" : "Live LangMind API Connected"}</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full border border-[#f6c945]/50 bg-[#281d08] px-2 py-0.5 text-[10px] font-bold text-[#ffe27a]">
+              <span className="inline-flex items-center gap-1 rounded-full border border-[#f6c945]/50 bg-[#281d08] px-1.5 py-0.5 text-[10px] font-bold text-[#ffe27a] whitespace-nowrap">
                 <Icon name="wrench" size={10} />
                 <span>{compact ? "Bridge" : "LangMind Bridge Ready (OpenAPI Tool Runtime)"}</span>
               </span>
@@ -563,12 +575,18 @@ export function LangMindAgentPanel({
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto max-w-full">
+        <div
+          className={
+            compact
+              ? "ml-auto flex items-center justify-end gap-1 shrink-0"
+              : "ml-auto flex flex-wrap items-center justify-end gap-1.5 max-w-full"
+          }
+        >
           <a
             href={publicAgentUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-lg border border-[#2fbf71]/50 bg-[#102a1e] px-2 py-1 text-[11px] font-bold text-[#86efac] hover:border-[#2fbf71] hover:bg-[#153828] transition-colors"
+            className="inline-flex items-center gap-1 rounded-lg border border-[#2fbf71]/50 bg-[#102a1e] px-2 py-1 text-[11px] font-bold text-[#86efac] hover:border-[#2fbf71] hover:bg-[#153828] transition-colors whitespace-nowrap"
           >
             <Icon name="globe" size={11} />
             <span>{compact ? t("เว็บจริง ↗", "Live Web ↗") : t("เปิด LangMind Agent จริง ↗", "Open Live LangMind Agent ↗")}</span>
@@ -578,7 +596,7 @@ export function LangMindAgentPanel({
             <button
               type="button"
               onClick={handleCopyOpenApiUrl}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-2.5 py-1.5 text-[11px] font-bold text-[#ffe27a] hover:border-[#f6c945] hover:bg-[#252238] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-2.5 py-1.5 text-[11px] font-bold text-[#ffe27a] hover:border-[#f6c945] hover:bg-[#252238] transition-colors cursor-pointer whitespace-nowrap"
             >
               <Icon name={copiedOpenApi ? "check" : "clipboard"} size={12} />
               <span>
@@ -594,7 +612,7 @@ export function LangMindAgentPanel({
               type="button"
               onClick={onCloseDrawer}
               aria-label={t("ปิดหน้าต่างผู้ช่วย LangMind", "Close LangMind Copilot")}
-              className="inline-flex items-center gap-1 rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-2 py-1 text-[11px] font-bold text-[#c4bdd6] hover:text-white cursor-pointer"
+              className="inline-flex items-center gap-1 rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-2 py-1 text-[11px] font-bold text-[#c4bdd6] hover:text-white cursor-pointer whitespace-nowrap"
             >
               <Icon name="close" size={12} />
               <span>{t("ปิด", "Close")}</span>
@@ -603,7 +621,7 @@ export function LangMindAgentPanel({
             <button
               type="button"
               onClick={() => setExpanded((prev) => !prev)}
-              className="inline-flex items-center gap-1 rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-2.5 py-1.5 text-[11px] font-bold text-[#c4bdd6] hover:text-white cursor-pointer"
+              className="inline-flex items-center gap-1 rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-2.5 py-1.5 text-[11px] font-bold text-[#c4bdd6] hover:text-white cursor-pointer whitespace-nowrap"
             >
               <span>{expanded ? t("ย่อหน้าต่าง", "Collapse") : t("เปิดใช้งาน", "Expand")}</span>
             </button>
