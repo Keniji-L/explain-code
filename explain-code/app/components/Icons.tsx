@@ -54,7 +54,9 @@ export type IconName =
   | "droplet"
   | "keyboard"
   | "footprints"
-  | "wrench";
+  | "wrench"
+  | "paperclip"
+  | "image";
 
 interface IconProps {
   name: IconName;
@@ -510,6 +512,20 @@ export function Icon({ name, size = 24, filled = false, className = "" }: IconPr
       return (
         <svg {...common}>
           <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+        </svg>
+      );
+    case "paperclip":
+      return (
+        <svg {...common}>
+          <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+        </svg>
+      );
+    case "image":
+      return (
+        <svg {...common}>
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="9" cy="9" r="2" />
+          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
         </svg>
       );
   }

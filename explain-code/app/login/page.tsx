@@ -7,6 +7,7 @@ import Image from "next/image";
 import { SiteHeader, setClientSession } from "../components/SiteHeader";
 import { Icon } from "../components/Icons";
 import { useUiLanguage } from "../components/LanguageProvider";
+import { JudgeTestPanel } from "../components/JudgeTestPanel";
 
 const REDIRECT_PAGE_LABELS: Record<string, { th: string; en: string }> = {
   "/": { th: "หน้าแรก", en: "Home" },
@@ -433,6 +434,8 @@ function LoginFormContent() {
             </p>
           </div>
         </div>
+
+        <JudgeTestPanel variant="login" redirectPath={redirectPath} />
       </main>
     </div>
   );

@@ -4,6 +4,9 @@ import { Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { LanguageProvider } from "./components/LanguageProvider";
+import { LangMindContextProvider } from "./components/LangMindContext";
+import { GlobalLangMindDock } from "./components/GlobalLangMindDock";
+import { JudgeQuickTestDock } from "./components/JudgeQuickTestDock";
 import SiteFooter from "./components/SiteFooter";
 
 const notoSansThai = Noto_Sans_Thai({
@@ -48,10 +51,14 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-[var(--bg)] text-[var(--ink)] selection:bg-[#0f766e]/30 selection:text-white transition-colors duration-150">
         <ThemeProvider>
           <LanguageProvider>
-            <div className="flex-1 flex flex-col">{children}</div>
-            <Suspense fallback={null}>
-              <SiteFooter />
-            </Suspense>
+            <LangMindContextProvider>
+              <div className="flex-1 flex flex-col">{children}</div>
+              <Suspense fallback={null}>
+                <GlobalLangMindDock />
+                <JudgeQuickTestDock />
+                <SiteFooter />
+              </Suspense>
+            </LangMindContextProvider>
           </LanguageProvider>
         </ThemeProvider>
       </body>

@@ -61,7 +61,7 @@ export function DungeonHud({
   }
 
   return (
-    <header className="w-full max-w-[640px] mx-auto bg-[#1c1b2b] border-2 border-[#4a4766] rounded-xl px-3.5 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs select-none shadow-md">
+    <header className="w-full max-w-[640px] mx-auto bg-[#1c1b2b] border-2 border-[#4a4766] rounded-xl px-2.5 sm:px-4 py-1.5 sm:py-2.5 flex flex-wrap items-center justify-between gap-1.5 sm:gap-3 text-xs select-none shadow-md">
       {/* Left: Player Profile & Hearts */}
       <div className="flex items-center gap-3">
         <div className="p-1 rounded bg-[#120f1c] border border-[#4a4766] flex items-center justify-center">

@@ -120,7 +120,7 @@ export function CoinShopModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-xs select-none"
+      className="fixed inset-0 z-[65] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-xs select-none"
     >
       <div className="retro-panel rounded-2xl max-w-md w-full p-5 sm:p-6 space-y-4 text-[#f4efe6] border border-[#f6c945]/40 bg-[#141220]">
         <div className="flex items-center justify-between gap-3 border-b border-[#2f2d45] pb-3">

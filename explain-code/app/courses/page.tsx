@@ -266,7 +266,7 @@ function CoursesContent() {
     useState<LearningLanguage | null>(langParam);
   const [session, setSession] = useState<ClientAuthSession | null>(null);
   const [activeTab, setActiveTab] = useState<LearningTab>(() => {
-    if (customDungeonParam) return "custom-dungeon";
+    if (customDungeonParam || shareDungeonParam) return "custom-dungeon";
     if (langParam && Number.isFinite(topicIdParam)) return "practice";
     return "quest";
   });
@@ -311,6 +311,7 @@ function CoursesContent() {
   const [snapshotHydrationNonce, setSnapshotHydrationNonce] =
     useState<number>(0);
   const latestArenaSnapshotRef = useRef<DungeonArenaSnapshot | null>(null);
+  const sharedLaunchHandledRef = useRef<string | null>(null);
 
   // Code runner sandbox state
   const [playgroundCode, setPlaygroundCode] = useState<string>(
@@ -329,8 +330,31 @@ function CoursesContent() {
     text: string;
   } | null>(null);
 
-  // Sync ?lang=... and ?customDungeon=... query params
+  // Sync ?lang=..., ?customDungeon=..., and ?shareDungeon=... query params
   useEffect(() => {
+    if (!shareDungeonParam) {
+      sharedLaunchHandledRef.current = null;
+    } else {
+      if (sharedLaunchHandledRef.current !== shareDungeonParam) {
+        const decoded = decodeCustomDungeonShareToken(shareDungeonParam);
+        if (decoded) {
+          sharedLaunchHandledRef.current = shareDungeonParam;
+          const uid = getClientSession()?.userId ?? null;
+          saveCustomDungeon(decoded, uid);
+          const updatedList = loadCustomDungeons(uid);
+          setCustomDungeons(updatedList);
+          setActiveCustomDungeon(decoded, uid);
+          setActiveCustomDungeonState(decoded);
+          setSelectedLanguage(decoded.language);
+          setPlayAttemptNonce((n) => n + 1);
+          setActiveTab("custom-dungeon");
+          return;
+        }
+      } else {
+        return;
+      }
+    }
+
     queueMicrotask(() => {
       const uid = getClientSession()?.userId ?? null;
       setCustomDungeons(loadCustomDungeons(uid));
@@ -385,7 +409,7 @@ function CoursesContent() {
     } else {
       setSelectedLanguage(null);
     }
-  }, [langParam, customDungeonParam, topicIdParam]);
+  }, [langParam, customDungeonParam, shareDungeonParam, topicIdParam]);
 
   const handleSelectLanguage = (lang: LearningLanguage) => {
     const track = LANGUAGE_TRACKS.find((tr) => tr.id === lang);
@@ -656,9 +680,10 @@ function CoursesContent() {
       void syncStudentData(current.userId);
     }
 
-    if (shareDungeonParam) {
+    if (shareDungeonParam && sharedLaunchHandledRef.current !== shareDungeonParam) {
       const decoded = decodeCustomDungeonShareToken(shareDungeonParam);
       if (decoded) {
+        sharedLaunchHandledRef.current = shareDungeonParam;
         const uid = current?.userId ?? null;
         saveCustomDungeon(decoded, uid);
         const updatedList = loadCustomDungeons(uid);
@@ -2057,10 +2082,10 @@ function CoursesContent() {
                         setJoinCodeInput(e.target.value.toUpperCase())
                       }
                       placeholder={t(
-                        `รหัสคอร์ส เช่น ${getJoinCodePlaceholder(currentLanguage)}`,
-                        `Code e.g. ${getJoinCodePlaceholder(currentLanguage)}`
+                        `เช่น ${getJoinCodePlaceholder(currentLanguage)}`,
+                        `e.g. ${getJoinCodePlaceholder(currentLanguage)}`
                       )}
-                      className="w-36 sm:w-44 rounded-xl border border-[#2f2d45] bg-[#0d0b14] px-3 py-1.5 text-xs font-mono font-bold uppercase text-[#f4efe6] placeholder:text-[#7c7491] focus:border-[#f6c945] focus:outline-hidden"
+                      className="w-40 sm:w-44 rounded-xl border border-[#2f2d45] bg-[#0d0b14] px-3 py-1.5 text-xs font-mono font-bold uppercase text-[#f4efe6] placeholder:text-[#7c7491] focus:border-[#f6c945] focus:outline-hidden"
                     />
                     <button
                       type="submit"
@@ -2605,8 +2630,9 @@ function CoursesContent() {
               onChangeHero={() => setActiveTab("hero-select")}
               embedded
               onBackToMap={() => {
+                sharedLaunchHandledRef.current = null;
                 setActiveTab("quest");
-                if (customDungeonParam) {
+                if (customDungeonParam || shareDungeonParam) {
                   router.replace(
                     `/courses?lang=${encodeURIComponent(activeCustomDungeon.language)}`,
                     { scroll: false }
@@ -2648,8 +2674,9 @@ function CoursesContent() {
                   }
                   saveStudentsToStorage(updatedList);
                 }
+                sharedLaunchHandledRef.current = null;
                 setActiveTab("quest");
-                if (customDungeonParam) {
+                if (customDungeonParam || shareDungeonParam) {
                   router.replace(
                     `/courses?lang=${encodeURIComponent(activeCustomDungeon.language)}`,
                     { scroll: false }

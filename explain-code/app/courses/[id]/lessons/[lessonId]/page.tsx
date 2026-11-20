@@ -34,6 +34,7 @@ import {
   LearningLanguage,
 } from "../../../../lib/language-tracks";
 import { useUiLanguage } from "../../../../components/LanguageProvider";
+import { useRegisterLangMindContext } from "../../../../components/LangMindContext";
 import { LessonDungeonRoom } from "../../../../components/dungeon/LessonDungeonRoom";
 import { PixelSpriteView } from "../../../../components/dungeon/PixelSpriteView";
 import { getMonsterDef } from "../../../../lib/dungeon/monsters";
@@ -293,6 +294,27 @@ function LessonViewContent() {
       };
     });
   }, [lesson?.quiz_questions, quizShuffleSeed]);
+
+  const localizedLessonForContext = useMemo(
+    () => (lesson ? getLocalizedLesson(lesson, uiLang) : null),
+    [lesson, uiLang]
+  );
+
+  useRegisterLangMindContext(
+    "page",
+    course && lesson && !isCourseLocked
+      ? {
+          pageKind: "lesson",
+          courseId: course.id,
+          lessonId: lesson.id,
+          lessonTitle: localizedLessonForContext?.title || lesson.title,
+          code: lesson.code_example || undefined,
+          language: lesson.programming_language || "javascript",
+          studentId: session?.userId,
+          displayName: session?.displayName,
+        }
+      : null
+  );
 
   if (isLoading) {
     return (

@@ -46,11 +46,11 @@ export function MobileDpad({ onMove, onAction, disabled = false }: MobileDpadPro
 
   return (
     <div
-      className="w-full max-w-[640px] mx-auto flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 select-none touch-none"
+      className="w-full max-w-[640px] mx-auto flex items-center justify-between px-3 py-1 sm:px-4 sm:py-3 select-none touch-none"
       style={{ touchAction: "none" }}
     >
       {/* 4-Way D-Pad (Hold-to-move supported) */}
-      <div className="relative w-32 h-32 sm:w-36 sm:h-36">
+      <div className="relative w-28 h-28 sm:w-36 sm:h-36">
         {/* UP */}
         <button
           type="button"
@@ -59,7 +59,7 @@ export function MobileDpad({ onMove, onAction, disabled = false }: MobileDpadPro
           onPointerUp={stopHold}
           onPointerLeave={stopHold}
           onPointerCancel={stopHold}
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-t-xl bg-[#252238] active:bg-[#5a2d91] border-2 border-[#4a4766] flex items-center justify-center text-base sm:text-lg text-[#f4efe6] shadow-sm select-none active:scale-95 transition-transform"
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-9 h-9 sm:w-12 sm:h-12 rounded-t-xl bg-[#252238] active:bg-[#5a2d91] border-2 border-[#4a4766] flex items-center justify-center text-sm sm:text-lg text-[#f4efe6] shadow-sm select-none active:scale-95 transition-transform"
           aria-label={t("เดินขึ้น", "Move Up")}
         >
           ▲
@@ -73,7 +73,7 @@ export function MobileDpad({ onMove, onAction, disabled = false }: MobileDpadPro
           onPointerUp={stopHold}
           onPointerLeave={stopHold}
           onPointerCancel={stopHold}
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-b-xl bg-[#252238] active:bg-[#5a2d91] border-2 border-[#4a4766] flex items-center justify-center text-base sm:text-lg text-[#f4efe6] shadow-sm select-none active:scale-95 transition-transform"
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 w-9 h-9 sm:w-12 sm:h-12 rounded-b-xl bg-[#252238] active:bg-[#5a2d91] border-2 border-[#4a4766] flex items-center justify-center text-sm sm:text-lg text-[#f4efe6] shadow-sm select-none active:scale-95 transition-transform"
           aria-label={t("เดินลง", "Move Down")}
         >
           ▼
@@ -87,7 +87,7 @@ export function MobileDpad({ onMove, onAction, disabled = false }: MobileDpadPro
           onPointerUp={stopHold}
           onPointerLeave={stopHold}
           onPointerCancel={stopHold}
-          className="absolute top-1/2 -translate-y-1/2 left-0 w-10 h-10 sm:w-12 sm:h-12 rounded-l-xl bg-[#252238] active:bg-[#5a2d91] border-2 border-[#4a4766] flex items-center justify-center text-base sm:text-lg text-[#f4efe6] shadow-sm select-none active:scale-95 transition-transform"
+          className="absolute top-1/2 -translate-y-1/2 left-0 w-9 h-9 sm:w-12 sm:h-12 rounded-l-xl bg-[#252238] active:bg-[#5a2d91] border-2 border-[#4a4766] flex items-center justify-center text-sm sm:text-lg text-[#f4efe6] shadow-sm select-none active:scale-95 transition-transform"
           aria-label={t("เดินซ้าย", "Move Left")}
         >
           ◀
@@ -101,14 +101,14 @@ export function MobileDpad({ onMove, onAction, disabled = false }: MobileDpadPro
           onPointerUp={stopHold}
           onPointerLeave={stopHold}
           onPointerCancel={stopHold}
-          className="absolute top-1/2 -translate-y-1/2 right-0 w-10 h-10 sm:w-12 sm:h-12 rounded-r-xl bg-[#252238] active:bg-[#5a2d91] border-2 border-[#4a4766] flex items-center justify-center text-base sm:text-lg text-[#f4efe6] shadow-sm select-none active:scale-95 transition-transform"
+          className="absolute top-1/2 -translate-y-1/2 right-0 w-9 h-9 sm:w-12 sm:h-12 rounded-r-xl bg-[#252238] active:bg-[#5a2d91] border-2 border-[#4a4766] flex items-center justify-center text-sm sm:text-lg text-[#f4efe6] shadow-sm select-none active:scale-95 transition-transform"
           aria-label={t("เดินขวา", "Move Right")}
         >
           ▶
         </button>
 
         {/* Center Pad */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-[#1c1b2b] border border-[#2f2d45] flex items-center justify-center">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 sm:w-12 sm:h-12 bg-[#1c1b2b] border border-[#2f2d45] flex items-center justify-center">
           <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#4a4766]" />
         </div>
       </div>

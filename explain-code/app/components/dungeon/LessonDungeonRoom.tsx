@@ -600,7 +600,7 @@ export function LessonDungeonRoom({
         )}
 
         {/* Mobile On-Screen D-Pad */}
-        <div className="w-full sm:hidden pt-2">
+        <div className="w-full sm:hidden pt-2 pb-24">
           <MobileDpad
             disabled={isPaused || isInBattle || chestModalMode !== null || isGameOver}
             onMove={(dx, dy) => {

@@ -10,6 +10,7 @@ import {
   ClientAuthSession,
 } from "../components/SiteHeader";
 import { Icon } from "../components/Icons";
+import { useRegisterLangMindContext } from "../components/LangMindContext";
 import {
   Course,
   Enrollment,
@@ -527,6 +528,19 @@ export default function TeacherLMSDashboardPage() {
     }
     return false;
   }
+
+  useRegisterLangMindContext(
+    "page",
+    session
+      ? {
+          pageKind: "teacher",
+          roleOverride: "teacher",
+          pageTitle: uiLang === "en" ? "Teacher Hub" : "แดชบอร์ดครู",
+          displayName: session.displayName || session.username,
+          roomCode: classrooms[0]?.roomCode || "JS2026",
+        }
+      : null
+  );
 
   if (!session) {
     return (

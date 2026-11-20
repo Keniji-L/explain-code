@@ -5,7 +5,11 @@ import {
   INITIAL_CLASSROOMS,
   INITIAL_STUDENTS,
 } from "./curriculum";
-import { CustomDungeonPayload, normalizeLearningLanguage } from "./custom-dungeon";
+import {
+  CustomDungeonPayload,
+  encodeCustomDungeonShareToken,
+  normalizeLearningLanguage,
+} from "./custom-dungeon";
 import { generateCustomDungeonFromCode } from "./dungeon/to-dungeon-questions";
 import { explainCodeSnippet } from "./explain-code";
 import { LearningLanguage } from "./language-tracks";
@@ -47,6 +51,14 @@ export interface LangMindGeneratedDungeon {
   shareToken: string;
   playPath: string;
   playUrl: string;
+}
+
+export interface LangMindAttachmentPayload {
+  name: string;
+  mimeType: string;
+  textContent?: string;
+  base64Data?: string;
+  sizeBytes?: number;
 }
 
 export interface LangMindChatResponse {
@@ -148,24 +160,62 @@ export const BLOCK_CELL_REMEDIAL_MAP: Record<BlockCellId, CellRemedialEntry> =
     ])
   ) as Record<BlockCellId, CellRemedialEntry>;
 
+export function isValidBlockCell(cell: unknown): cell is BlockCellId {
+  if (typeof cell !== "string") return false;
+  const upper = cell.trim().toUpperCase();
+  return Object.prototype.hasOwnProperty.call(BLOCK_CELL_REMEDIAL_MAP, upper);
+}
+
+export function resolveValidBlockCell(
+  cell: unknown,
+  fallback: BlockCellId = "E2"
+): BlockCellId {
+  if (typeof cell === "string") {
+    const upper = cell.trim().toUpperCase();
+    if (Object.prototype.hasOwnProperty.call(BLOCK_CELL_REMEDIAL_MAP, upper)) {
+      return upper as BlockCellId;
+    }
+  }
+  return fallback;
+}
+
+export function getRemedialCodeForLanguage(
+  cellId: BlockCellId,
+  lang: LearningLanguage
+): string {
+  const safeCell = resolveValidBlockCell(cellId, "E2");
+  if (lang === "python") {
+    const pyByCell: Partial<Record<BlockCellId, string>> = {
+      T1: `price = 120\nqty = 2\ndiscount = 30\nnet = price * qty - discount\nprint(net)`,
+      E1: `score = 40\nscore += 15\nscore = score * 2\nprint(score)`,
+      T2: `temp = 32\nif temp >= 38:\n    print("Hot")\nelif temp >= 30:\n    print("Warm")\nelse:\n    print("Cool")`,
+      E2: `total = 0\nfor i in range(1, 4):\n    total += i * 10\nprint(total)`,
+      E3: `def calc_damage(atk, armor):\n    dmg = atk - armor\n    if dmg < 0:\n        return 0\n    return dmg\n\nprint(calc_damage(45, 20))`,
+    };
+    return pyByCell[safeCell] || pyByCell.E2!;
+  }
+  if (lang === "typescript") {
+    return `let total: number = 0;\nfor (let round: number = 1; round <= 3; round++) {\n  total += round * 10;\n}\nconsole.log("Loop total:", total);`;
+  }
+  if (lang === "java") {
+    return `int total = 0;\nfor (int i = 1; i <= 3; i++) {\n  total += i * 10;\n}\nSystem.out.println(total);`;
+  }
+  if (lang === "cpp") {
+    return `int total = 0;\nfor (int i = 1; i <= 3; i++) {\n  total += i * 10;\n}\nstd::cout << total << std::endl;`;
+  }
+  if (lang === "sql") {
+    return `SELECT name, price\nFROM products\nWHERE price >= 500\nORDER BY price DESC;`;
+  }
+  if (lang === "html") {
+    return `<div class="quest-card">\n  <h2>Remedial Quest ${safeCell}</h2>\n  <p>Inspect structure and attributes</p>\n</div>`;
+  }
+  return BLOCK_CELL_REMEDIAL_MAP[safeCell].remedialCodeJs;
+}
+
 export function encodeDungeonShareTokenServer(
   dungeon: CustomDungeonPayload
 ): string {
-  const payload = {
-    title: dungeon.title,
-    subtitle: dungeon.subtitle,
-    language: dungeon.language,
-    code: dungeon.code,
-    summary: dungeon.summary,
-    keyConcepts: dungeon.keyConcepts,
-    topic: dungeon.topic,
-    questions: dungeon.questions,
-    provider: dungeon.provider,
-  };
-  const encoded = Buffer.from(JSON.stringify(payload), "utf8").toString(
-    "base64url"
-  );
-  return `CD1:${encoded}`;
+  return encodeCustomDungeonShareToken(dungeon);
 }
 
 export function evaluatePromptSafetyHarness(
@@ -185,7 +235,6 @@ export function evaluatePromptSafetyHarness(
     "jailbreak",
     "act as developer",
     "override rules",
-    "bypass",
     "dan mode",
   ];
 
@@ -197,6 +246,17 @@ export function evaluatePromptSafetyHarness(
         reason: `ตรวจพบรูปแบบคำสั่งแอบแฝง (Prompt Injection: "${pat}") ระบบจึงระงับการเปิดเผย System Policy และคงขอบเขตผู้ช่วยการเรียนรู้ไว้อย่างปลอดภัย`,
       };
     }
+  }
+
+  const bypassMatch = message.match(
+    /bypass\s+(?:safety|guard|rule|rules|system|instruction|instructions|filter|policy|prompt)/i
+  );
+  if (bypassMatch) {
+    return {
+      status: "blocked_injection",
+      policyApplied: "LangMind Trust & Safety Harness + Anti-Injection Policy",
+      reason: `ตรวจพบรูปแบบคำสั่งแอบแฝง (Prompt Injection: "${bypassMatch[0]}") ระบบจึงระงับการเปิดเผย System Policy และคงขอบเขตผู้ช่วยการเรียนรู้ไว้อย่างปลอดภัย`,
+    };
   }
 
   if (role === "student") {
@@ -528,20 +588,16 @@ export async function runClassroomRadarTool(input: {
 export async function runCreateDungeonTool(input: {
   code?: string;
   language?: string;
-  targetCell?: BlockCellId;
+  targetCell?: BlockCellId | string;
   origin: string;
   uiLang?: "th" | "en";
 }): Promise<LangMindGeneratedDungeon> {
-  const cellId: BlockCellId = ALL_CELL_IDS.includes(
-    (input.targetCell || "E2") as BlockCellId
-  )
-    ? ((input.targetCell || "E2") as BlockCellId)
-    : "E2";
+  const cellId: BlockCellId = resolveValidBlockCell(input.targetCell, "E2");
   const lang = normalizeLearningLanguage(input.language || "javascript");
   const code =
     input.code && input.code.trim().length > 10
       ? input.code.trim()
-      : BLOCK_CELL_REMEDIAL_MAP[cellId].remedialCodeJs;
+      : getRemedialCodeForLanguage(cellId, lang);
 
   const dungeon = await generateCustomDungeonFromCode({
     code,
@@ -807,6 +863,9 @@ export async function callLiveLangMindApi(opts: {
   sessionId?: string;
   context?: Record<string, unknown>;
   toolSummary?: string;
+  hasGeneratedDungeon?: boolean;
+  attachmentContext?: string;
+  screenContextSummary?: string;
 }): Promise<{ ok: boolean; reply?: string; citations?: LangMindCitation[] }> {
   const customApiUrl = process.env.LANGMIND_API_URL?.trim();
   const customApiKey = process.env.LANGMIND_API_KEY?.trim();
@@ -822,9 +881,38 @@ export async function callLiveLangMindApi(opts: {
   const timer = setTimeout(() => controller.abort(), 28000);
 
   try {
-    const composedMessage = opts.toolSummary
-      ? `${opts.message}\n\n[ข้อมูลจริงจากระบบ CODE COOL]\n${opts.toolSummary}\n(คำสั่งสำคัญ: กรุณาตอบให้กระชับ ชัดเจน ไม่เกิน 85 คำ โดยอ้างอิงข้อมูลจริงและเลข Block Model ด้านบน และห้ามเขียน URL ลิงก์เองหรือระบุข้อความว่า "ยังไม่มีลิงก์จริง" / "ข้อมูลจำลอง" เพราะระบบหน้าเว็บได้สร้างปุ่มเข้าเล่นด่านจริงและรหัสแชร์ CD1 แสดงใต้คำตอบนี้อัตโนมัติแล้ว)`
-      : opts.message;
+    const roleRule =
+      opts.role === "teacher"
+        ? "ผู้ใช้งานคือครูผู้สอน"
+        : "ผู้ใช้งานคือนักเรียน/ผู้เรียน (ห้ามเรียกผู้ใช้งานว่าคุณครูหรือคุณครูใหญ่)";
+    const dungeonRule = opts.hasGeneratedDungeon
+      ? "ระบบหน้าเว็บได้สร้างปุ่มเข้าเล่นด่านจริงและรหัสแชร์ CD1 แสดงใต้คำตอบนี้อัตโนมัติแล้ว ห้ามเขียน URL ลิงก์เองหรือระบุว่ายังไม่มีลิงก์จริง"
+      : "รอบนี้ยังไม่ได้สร้างด่านเกม ห้ามแต่งรหัสแชร์ CD1 หรือระบุว่าสร้างด่าน/ปุ่มเข้าเล่นแล้ว";
+    const socraticScreenRule = opts.screenContextSummary
+      ? "ให้คำแนะนำอ้างอิงโจทย์/โค้ดบนหน้าจอปัจจุบันแบบ Socratic PRIMM และห้ามบอกเฉลยว่าตัวเลือกใดถูกโดยตรง"
+      : "";
+
+    const contextBlocks: string[] = [];
+    if (opts.screenContextSummary?.trim()) {
+      contextBlocks.push(
+        `[บริบทหน้าจอปัจจุบันของผู้ใช้งาน]\n${opts.screenContextSummary.trim()}`
+      );
+    }
+    if (opts.attachmentContext?.trim()) {
+      contextBlocks.push(`[เนื้อหาจากไฟล์/ภาพที่ผู้ใช้งานแนบมา]\n${opts.attachmentContext.trim()}`);
+    }
+    if (opts.toolSummary?.trim()) {
+      contextBlocks.push(`[ข้อมูลจริงจากระบบ CODE COOL]\n${opts.toolSummary.trim()}`);
+    }
+
+    const extraRules = [roleRule, dungeonRule, socraticScreenRule]
+      .filter(Boolean)
+      .join(" · ");
+
+    const composedMessage =
+      contextBlocks.length > 0
+        ? `${opts.message}\n\n${contextBlocks.join("\n\n")}\n(คำสั่งสำคัญ: ${extraRules} · ตอบให้กระชับ ชัดเจน ไม่เกิน 95 คำ)`
+        : `${opts.message}\n\n(คำสั่งสำคัญ: ${extraRules} · หากเป็นการทักทายหรือถามทั่วไป ให้ตอบสั้นๆ เป็นกันเองไม่เกิน 65 คำ พร้อมแนะนำวิธีใช้งาน CODE COOL × LangMind เช่น วิเคราะห์จุดอ่อน 12 มิติ ใบ้โค้ด PRIMM หรือแนบรูป/ไฟล์โค้ด)`;
 
     const sessionId =
       opts.sessionId?.trim() ||

@@ -26,6 +26,7 @@ import { Icon, StatusCircle } from "./components/Icons";
 import { BlockModelGrid } from "./components/BlockModelGrid";
 import { PracticeArena } from "./components/PracticeArena";
 import { TeacherDashboard } from "./components/TeacherDashboard";
+import { JudgeTestPanel } from "./components/JudgeTestPanel";
 
 type AppMode =
   | "landing"
@@ -1254,6 +1255,9 @@ export default function ExplainCodeApp() {
               </div>
             </div>
           </section>
+
+          {/* Judge Quick-Test Hub */}
+          <JudgeTestPanel variant="home" />
 
           {/* Compact 3-Step Guide */}
           <section className="rounded-2xl border border-[#2f2d45] bg-[#141220] p-6 sm:p-7 shadow-lg">

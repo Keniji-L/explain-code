@@ -6,7 +6,9 @@ import { Icon } from "./Icons";
 import { useUiLanguage } from "./LanguageProvider";
 import { BlockCellId } from "../lib/curriculum";
 import { copyTextToClipboard } from "../lib/clipboard";
+import type { LangMindScreenContext } from "./LangMindContext";
 import type {
+  LangMindAttachmentPayload,
   LangMindChatResponse,
   LangMindCitation,
   LangMindGeneratedDungeon,
@@ -17,22 +19,42 @@ import type {
 
 export interface LangMindAgentPanelProps {
   role: LangMindRole;
-  context?: {
-    studentId?: string;
-    displayName?: string;
-    roomCode?: string;
-    code?: string;
-    language?: string;
-    cellScores?: Partial<Record<BlockCellId, number>>;
-    weakestCell?: BlockCellId;
-  };
+  context?: LangMindScreenContext;
   defaultExpanded?: boolean;
+  compact?: boolean;
+  onCloseDrawer?: () => void;
 }
+
+interface ChatAttachmentState extends LangMindAttachmentPayload {
+  previewDataUrl?: string;
+}
+
+const ACCEPTED_TEXT_EXTENSIONS = new Set([
+  ".txt",
+  ".md",
+  ".csv",
+  ".json",
+  ".js",
+  ".jsx",
+  ".ts",
+  ".tsx",
+  ".py",
+  ".java",
+  ".cpp",
+  ".cc",
+  ".c",
+  ".h",
+  ".sql",
+  ".html",
+  ".htm",
+]);
 
 interface ChatEntry {
   id: string;
   sender: "user" | "agent";
   text: string;
+  attachmentName?: string;
+  attachmentPreviewUrl?: string;
   mode?: "live-langmind" | "preview-sandbox";
   safetyCheck?: LangMindSafetyCheck;
   citations?: LangMindCitation[];
@@ -144,9 +166,12 @@ export function LangMindAgentPanel({
   role,
   context,
   defaultExpanded = true,
+  compact = false,
+  onCloseDrawer,
 }: LangMindAgentPanelProps) {
   const { uiLang, t } = useUiLanguage();
-  const [expanded, setExpanded] = useState<boolean>(defaultExpanded);
+  const [expanded, setExpanded] = useState<boolean>(compact ? true : defaultExpanded);
+  const [shareScreenContext, setShareScreenContext] = useState<boolean>(true);
   const [liveConfigured, setLiveConfigured] = useState<boolean>(false);
   const [embedUrl, setEmbedUrl] = useState<string | null>(null);
   const [publicAgentUrl, setPublicAgentUrl] = useState<string>(
@@ -154,12 +179,15 @@ export function LangMindAgentPanel({
   );
   const [activeTab, setActiveTab] = useState<"chat" | "embed">("chat");
   const [input, setInput] = useState<string>("");
+  const [attachment, setAttachment] = useState<ChatAttachmentState | null>(null);
   const [isSending, setIsSending] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [copiedOpenApi, setCopiedOpenApi] = useState<boolean>(false);
   const [copiedTokenId, setCopiedTokenId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatEntry[]>([]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const tabSessionRef = useRef<string>("");
 
   useEffect(() => {
     let cancelled = false;
@@ -193,11 +221,161 @@ export function LangMindAgentPanel({
     }
   }, [messages, isSending]);
 
-  const presets = role === "teacher" ? TEACHER_PRESETS : STUDENT_PRESETS;
+  const hasLiveScreenContext = Boolean(
+    context?.activeQuestionText ||
+      context?.dungeonTitle ||
+      context?.lessonTitle ||
+      context?.monsterName ||
+      context?.code
+  );
+
+  const screenContextSummaryLabel = (() => {
+    const parts: string[] = [];
+    if (context?.dungeonTitle) parts.push(context.dungeonTitle);
+    else if (context?.lessonTitle) parts.push(context.lessonTitle);
+    else if (context?.pageTitle) parts.push(context.pageTitle);
+    if (context?.monsterName) parts.push(context.monsterName);
+    if (context?.targetCell) parts.push(`ช่อง ${context.targetCell}`);
+    if (context?.activeQuestionPhase) parts.push(context.activeQuestionPhase);
+    if (parts.length === 0 && context?.code) {
+      parts.push(`โค้ด ${(context.language || "code").toUpperCase()}`);
+    }
+    return parts.join(" · ");
+  })();
+
+  const presets: PresetPrompt[] = (() => {
+    if (role === "teacher") return TEACHER_PRESETS;
+    if (context?.activeQuestionText || context?.monsterName) {
+      return [
+        {
+          labelTh: "ใบ้โจทย์ข้อนี้แบบ PRIMM (ไม่เฉลยตรงๆ)",
+          labelEn: "Hint This Question (Socratic PRIMM)",
+          promptTh: "ช่วยใบ้โจทย์ข้อนี้บนหน้าจอทีละขั้นแบบ PRIMM โดยยังไม่บอกเฉลยตรงๆ",
+          promptEn: "Give me a step-by-step PRIMM Socratic hint for this screen question without revealing the answer.",
+          icon: "bulb",
+        },
+        {
+          labelTh: "ช่วยไล่โค้ดในด่านนี้ทีละบรรทัด",
+          labelEn: "Trace This Dungeon Code",
+          promptTh: "ช่วยอธิบายโค้ดในด่านนี้ทีละบรรทัดและชี้จุดที่คนชอบพลาด",
+          promptEn: "Explain the code on this dungeon screen line-by-line and point out common pitfalls.",
+          icon: "zap",
+        },
+        STUDENT_PRESETS[0],
+      ];
+    }
+    if (context?.lessonTitle && context?.code) {
+      return [
+        {
+          labelTh: "ช่วยทายผล PRIMM ก่อนกดรันบทนี้",
+          labelEn: "Guide PRIMM Predict for Lesson",
+          promptTh: "ช่วยตั้งคำถามนำแบบ PRIMM Predict สำหรับโค้ดตัวอย่างในบทเรียนนี้โดยยังไม่เฉลยผลลัพธ์ตรงๆ",
+          promptEn: "Guide me through PRIMM Predict for this lesson code without spoiling the final output.",
+          icon: "bulb",
+        },
+        {
+          labelTh: "จุดเสี่ยง AI ที่ต้องระวังในบทนี้",
+          labelEn: "AI Pitfalls in This Lesson",
+          promptTh: "อธิบายโค้ดในหน้านี้และชี้จุดเสี่ยงที่ AI ชอบเขียนผิด",
+          promptEn: "Explain this lesson code and warn me about common AI-generated pitfalls.",
+          icon: "alert",
+        },
+        STUDENT_PRESETS[0],
+      ];
+    }
+    return STUDENT_PRESETS;
+  })();
+
+  const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(new Error("ไม่สามารถอ่านไฟล์ได้"));
+      reader.readAsDataURL(file);
+    });
+
+  const handleAttachFile = async (file: File) => {
+    setErrorMsg(null);
+    const maxBytes = 3.5 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      setErrorMsg(
+        t(
+          "ไฟล์มีขนาดใหญ่เกิน 3.5 MB กรุณาย่อขนาดรูปภาพหรือเลือกไฟล์ที่เล็กลง",
+          "File exceeds 3.5 MB limit. Please choose a smaller image or file."
+        )
+      );
+      return;
+    }
+
+    const lowerName = file.name.toLowerCase();
+    const dotIdx = lowerName.lastIndexOf(".");
+    const ext = dotIdx >= 0 ? lowerName.slice(dotIdx) : "";
+    const mime = (file.type || "").toLowerCase();
+
+    if (mime.startsWith("image/") && ["image/png", "image/jpeg", "image/jpg", "image/webp"].includes(mime)) {
+      const dataUrl = await readFileAsDataUrl(file);
+      const base64Data = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
+      setAttachment({
+        name: file.name || "screenshot.png",
+        mimeType: mime,
+        base64Data,
+        previewDataUrl: dataUrl,
+        sizeBytes: file.size,
+      });
+      return;
+    }
+
+    if (mime === "application/pdf" || ext === ".pdf") {
+      const dataUrl = await readFileAsDataUrl(file);
+      const base64Data = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
+      setAttachment({
+        name: file.name,
+        mimeType: "application/pdf",
+        base64Data,
+        sizeBytes: file.size,
+      });
+      return;
+    }
+
+    if (mime.startsWith("text/") || ACCEPTED_TEXT_EXTENSIONS.has(ext)) {
+      const textContent = (await file.text()).slice(0, 20000);
+      setAttachment({
+        name: file.name,
+        mimeType: mime || "text/plain",
+        textContent,
+        sizeBytes: file.size,
+      });
+      return;
+    }
+
+    setErrorMsg(
+      t(
+        "รองรับเฉพาะรูปภาพ (.png, .jpg, .webp), .pdf, และไฟล์โค้ด/เอกสารข้อความ (.js, .ts, .py, .java, .cpp, .sql, .html, .md, .txt, .csv)",
+        "Only images (.png, .jpg, .webp), .pdf, and code/text documents are supported."
+      )
+    );
+  };
+
+  const handlePasteMedia = async (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const items = Array.from(e.clipboardData?.items || []);
+    const imgItem = items.find((it) => it.type.startsWith("image/"));
+    if (!imgItem) return;
+    const file = imgItem.getAsFile();
+    if (!file) return;
+    e.preventDefault();
+    await handleAttachFile(file);
+  };
 
   const sendPrompt = async (rawPrompt: string) => {
     const trimmed = rawPrompt.trim();
-    if (!trimmed || isSending) return;
+    const currentAttachment = attachment;
+    if ((!trimmed && !currentAttachment) || isSending) return;
+    const displayText =
+      trimmed ||
+      t(
+        `ช่วยอ่านและวิเคราะห์ไฟล์ที่แนบ (${currentAttachment?.name}) ตามหลัก PRIMM`,
+        `Analyze the attached file (${currentAttachment?.name}) with Socratic PRIMM hints`
+      );
     setErrorMsg(null);
     setExpanded(true);
     setActiveTab("chat");
@@ -205,13 +383,34 @@ export function LangMindAgentPanel({
     const userEntry: ChatEntry = {
       id: `u-${Date.now()}`,
       sender: "user",
-      text: trimmed,
+      text: displayText,
+      attachmentName: currentAttachment?.name,
+      attachmentPreviewUrl: currentAttachment?.previewDataUrl,
     };
     setMessages((prev) => [...prev, userEntry]);
     setInput("");
+    setAttachment(null);
     setIsSending(true);
 
     try {
+      if (!tabSessionRef.current) {
+        const rand =
+          typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+            ? crypto.randomUUID().slice(0, 12)
+            : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        tabSessionRef.current = `code-cool-${role}-${rand}`;
+      }
+
+      const effectiveContext = shareScreenContext
+        ? context || {}
+        : {
+            studentId: context?.studentId,
+            displayName: context?.displayName,
+            roomCode: context?.roomCode,
+            cellScores: context?.cellScores,
+            weakestCell: context?.weakestCell,
+          };
+
       const res = await fetch("/api/langmind/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -219,8 +418,17 @@ export function LangMindAgentPanel({
           message: trimmed,
           role,
           uiLang,
-          sessionId: `code-cool-${role}-${context?.studentId || context?.roomCode || "live"}`,
-          context: context || {},
+          sessionId: tabSessionRef.current,
+          context: effectiveContext,
+          attachment: currentAttachment
+            ? {
+                name: currentAttachment.name,
+                mimeType: currentAttachment.mimeType,
+                textContent: currentAttachment.textContent,
+                base64Data: currentAttachment.base64Data,
+                sizeBytes: currentAttachment.sizeBytes,
+              }
+            : undefined,
         }),
       });
       const data = (await res.json().catch(() => null)) as
@@ -312,84 +520,127 @@ export function LangMindAgentPanel({
   return (
     <section
       aria-label="LangMind AI Agent Integration"
-      className="min-w-0 rounded-2xl border border-[#9b5de5]/50 bg-[#141220] p-4 sm:p-5 text-[#f4efe6] shadow-xl space-y-4 overflow-hidden"
+      className={
+        compact
+          ? "min-w-0 h-full flex flex-col rounded-2xl border border-[#9b5de5]/60 bg-[#141220] p-3.5 text-[#f4efe6] shadow-2xl space-y-3 overflow-hidden"
+          : "min-w-0 rounded-2xl border border-[#9b5de5]/50 bg-[#141220] p-4 sm:p-5 text-[#f4efe6] shadow-xl space-y-4 overflow-hidden"
+      }
     >
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-2.5 shrink-0">
         <div className="min-w-0 flex-1 space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#9b5de5]/50 bg-[#25193b] px-2.5 py-1 text-[11px] font-extrabold text-[#e9d5ff]">
               <Icon name="sparkles" size={13} className="text-[#f6c945]" />
-              <span>LangMind × CODE COOL AI Agent</span>
+              <span>{compact ? "LangMind Copilot" : "LangMind × CODE COOL AI Agent"}</span>
             </span>
 
             {liveConfigured ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-[#2fbf71]/50 bg-[#102a1e] px-2.5 py-0.5 text-[10px] font-bold text-[#86efac]">
-                <Icon name="globe" size={11} />
-                <span>Live LangMind API Connected</span>
+              <span className="inline-flex items-center gap-1 rounded-full border border-[#2fbf71]/50 bg-[#102a1e] px-2 py-0.5 text-[10px] font-bold text-[#86efac]">
+                <Icon name="globe" size={10} />
+                <span>{compact ? "Live" : "Live LangMind API Connected"}</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full border border-[#f6c945]/50 bg-[#281d08] px-2.5 py-0.5 text-[10px] font-bold text-[#ffe27a]">
-                <Icon name="wrench" size={11} />
-                <span>
-                  {t(
-                    "LangMind Bridge Ready (OpenAPI Tool Runtime)",
-                    "LangMind Bridge Ready (Sandbox)"
-                  )}
-                </span>
+              <span className="inline-flex items-center gap-1 rounded-full border border-[#f6c945]/50 bg-[#281d08] px-2 py-0.5 text-[10px] font-bold text-[#ffe27a]">
+                <Icon name="wrench" size={10} />
+                <span>{compact ? "Bridge" : "LangMind Bridge Ready (OpenAPI Tool Runtime)"}</span>
               </span>
             )}
           </div>
 
-          <p className="text-xs text-[#c4bdd6] leading-relaxed">
-            {role === "teacher"
-              ? t(
-                  "ผู้ช่วยครูที่ปรึกษา (Pedagogical Copilot) — เรียก LangMind RAG + Classroom Radar วิเคราะห์จุดอ่อน 12 มิติ และสร้างลิงก์ด่านซ่อมเสริมส่ง LINE OA ได้ทันที",
-                  "Teacher Pedagogical Copilot powered by LangMind RAG & OpenAPI Tools — diagnose 12-cell classroom gaps and mint shareable remedial dungeons."
-                )
-              : t(
-                  "พี่เลี้ยง Socratic ประจำตัว (ห้ามบอกเฉลยตรงๆ) — อ้างอิงฐานความรู้ PRIMM + Block Model 12 มิติ พร้อมเรียก OpenAPI Tool เสกด่านซ่อมจุดอ่อนให้ทันที",
-                  "Socratic Mentor powered by LangMind RAG & OpenAPI Tools — guides with PRIMM hints without leaking answers and mints remedial dungeons."
-                )}
-          </p>
+          {!compact && (
+            <p className="text-xs text-[#c4bdd6] leading-relaxed">
+              {role === "teacher"
+                ? t(
+                    "ผู้ช่วยครูที่ปรึกษา (Pedagogical Copilot) — เรียก LangMind RAG + Classroom Radar วิเคราะห์จุดอ่อน 12 มิติ และสร้างลิงก์ด่านซ่อมเสริมส่ง LINE OA ได้ทันที",
+                    "Teacher Pedagogical Copilot powered by LangMind RAG & OpenAPI Tools — diagnose 12-cell classroom gaps and mint shareable remedial dungeons."
+                  )
+                : t(
+                    "พี่เลี้ยง Socratic ประจำตัว (ห้ามบอกเฉลยตรงๆ) — อ้างอิงฐานความรู้ PRIMM + Block Model 12 มิติ พร้อมเรียก OpenAPI Tool เสกด่านซ่อมจุดอ่อนให้ทันที",
+                    "Socratic Mentor powered by LangMind RAG & OpenAPI Tools — guides with PRIMM hints without leaking answers and mints remedial dungeons."
+                  )}
+            </p>
+          )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto max-w-full">
           <a
             href={publicAgentUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-[#2fbf71]/50 bg-[#102a1e] px-2.5 py-1.5 text-[11px] font-bold text-[#86efac] hover:border-[#2fbf71] hover:bg-[#153828] transition-colors"
+            className="inline-flex items-center gap-1 rounded-lg border border-[#2fbf71]/50 bg-[#102a1e] px-2 py-1 text-[11px] font-bold text-[#86efac] hover:border-[#2fbf71] hover:bg-[#153828] transition-colors"
           >
-            <Icon name="globe" size={12} />
-            <span>{t("เปิด LangMind Agent จริง ↗", "Open Live LangMind Agent ↗")}</span>
+            <Icon name="globe" size={11} />
+            <span>{compact ? t("เว็บจริง ↗", "Live Web ↗") : t("เปิด LangMind Agent จริง ↗", "Open Live LangMind Agent ↗")}</span>
           </a>
 
-          <button
-            type="button"
-            onClick={handleCopyOpenApiUrl}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-2.5 py-1.5 text-[11px] font-bold text-[#ffe27a] hover:border-[#f6c945] hover:bg-[#252238] transition-colors cursor-pointer"
-          >
-            <Icon name={copiedOpenApi ? "check" : "clipboard"} size={12} />
-            <span>
-              {copiedOpenApi
-                ? t("คัดลอกลิงก์ OpenAPI แล้ว!", "Copied OpenAPI URL!")
-                : t("คัดลอกลิงก์ OpenAPI", "Copy OpenAPI Spec")}
-            </span>
-          </button>
+          {!compact && (
+            <button
+              type="button"
+              onClick={handleCopyOpenApiUrl}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-2.5 py-1.5 text-[11px] font-bold text-[#ffe27a] hover:border-[#f6c945] hover:bg-[#252238] transition-colors cursor-pointer"
+            >
+              <Icon name={copiedOpenApi ? "check" : "clipboard"} size={12} />
+              <span>
+                {copiedOpenApi
+                  ? t("คัดลอกลิงก์ OpenAPI แล้ว!", "Copied OpenAPI URL!")
+                  : t("คัดลอกลิงก์ OpenAPI", "Copy OpenAPI Spec")}
+              </span>
+            </button>
+          )}
 
-          <button
-            type="button"
-            onClick={() => setExpanded((prev) => !prev)}
-            className="inline-flex items-center gap-1 rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-2.5 py-1.5 text-[11px] font-bold text-[#c4bdd6] hover:text-white cursor-pointer"
-          >
-            <span>{expanded ? t("ย่อหน้าต่าง", "Collapse") : t("เปิดใช้งาน", "Expand")}</span>
-          </button>
+          {compact && onCloseDrawer ? (
+            <button
+              type="button"
+              onClick={onCloseDrawer}
+              aria-label={t("ปิดหน้าต่างผู้ช่วย LangMind", "Close LangMind Copilot")}
+              className="inline-flex items-center gap-1 rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-2 py-1 text-[11px] font-bold text-[#c4bdd6] hover:text-white cursor-pointer"
+            >
+              <Icon name="close" size={12} />
+              <span>{t("ปิด", "Close")}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setExpanded((prev) => !prev)}
+              className="inline-flex items-center gap-1 rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-2.5 py-1.5 text-[11px] font-bold text-[#c4bdd6] hover:text-white cursor-pointer"
+            >
+              <span>{expanded ? t("ย่อหน้าต่าง", "Collapse") : t("เปิดใช้งาน", "Expand")}</span>
+            </button>
+          )}
         </div>
       </div>
 
+      {/* Live Context Strip */}
+      {hasLiveScreenContext && screenContextSummaryLabel && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#2f2d45] bg-[#0d0b14] px-3 py-1.5 text-[11px] shrink-0">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Icon name="eye" size={12} className="text-[#86efac] shrink-0" />
+            <span className="text-[#9a93ad] shrink-0">
+              {t("บริบทหน้าจอ:", "Seeing:")}
+            </span>
+            <span className="truncate font-bold text-[#ffe27a]">
+              {screenContextSummaryLabel}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShareScreenContext((prev) => !prev)}
+            className={`rounded-md px-2 py-0.5 text-[10px] font-bold border cursor-pointer shrink-0 ${
+              shareScreenContext
+                ? "border-[#2fbf71]/50 bg-[#102a1e] text-[#86efac]"
+                : "border-[#3d395a] bg-[#1c1b2b] text-[#9a93ad]"
+            }`}
+          >
+            {shareScreenContext
+              ? t("เชื่อมหน้าจอ: เปิด", "Context: ON")
+              : t("เชื่อมหน้าจอ: ปิด", "Context: OFF")}
+          </button>
+        </div>
+      )}
+
       {expanded && (
-        <div className="space-y-3">
+        <div className={compact ? "flex-1 min-h-0 flex flex-col gap-2.5" : "space-y-3"}>
           {embedUrl && (
             <div className="flex items-center gap-2 border-b border-[#2f2d45] pb-2">
               <button
@@ -452,10 +703,14 @@ export function LangMindAgentPanel({
               </div>
 
               {/* Conversation Thread */}
-              {messages.length > 0 && (
+              {messages.length > 0 ? (
                 <div
                   ref={scrollRef}
-                  className="max-h-[420px] overflow-y-auto space-y-3 rounded-xl border border-[#2f2d45] bg-[#0d0b14] p-3.5"
+                  className={
+                    compact
+                      ? "flex-1 min-h-0 overflow-y-auto space-y-3 rounded-xl border border-[#2f2d45] bg-[#0d0b14] p-3"
+                      : "max-h-[420px] overflow-y-auto space-y-3 rounded-xl border border-[#2f2d45] bg-[#0d0b14] p-3.5"
+                  }
                 >
                   {messages.map((msg) => (
                     <div
@@ -486,6 +741,21 @@ export function LangMindAgentPanel({
                               </span>
                             </span>
                           ))}
+                        </div>
+                      )}
+
+                      {msg.sender === "user" && msg.attachmentName && (
+                        <div className="mb-2 flex items-center gap-2 rounded-lg border border-[#3d395a] bg-[#141220] px-2.5 py-1.5 text-[11px] text-[#ffe27a]">
+                          {msg.attachmentPreviewUrl ? (
+                            <img
+                              src={msg.attachmentPreviewUrl}
+                              alt={msg.attachmentName}
+                              className="h-9 w-9 rounded object-cover border border-[#3d395a]"
+                            />
+                          ) : (
+                            <Icon name="paperclip" size={12} />
+                          )}
+                          <span className="truncate font-semibold">{msg.attachmentName}</span>
                         </div>
                       )}
 
@@ -576,11 +846,54 @@ export function LangMindAgentPanel({
                     </div>
                   )}
                 </div>
-              )}
+              ) : compact ? (
+                <div className="flex-1 min-h-0 flex items-center justify-center rounded-xl border border-dashed border-[#2f2d45] bg-[#0d0b14] p-4 text-center text-xs text-[#9a93ad]">
+                  {t(
+                    "พิมพ์ถาม หรือกดปุ่มด้านบนเพื่อขอคำใบ้แบบ PRIMM จากหน้าจอนี้ได้เลย",
+                    "Ask a question or click a preset above for PRIMM Socratic guidance on this screen."
+                  )}
+                </div>
+              ) : null}
 
               {errorMsg && (
                 <div className="rounded-lg border border-[#ff4d6d]/50 bg-[#2a121b] px-3 py-2 text-xs text-[#fda4af]">
                   {errorMsg}
+                </div>
+              )}
+
+              {/* Attached File / Screenshot Preview */}
+              {attachment && (
+                <div className="flex items-center justify-between gap-2 rounded-xl border border-[#9b5de5]/50 bg-[#1a1428] px-3 py-2 text-xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {attachment.previewDataUrl ? (
+                      <img
+                        src={attachment.previewDataUrl}
+                        alt={attachment.name}
+                        className="h-9 w-9 rounded-md object-cover border border-[#3d395a] shrink-0"
+                      />
+                    ) : (
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-[#25193b] text-[#e9d5ff] shrink-0">
+                        <Icon name="paperclip" size={14} />
+                      </span>
+                    )}
+                    <div className="min-w-0">
+                      <div className="truncate font-bold text-[#f4efe6]">{attachment.name}</div>
+                      <div className="text-[10px] text-[#b4adc8]">
+                        {attachment.previewDataUrl
+                          ? t("พร้อมอ่านโค้ดจากภาพ (Vision/OCR)", "Ready for Vision/OCR")
+                          : t("พร้อมส่งเนื้อหาไฟล์ให้ Agent", "Ready to send document content")}{" "}
+                        · {Math.max(1, Math.round((attachment.sizeBytes || 0) / 1024))} KB
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAttachment(null)}
+                    aria-label={t("ลบไฟล์แนบ", "Remove attachment")}
+                    className="rounded-lg border border-[#3d395a] bg-[#0d0b14] p-1.5 text-[#c4bdd6] hover:text-white cursor-pointer shrink-0"
+                  >
+                    <Icon name="close" size={12} />
+                  </button>
                 </div>
               )}
 
@@ -590,32 +903,95 @@ export function LangMindAgentPanel({
                   e.preventDefault();
                   void sendPrompt(input);
                 }}
-                className="flex flex-col sm:flex-row gap-2"
+                className="flex items-center gap-2"
               >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,.pdf,.txt,.md,.csv,.json,.js,.jsx,.ts,.tsx,.py,.java,.cpp,.cc,.c,.h,.sql,.html,.htm"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void handleAttachFile(f);
+                    e.target.value = "";
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isSending}
+                  aria-label={t(
+                    "แนบรูปภาพหรือไฟล์เอกสาร",
+                    "Attach image or file"
+                  )}
+                  title={t(
+                    "แนบรูปภาพ (.png/.jpg/.webp), .pdf หรือไฟล์โค้ด/เอกสาร",
+                    "Attach image (.png/.jpg/.webp), .pdf or code/text file"
+                  )}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#3d395a] bg-[#161326] text-[#e9d5ff] hover:border-[#9b5de5] hover:bg-[#25193b] transition-colors disabled:opacity-50 cursor-pointer shrink-0"
+                >
+                  <svg
+                    width={18}
+                    height={18}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 5v14" />
+                    <path d="M5 12h14" />
+                  </svg>
+                </button>
                 <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
+                  onPaste={(e) => void handlePasteMedia(e)}
                   placeholder={
-                    role === "teacher"
+                    compact
                       ? t(
-                          "ถาม LangMind Copilot เช่น วิเคราะห์จุดอ่อนห้อง JS2026 หรือเสกด่านซ่อม E2...",
-                          "Ask LangMind Copilot e.g. analyze room JS2026 or mint an E2 dungeon..."
+                          "พิมพ์ถาม หรือวางรูป Ctrl+V...",
+                          "Ask or paste image (Ctrl+V)..."
                         )
-                      : t(
-                          "ถามพี่เลี้ยง LangMind เช่น วิเคราะห์จุดอ่อนฉัน หรือขอคำใบ้ PRIMM...",
-                          "Ask LangMind Mentor e.g. check my weakest cell or give a PRIMM hint..."
-                        )
+                      : role === "teacher"
+                        ? t(
+                            "ถาม LangMind หรือแนบรูป/ไฟล์ใบงาน (วางรูป Ctrl+V ได้)...",
+                            "Ask LangMind or attach/paste image or file..."
+                          )
+                        : t(
+                            "ถามพี่เลี้ยง LangMind หรือแนบรูปโค้ด/ไฟล์ (วางรูป Ctrl+V ได้)...",
+                            "Ask LangMind or attach/paste code image or file..."
+                          )
                   }
                   className="min-w-0 flex-1 rounded-xl border border-[#3d395a] bg-[#0d0b14] px-3.5 py-2.5 text-xs text-[#f4efe6] placeholder:text-[#7c7491] focus:border-[#9b5de5] focus:outline-hidden"
                 />
                 <button
                   type="submit"
-                  disabled={isSending || !input.trim()}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#9b5de5] px-4 py-2.5 text-xs font-extrabold text-white hover:bg-[#a972eb] transition-colors disabled:opacity-50 cursor-pointer shrink-0"
+                  disabled={isSending || (!input.trim() && !attachment)}
+                  aria-label={t(
+                    "ส่งคำถามถึง LangMind",
+                    "Send message to LangMind"
+                  )}
+                  title={t("ส่งคำถามถึง LangMind", "Send message to LangMind")}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#9b5de5] text-white hover:bg-[#a972eb] transition-colors disabled:opacity-50 cursor-pointer shrink-0"
                 >
-                  <Icon name="sparkles" size={14} />
-                  <span>{t("ถาม LangMind", "Ask LangMind")}</span>
+                  <svg
+                    width={16}
+                    height={16}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2.2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m22 2-7 20-4-9-9-4Z" />
+                    <path d="M22 2 11 13" />
+                  </svg>
                 </button>
               </form>
             </>

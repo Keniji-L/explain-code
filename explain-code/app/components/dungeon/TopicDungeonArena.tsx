@@ -35,6 +35,7 @@ import { PixelSpriteView } from "./PixelSpriteView";
 import { useUiLanguage } from "../LanguageProvider";
 import { getClientSession } from "../SiteHeader";
 import { Icon } from "../Icons";
+import { useRegisterLangMindContext } from "../LangMindContext";
 import type { DungeonArenaSnapshot } from "../../lib/dungeon-save";
 
 const VALID_CELL_IDS = new Set<string>([
@@ -147,6 +148,18 @@ export function TopicDungeonArena({
     const idx = langTopics.findIndex((item) => item.id === activeTopic.id);
     return idx >= 0 ? idx : 0;
   }, [topicIndex, langTopics, activeTopic.id]);
+
+  useRegisterLangMindContext("arena", {
+    pageKind: "dungeon",
+    dungeonTitle:
+      uiLang === "en" ? activeTopic.titleEn || activeTopic.title : activeTopic.title,
+    floorLabel: floorBadgeLabel || trackMeta.name,
+    targetCell: activeTopic.questions?.[0]?.cellId,
+    code: displayTopicCode,
+    language: activeLanguage,
+    studentId,
+    cellScores: currentStudent?.cellScores,
+  });
 
   const resolvedTotalFloors = Math.max(
     1,
@@ -941,7 +954,7 @@ export function TopicDungeonArena({
             )}
 
             {/* Touch D-Pad (shown on mobile & tablet below lg) */}
-            <div className="lg:hidden">
+            <div className="lg:hidden pb-24 md:pb-4">
               <MobileDpad
                 disabled={isInBattle || isChestOpen || isGameOver}
                 onMove={(dx, dy) => {

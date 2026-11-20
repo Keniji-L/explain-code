@@ -194,11 +194,11 @@ export function BlockModelGrid({
                       <span className="shrink-0 px-2 py-0.5 rounded-md bg-[#0d0b14]/80 border border-white/15 text-[#f4efe6] text-[11px] font-extrabold">
                         {cellId}
                       </span>
-                      <span className="text-[12px] font-bold text-[#f4efe6] truncate">
+                      <span className="text-[12px] font-bold text-[#f4efe6] leading-snug break-words">
                         {t(meta.shortTitle, meta.shortTitleEn || meta.shortTitle)}
                       </span>
                     </div>
-                    <span className="shrink-0 text-[13px] font-extrabold whitespace-nowrap">
+                    <span className="shrink-0 text-[12px] sm:text-[13px] font-extrabold whitespace-nowrap">
                       {score}% · {status.shortLabel}
                     </span>
                   </button>

@@ -20,6 +20,9 @@ export function PauseModal({ isOpen, onResume, onExit }: PauseModalProps) {
     if (!isOpen) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        if (document.querySelector('[data-floating-dock-open="true"]')) {
+          return;
+        }
         e.preventDefault();
         onResume();
       }
@@ -34,7 +37,7 @@ export function PauseModal({ isOpen, onResume, onExit }: PauseModalProps) {
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs select-none"
+      className="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs select-none"
     >
       <div className="retro-panel rounded-2xl max-w-sm w-full p-6 text-center space-y-5 text-[#f4efe6]">
         <div className="space-y-1">
@@ -85,7 +88,7 @@ export function GameOverModal({ isOpen, onRetry, onExit }: GameOverModalProps) {
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs select-none"
+      className="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs select-none"
     >
       <div className="retro-panel rounded-2xl max-w-md w-full p-6 text-center space-y-5 text-[#f4efe6] border-2 border-[#c0283a]">
         <div className="space-y-2">
@@ -156,7 +159,7 @@ export function VictoryModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs select-none"
+      className="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs select-none"
     >
       <div className="retro-panel rounded-2xl max-w-md w-full p-6 text-center space-y-6 text-[#f4efe6] border-2 border-[#f6c945] animate-in zoom-in-95 duration-200">
         <div className="space-y-2">

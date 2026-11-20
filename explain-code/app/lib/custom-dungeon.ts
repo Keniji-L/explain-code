@@ -1,5 +1,5 @@
-import { TopicQuest } from "./curriculum";
-import { DungeonQuestion } from "./dungeon/questions";
+import { BlockCellId, BlockQuestion, ModifyChallenge, TopicQuest, TraceStep } from "./curriculum";
+import { DungeonQuestion, DungeonTraceStep } from "./dungeon/questions";
 import { LearningLanguage } from "./language-tracks";
 
 export interface CustomDungeonPayload {
@@ -274,17 +274,39 @@ export function mergeRemoteCustomDungeons(
 export function encodeCustomDungeonShareToken(
   dungeon: CustomDungeonPayload
 ): string {
+  const code = (dungeon.code || "").slice(0, 900);
+  const subtitle = (dungeon.subtitle || "").slice(0, 90);
+
+  const compactQuestions = (dungeon.questions || []).slice(0, 3).map((q) => ({
+    question: (q.question || "").slice(0, 130),
+    ...(q.codeSnippet && q.codeSnippet !== dungeon.code
+      ? { codeSnippet: q.codeSnippet.slice(0, 600) }
+      : {}),
+    choices: (q.choices || []).slice(0, 4).map((c) => String(c).slice(0, 75)),
+    correctIndex: q.correctIndex,
+    explanation: (q.explanation || "").slice(0, 90),
+    ...(q.difficulty && q.difficulty !== "medium"
+      ? { difficulty: q.difficulty }
+      : {}),
+    blockModelCell: q.blockModelCell,
+    ...(q.hint ? { hint: q.hint.slice(0, 65) } : {}),
+    ...(q.expectedOutput ? { expectedOutput: q.expectedOutput.slice(0, 60) } : {}),
+  }));
+
   const payload = {
-    title: dungeon.title,
-    subtitle: dungeon.subtitle,
+    title: (dungeon.title || "").slice(0, 75),
+    subtitle,
     language: dungeon.language,
-    code: dungeon.code,
-    summary: dungeon.summary,
-    keyConcepts: dungeon.keyConcepts,
-    topic: dungeon.topic,
-    questions: dungeon.questions,
-    provider: dungeon.provider,
+    code,
+    keyConcepts: (dungeon.keyConcepts || []).slice(0, 3),
+    topic: {
+      id: typeof dungeon.topic?.id === "number" ? dungeon.topic.id : 9001,
+      ...(dungeon.topic?.isBoss ? { isBoss: true } : {}),
+    },
+    questions: compactQuestions,
+    ...(dungeon.provider === "ai-api" ? { provider: "ai-api" } : {}),
   };
+
   const json = JSON.stringify(payload);
   const bytes = new TextEncoder().encode(json);
   let binary = "";
@@ -311,6 +333,13 @@ export function decodeCustomDungeonShareToken(
       const param = url.searchParams.get("shareDungeon");
       if (param) token = param.trim();
     }
+    if (/^CD1%3A/i.test(token)) {
+      try {
+        token = decodeURIComponent(token);
+      } catch {
+        // keep original token
+      }
+    }
     if (!token.startsWith("CD1:")) return null;
 
     const base64 = token
@@ -327,7 +356,6 @@ export function decodeCustomDungeonShareToken(
     if (
       !parsed ||
       typeof parsed.title !== "string" ||
-      !parsed.topic ||
       !Array.isArray(parsed.questions) ||
       parsed.questions.length === 0
     ) {
@@ -339,16 +367,189 @@ export function decodeCustomDungeonShareToken(
       ? (parsed.language as LearningLanguage)
       : "javascript";
 
+    const code = typeof parsed.code === "string" ? parsed.code : "";
+    const subtitle = typeof parsed.subtitle === "string" ? parsed.subtitle : "";
+    const summary =
+      typeof parsed.summary === "string" && parsed.summary
+        ? parsed.summary
+        : subtitle;
+    const rawTopic = (parsed.topic || {}) as Partial<TopicQuest>;
+    const rawSteps = Array.isArray(rawTopic.steps) ? rawTopic.steps : [];
+
+    const hydratedSteps: TraceStep[] =
+      rawSteps.length > 0
+        ? rawSteps.map((s, idx) => ({
+            stepNumber: typeof s.stepNumber === "number" ? s.stepNumber : idx + 1,
+            line: typeof s.line === "number" ? s.line : idx + 1,
+            codeLine: typeof s.codeLine === "string" ? s.codeLine : "",
+            variables:
+              s.variables && typeof s.variables === "object" ? s.variables : {},
+            outputSoFar: Array.isArray(s.outputSoFar) ? s.outputSoFar : [],
+            explanation: typeof s.explanation === "string" ? s.explanation : "",
+          }))
+        : (() => {
+            const codeLines = code
+              .split(/\r?\n/)
+              .map((rawLine, idx) => ({ line: idx + 1, text: rawLine.trim() }))
+              .filter((item) => item.text.length > 0)
+              .slice(0, 6);
+            if (codeLines.length === 0) {
+              return [
+                {
+                  stepNumber: 1,
+                  line: 1,
+                  codeLine: "// code",
+                  variables: {},
+                  outputSoFar: [],
+                  explanation: summary || parsed.title,
+                },
+              ];
+            }
+            return codeLines.map((item, idx) => ({
+              stepNumber: idx + 1,
+              line: item.line,
+              codeLine: item.text,
+              variables: {},
+              outputSoFar: [],
+              explanation: `ประมวลผลคำสั่งบรรทัดที่ ${item.line}: ${item.text}`,
+            }));
+          })();
+
+    const dungeonTraceSteps: DungeonTraceStep[] = hydratedSteps.map((s) => ({
+      line: s.line,
+      codeLine: s.codeLine,
+      variables: s.variables,
+      explanation: s.explanation,
+    }));
+
+    const hydratedQuestions: DungeonQuestion[] = parsed.questions.map((q, idx) => {
+      const cell: BlockCellId =
+        typeof q.blockModelCell === "string" &&
+        /^[TEF][1-4]$/.test(q.blockModelCell)
+          ? (q.blockModelCell as BlockCellId)
+          : idx === 0
+          ? "E4"
+          : idx === 1
+          ? "T1"
+          : "F2";
+      const choices =
+        Array.isArray(q.choices) && q.choices.length > 0
+          ? q.choices.map((c) => String(c))
+          : ["A", "B", "C", "D"];
+      const correctIndex =
+        typeof q.correctIndex === "number" &&
+        q.correctIndex >= 0 &&
+        q.correctIndex < choices.length
+          ? q.correctIndex
+          : 0;
+
+      return {
+        id: typeof q.id === "string" && q.id ? q.id : `custom-phase-${idx + 1}`,
+        language: lang,
+        question: typeof q.question === "string" ? q.question : `Phase ${idx + 1}`,
+        questionEn:
+          typeof q.questionEn === "string" ? q.questionEn : q.question,
+        codeSnippet:
+          typeof q.codeSnippet === "string" && q.codeSnippet.length > 0
+            ? q.codeSnippet
+            : code,
+        choices,
+        correctIndex,
+        explanation: typeof q.explanation === "string" ? q.explanation : summary,
+        difficulty:
+          q.difficulty === "easy" ||
+          q.difficulty === "medium" ||
+          q.difficulty === "hard"
+            ? q.difficulty
+            : "medium",
+        blockModelCell: cell,
+        hint: typeof q.hint === "string" ? q.hint : undefined,
+        traceSteps:
+          Array.isArray(q.traceSteps) && q.traceSteps.length > 0
+            ? q.traceSteps
+            : dungeonTraceSteps,
+        expectedOutput:
+          typeof q.expectedOutput === "string" ? q.expectedOutput : undefined,
+        phaseLabel:
+          typeof q.phaseLabel === "string" ? q.phaseLabel : undefined,
+      };
+    });
+
+    const topicId = typeof rawTopic.id === "number" ? rawTopic.id : 9001;
+    const firstQ = hydratedQuestions[0];
+    const hydratedBlockQuestions: BlockQuestion[] =
+      Array.isArray(rawTopic.questions) && rawTopic.questions.length > 0
+        ? rawTopic.questions
+        : hydratedQuestions.map((q, idx) => ({
+            id: q.id,
+            cellId: (q.blockModelCell as BlockCellId) || "E4",
+            targetLine: hydratedSteps[idx]?.line || 1,
+            question: q.question,
+            options: q.choices.map((text, cIdx) => ({
+              id: `opt-${cIdx}`,
+              text,
+            })),
+            correctOptionId: `opt-${q.correctIndex}`,
+            hint: q.hint || "",
+            explanation: q.explanation,
+          }));
+
+    const defaultModifyChallenge: ModifyChallenge = {
+      instruction:
+        "ลองแก้ไขค่าตัวแปรหรือเงื่อนไขในโค้ดนี้ แล้วกดรันทดสอบผลลัพธ์",
+      suggestedCode: code,
+      changeDescription:
+        "แก้ไขค่าตั้งต้นหรือเงื่อนไข 1 จุด แล้วสังเกตผลลัพธ์ที่เปลี่ยนไป",
+      options: [],
+      explanation:
+        "การลองแก้ค่าตั้งต้นช่วยให้เข้าใจความสัมพันธ์ของตัวแปรและผลลัพธ์มากขึ้น",
+    };
+
+    const hydratedTopic: TopicQuest = {
+      id: topicId,
+      title: typeof rawTopic.title === "string" ? rawTopic.title : parsed.title,
+      shortName:
+        typeof rawTopic.shortName === "string"
+          ? rawTopic.shortName
+          : parsed.title.slice(0, 28),
+      isBoss: Boolean(rawTopic.isBoss),
+      subtitle:
+        typeof rawTopic.subtitle === "string" ? rawTopic.subtitle : subtitle,
+      aiScenario:
+        typeof rawTopic.aiScenario === "string" ? rawTopic.aiScenario : summary,
+      code: typeof rawTopic.code === "string" ? rawTopic.code : code,
+      predictPrompt:
+        typeof rawTopic.predictPrompt === "string"
+          ? rawTopic.predictPrompt
+          : firstQ?.question || subtitle,
+      predictOptions:
+        Array.isArray(rawTopic.predictOptions) && rawTopic.predictOptions.length > 0
+          ? rawTopic.predictOptions
+          : firstQ?.choices || [],
+      predictExplanation:
+        typeof rawTopic.predictExplanation === "string"
+          ? rawTopic.predictExplanation
+          : firstQ?.explanation || summary,
+      steps: hydratedSteps,
+      questions: hydratedBlockQuestions,
+      modifyChallenge: rawTopic.modifyChallenge || defaultModifyChallenge,
+      badgeReward: rawTopic.badgeReward || {
+        id: `custom-${topicId}`,
+        name: "ผู้พิชิตดันเจี้ยนโค้ดส่วนตัว",
+        description: "พิชิตดันเจี้ยนที่สร้างขึ้นจากโค้ดของคุณเองได้สำเร็จ",
+      },
+    };
+
     return {
       id: `shared-${Date.now().toString(36)}`,
       title: parsed.title,
-      subtitle: typeof parsed.subtitle === "string" ? parsed.subtitle : "",
+      subtitle,
       language: lang,
-      code: typeof parsed.code === "string" ? parsed.code : "",
-      summary: typeof parsed.summary === "string" ? parsed.summary : "",
+      code,
+      summary,
       keyConcepts: Array.isArray(parsed.keyConcepts) ? parsed.keyConcepts : [],
-      topic: parsed.topic,
-      questions: parsed.questions,
+      topic: hydratedTopic,
+      questions: hydratedQuestions,
       provider: parsed.provider === "ai-api" ? "ai-api" : "mock-generator",
       createdAt: new Date().toISOString(),
     };

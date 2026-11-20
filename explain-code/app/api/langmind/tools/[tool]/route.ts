@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { BlockCellId } from "@/app/lib/curriculum";
 import {
+  resolveValidBlockCell,
   runClassroomRadarTool,
   runCreateDungeonTool,
   runExplainCodeTool,
@@ -82,10 +83,18 @@ export async function POST(
   context: { params: Promise<{ tool: string }> }
 ) {
   try {
+    if (!verifyToolSecret(req)) {
+      return NextResponse.json(
+        { ok: false, error: "Unauthorized LangMind Tool caller." },
+        { status: 401, headers: CORS_HEADERS }
+      );
+    }
+
     const rate = checkRateLimit(getClientIp(req));
     if (!rate.allowed) {
       return NextResponse.json(
         {
+          ok: false,
           error: `Rate limit exceeded. Retry in ${rate.retryAfterSec}s.`,
           rateLimited: true,
         },
@@ -93,22 +102,25 @@ export async function POST(
       );
     }
 
-    if (!verifyToolSecret(req)) {
-      return NextResponse.json(
-        { error: "Unauthorized LangMind Tool caller." },
-        { status: 401, headers: CORS_HEADERS }
-      );
-    }
-
     const { tool } = await context.params;
     let body: Record<string, unknown> = {};
-    try {
-      const parsed = await req.json();
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+    const rawText = await req.text();
+    if (rawText.trim().length > 0) {
+      try {
+        const parsed = JSON.parse(rawText);
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          return NextResponse.json(
+            { ok: false, error: "INVALID_JSON_BODY" },
+            { status: 400, headers: CORS_HEADERS }
+          );
+        }
         body = parsed as Record<string, unknown>;
+      } catch {
+        return NextResponse.json(
+          { ok: false, error: "INVALID_JSON_BODY" },
+          { status: 400, headers: CORS_HEADERS }
+        );
       }
-    } catch {
-      body = {};
     }
 
     const origin =
@@ -144,14 +156,17 @@ export async function POST(
     }
 
     if (tool === "create-dungeon") {
+      if (typeof body.code === "string" && body.code.length > 12000) {
+        return NextResponse.json(
+          { ok: false, error: "CODE_TOO_LONG" },
+          { status: 400, headers: CORS_HEADERS }
+        );
+      }
       const result = await runCreateDungeonTool({
         code: typeof body.code === "string" ? body.code : undefined,
         language:
           typeof body.language === "string" ? body.language : "javascript",
-        targetCell:
-          typeof body.targetCell === "string"
-            ? (body.targetCell.toUpperCase() as BlockCellId)
-            : "E2",
+        targetCell: resolveValidBlockCell(body.targetCell, "E2"),
         origin,
         uiLang,
       });

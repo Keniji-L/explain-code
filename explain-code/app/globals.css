@@ -67,14 +67,12 @@ body {
 
 @media (max-width: 767px) {
   body {
-    padding-bottom: 5.5rem;
+    padding-bottom: 8.25rem;
   }
 }
 
 @layer base {
-  code,
-  pre,
-  .font-code {
+  :where(code, pre, .font-code) {
     font-family: "Courier New", Courier, monospace;
     font-size: 16px;
   }

@@ -4046,24 +4046,6 @@ function runPythonSimulated(code: string): {
       };
     }
 
-    // ตรวจจับรูปแบบเควสต์ที่ 3: for i in range(a, b): total = total + (i * m)
-    const rangeMatch = clean.match(
-      /range\(\s*(\d+)\s*,\s*(\d+)\s*\)/
-    );
-    if (rangeMatch && clean.includes("total")) {
-      const start = Number(rangeMatch[1]);
-      const stop = Number(rangeMatch[2]);
-      let total = 0;
-      for (let i = start; i < stop; i++) {
-        total += i * 10;
-      }
-      return {
-        outputs: [String(total)],
-        finalOutput: String(total),
-        success: true,
-      };
-    }
-
     // ตรวจจับรูปแบบเควสต์ที่ 2: temp & if/elif/else
     const tempMatch = clean.match(/temp\s*=\s*(-?\d+(?:\.\d+)?)/);
     if (tempMatch && clean.includes("elif")) {
@@ -4093,15 +4075,90 @@ function runPythonSimulated(code: string): {
       };
     }
 
-    // ตัวแปลง Python พื้นฐานเป็น JS สำหรับ Playground ทั่วไป
+    // ตัวแปลง Python พื้นฐานเป็น JS สำหรับ Playground และเควสต์ลูป range / list
     const lines = clean.split("\n");
     const env: Record<string, any> = {};
     const outputs: string[] = [];
 
     for (let idx = 0; idx < lines.length; idx++) {
       const rawLine = lines[idx];
+      const indent = (rawLine.match(/^[ \t]*/) || [""])[0].length;
       const trimmed = rawLine.replace(/#.*$/, "").trim();
       if (!trimmed) continue;
+
+      // รองรับ for x in range(...):
+      const forInRange = trimmed.match(
+        /^for\s+([a-zA-Z_]\w*)\s+in\s+range\(([^)]+)\)\s*:\s*(.*)$/
+      );
+      if (forInRange) {
+        const iterVar = forInRange[1];
+        const rangeArgs = forInRange[2]
+          .split(",")
+          .map((a) => Number(evalPythonExpr(a.trim(), env)));
+        const start = rangeArgs.length >= 2 ? rangeArgs[0] : 0;
+        const stop = rangeArgs.length >= 2 ? rangeArgs[1] : rangeArgs[0] ?? 0;
+        const step =
+          rangeArgs.length >= 3 && rangeArgs[2] !== 0 ? rangeArgs[2] : 1;
+
+        const bodyStmts: string[] = [];
+        let trailingTopLevelStmts: string[] = [];
+        if (forInRange[3] && forInRange[3].trim()) {
+          const inlineParts = forInRange[3]
+            .split(";")
+            .map((s) => s.trim())
+            .filter(Boolean);
+          if (
+            inlineParts.length > 1 &&
+            inlineParts[inlineParts.length - 1].startsWith("print(")
+          ) {
+            bodyStmts.push(...inlineParts.slice(0, -1));
+            trailingTopLevelStmts = [inlineParts[inlineParts.length - 1]];
+          } else {
+            bodyStmts.push(...inlineParts);
+          }
+        } else {
+          let k = idx + 1;
+          while (k < lines.length) {
+            const nextRaw = lines[k];
+            const nextTrim = nextRaw.replace(/#.*$/, "").trim();
+            if (!nextTrim) {
+              k++;
+              continue;
+            }
+            const nextIndent = (nextRaw.match(/^[ \t]*/) || [""])[0].length;
+            if (nextIndent > indent) {
+              bodyStmts.push(nextTrim);
+              idx = k;
+              k++;
+            } else {
+              break;
+            }
+          }
+          if (bodyStmts.length === 0 && idx + 1 < lines.length) {
+            const fallbackBody = lines[idx + 1].replace(/#.*$/, "").trim();
+            if (fallbackBody && !fallbackBody.startsWith("print(")) {
+              bodyStmts.push(fallbackBody);
+              idx++;
+            }
+          }
+        }
+
+        for (
+          let i = start, guard = 0;
+          step > 0 ? i < stop : i > stop;
+          i += step, guard++
+        ) {
+          if (guard > 10000) break;
+          env[iterVar] = i;
+          for (const bStmt of bodyStmts) {
+            execPythonSimpleStmt(bStmt, env, outputs);
+          }
+        }
+        for (const tStmt of trailingTopLevelStmts) {
+          execPythonSimpleStmt(tStmt, env, outputs);
+        }
+        continue;
+      }
 
       // รองรับ for x in list_var:
       const forInList = trimmed.match(/^for\s+([a-zA-Z_]\w*)\s+in\s+([a-zA-Z_]\w*)\s*:$/);
@@ -4112,20 +4169,19 @@ function runPythonSimulated(code: string): {
         const arr = Array.isArray(env[listVar]) ? env[listVar] : [];
         for (const item of arr) {
           env[iterVar] = item;
-          evalPythonSimpleAssignment(bodyLine, env);
+          execPythonSimpleStmt(bodyLine, env, outputs);
         }
         idx++;
         continue;
       }
 
-      if (trimmed.startsWith("print(") && trimmed.endsWith(")")) {
-        const inner = trimmed.slice(6, -1);
-        const parts = inner.split(",").map((p) => evalPythonExpr(p.trim(), env));
-        outputs.push(parts.join(" "));
-        continue;
+      const subStmts = trimmed
+        .split(";")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      for (const stmt of subStmts) {
+        execPythonSimpleStmt(stmt, env, outputs);
       }
-
-      evalPythonSimpleAssignment(trimmed, env);
     }
 
     return {
@@ -4143,13 +4199,45 @@ function runPythonSimulated(code: string): {
   }
 }
 
+function execPythonSimpleStmt(
+  stmt: string,
+  env: Record<string, any>,
+  outputs: string[]
+): void {
+  if (stmt.startsWith("print(") && stmt.endsWith(")")) {
+    const inner = stmt.slice(6, -1);
+    const parts = inner.split(",").map((p) => evalPythonExpr(p.trim(), env));
+    outputs.push(parts.join(" "));
+    return;
+  }
+  evalPythonSimpleAssignment(stmt, env);
+}
+
 function evalPythonSimpleAssignment(
   stmt: string,
   env: Record<string, any>
 ): void {
   const plusEq = stmt.match(/^([a-zA-Z_]\w*)\s*\+=\s*(.+)$/);
   if (plusEq) {
-    env[plusEq[1]] = (Number(env[plusEq[1]]) || 0) + Number(evalPythonExpr(plusEq[2], env));
+    const currentVal = env[plusEq[1]];
+    const rhsVal = evalPythonExpr(plusEq[2], env);
+    if (typeof currentVal === "string" || typeof rhsVal === "string") {
+      env[plusEq[1]] = String(currentVal ?? "") + String(rhsVal ?? "");
+    } else {
+      env[plusEq[1]] = (Number(currentVal) || 0) + Number(rhsVal);
+    }
+    return;
+  }
+  const minusEq = stmt.match(/^([a-zA-Z_]\w*)\s*-=\s*(.+)$/);
+  if (minusEq) {
+    env[minusEq[1]] =
+      (Number(env[minusEq[1]]) || 0) - Number(evalPythonExpr(minusEq[2], env));
+    return;
+  }
+  const mulEq = stmt.match(/^([a-zA-Z_]\w*)\s*\*=\s*(.+)$/);
+  if (mulEq) {
+    env[mulEq[1]] =
+      (Number(env[mulEq[1]]) ?? 1) * Number(evalPythonExpr(mulEq[2], env));
     return;
   }
   const eq = stmt.match(/^([a-zA-Z_]\w*)\s*=\s*(.+)$/);

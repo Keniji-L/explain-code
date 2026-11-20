@@ -9,6 +9,8 @@ import { PixelSpriteView } from "./PixelSpriteView";
 import { dungeonSound } from "../../lib/dungeon/sound";
 import { useUiLanguage } from "../LanguageProvider";
 import { Icon } from "../Icons";
+import { useRegisterLangMindContext } from "../LangMindContext";
+import type { BlockCellId } from "../../lib/curriculum";
 
 export interface BattlePhaseResult {
   questionId: string;
@@ -366,6 +368,36 @@ export function BattleOverlay({
     return deriveTraceSteps(activeQuestion, isEn);
   }, [activeQuestion, isEn]);
 
+  const battleTargetCell =
+    activeQuestion?.blockModelCell &&
+    /^[TEF][1-4]$/.test(activeQuestion.blockModelCell.toUpperCase())
+      ? (activeQuestion.blockModelCell.toUpperCase() as BlockCellId)
+      : undefined;
+
+  useRegisterLangMindContext(
+    "battle",
+    isOpen && activeQuestion
+      ? {
+          pageKind: "dungeon",
+          courseId,
+          lessonId,
+          monsterName: isEn ? monster.nameEn || monster.name : monster.name,
+          targetCell: battleTargetCell,
+          activeQuestionText: displayQuestionText,
+          activeQuestionPhase: isMultiPhase
+            ? isEn
+              ? `Phase ${phaseIndex + 1}/${totalPhases}`
+              : `เฟส ${phaseIndex + 1}/${totalPhases}`
+            : activeQuestion.phaseLabel,
+          activeQuestionChoices: displayChoices,
+          code: isEn
+            ? activeQuestion.codeSnippetEn || activeQuestion.codeSnippet
+            : activeQuestion.codeSnippet,
+          language: activeQuestion.language,
+        }
+      : null
+  );
+
   const handleSelectChoice = (index: number) => {
     if (isSubmitted || isSubmitting || eliminatedChoices.includes(index)) return;
     if (selectedChoice === index) {
@@ -704,7 +736,24 @@ export function BattleOverlay({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen || !activeQuestion) return;
+
+      // Do not hijack keystrokes while typing or interacting inside floating docks/inputs
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable ||
+          target.closest?.('[data-langmind-dock="true"], [data-judge-dock="true"]'))
+      ) {
+        return;
+      }
+
       if (e.key === "Escape" && !isSubmitting) {
+        if (document.querySelector('[data-floating-dock-open="true"]')) {
+          return;
+        }
         e.preventDefault();
         handleCloseOverlay();
         return;
@@ -786,7 +835,7 @@ export function BattleOverlay({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-xs select-none overflow-y-auto"
+      className="fixed inset-0 z-[65] flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-xs select-none overflow-y-auto"
     >
       <div className="retro-panel rounded-2xl max-w-2xl w-full p-3 sm:p-6 flex flex-col gap-3 sm:gap-4 text-[#f4efe6] relative overflow-hidden my-auto max-h-[95vh] overflow-y-auto">
         {/* Top Bar: Encounter Label + Save + Close Button */}
@@ -1048,7 +1097,7 @@ export function BattleOverlay({
                 )}
               </div>
               <pre className="p-3 rounded-xl bg-[#0b0b14] border border-[#4a4766] text-[#ffe27a] text-xs font-mono max-w-full overflow-x-auto leading-relaxed">
-                <code>
+                <code className="text-xs">
                   {(isEn ? activeQuestion.codeSnippetEn || activeQuestion.codeSnippet : activeQuestion.codeSnippet)!.split("\n").map((line, lineIdx) => {
                     const isPinned = selectedCodeLine === lineIdx;
                     return (

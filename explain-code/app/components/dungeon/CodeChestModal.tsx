@@ -193,7 +193,7 @@ export function CodeChestModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-xs select-none overflow-y-auto"
+      className="fixed inset-0 z-[65] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-xs select-none overflow-y-auto"
     >
       <div
         className={`retro-panel rounded-2xl max-w-xl w-full p-4 sm:p-6 flex flex-col gap-4 text-[#f4efe6] border-2 my-auto max-h-[95vh] overflow-y-auto ${

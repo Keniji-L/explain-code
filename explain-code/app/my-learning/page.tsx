@@ -28,6 +28,7 @@ import {
 import { LANGUAGE_TRACKS } from "../lib/language-tracks";
 import { BlockModelGrid } from "../components/BlockModelGrid";
 import { LangMindAgentPanel } from "../components/LangMindAgentPanel";
+import { useRegisterLangMindContext } from "../components/LangMindContext";
 import {
   BLOCK_MODEL_CELLS,
   BlockCellId,
@@ -209,6 +210,25 @@ export default function MyLearningPage() {
       window.removeEventListener("storage", syncState);
     };
   }, [router]);
+
+  const preWeakestCellId = ([...BLOCK_MODEL_CELLS].sort(
+    (a, b) => (cellScores[a.id] ?? 0) - (cellScores[b.id] ?? 0)
+  )[0] || BLOCK_MODEL_CELLS[0]).id;
+
+  useRegisterLangMindContext(
+    "page",
+    session
+      ? {
+          pageKind: "my-learning",
+          pageTitle: uiLang === "en" ? "My Learning (12-Cell)" : "การเรียนของฉัน (12 มิติ)",
+          studentId: session.userId,
+          displayName: session.displayName,
+          cellScores,
+          weakestCell: preWeakestCellId,
+          language: dungeonSaves[0]?.language || "javascript",
+        }
+      : null
+  );
 
   if (!session) {
     return (

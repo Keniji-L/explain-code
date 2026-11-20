@@ -14,6 +14,7 @@ import { ExplainCodeResult } from "../lib/explain-code";
 import { appendLocalExplanationHistory } from "../lib/lms-data";
 import { saveCustomDungeon } from "../lib/custom-dungeon";
 import { LangMindAgentPanel } from "../components/LangMindAgentPanel";
+import { useRegisterLangMindContext } from "../components/LangMindContext";
 
 const SAMPLE_SNIPPET_BUTTONS = [
   { key: "javascript", label: "JS" },
@@ -156,6 +157,15 @@ export default function ExplainCodePage() {
     return () =>
       window.removeEventListener("explain-code-auth-change", onAuthChange);
   }, []);
+
+  useRegisterLangMindContext("page", {
+    pageKind: "explain",
+    pageTitle: uiLang === "en" ? "Code Explainer" : "อธิบายโค้ด",
+    code,
+    language: result?.language || "javascript",
+    studentId: session?.userId,
+    displayName: session?.displayName,
+  });
 
   const handleExplain = async () => {
     setError(null);
@@ -461,7 +471,7 @@ export default function ExplainCodePage() {
 
                 {/* 1. ภาพรวมของโค้ด */}
                 <div className="rounded-2xl border border-[#2f2d45] bg-[#141220] p-6 shadow-lg">
-                  <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <h2 className="text-base font-bold text-[#f4efe6] flex items-center gap-2">
                       <Icon name="book" className="h-4 w-4 text-[#f6c945]" />
                       <span>{t("สรุปภาพรวมการทำงาน", "Code Summary")}</span>
@@ -474,7 +484,7 @@ export default function ExplainCodePage() {
                           setCopiedSummary(true);
                           window.setTimeout(() => setCopiedSummary(false), 2000);
                         }}
-                        className="inline-flex items-center gap-1 rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-2.5 py-1 text-[11px] font-bold text-[#c4bdd6] hover:border-[#f6c945] hover:text-[#ffe27a] transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 rounded-lg border border-[#3d395a] bg-[#1c1b2b] px-2.5 py-1 text-[11px] font-bold text-[#c4bdd6] hover:border-[#f6c945] hover:text-[#ffe27a] transition-colors cursor-pointer whitespace-nowrap shrink-0"
                       >
                         <Icon name={copiedSummary ? "check" : "clipboard"} size={12} />
                         <span>{copiedSummary ? t("คัดลอกแล้ว", "Copied") : t("คัดลอกสรุป", "Copy")}</span>
