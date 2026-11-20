@@ -268,16 +268,16 @@ export function SiteHeader({ onOpenClassicPortal }: SiteHeaderProps) {
                   />
                 </div>
                 <div className="leading-tight whitespace-nowrap">
-                  <span className="flex items-center gap-1.5 text-sm sm:text-base font-extrabold tracking-tight text-[#f4efe6]">
+                  <span className="flex items-baseline gap-1.5 text-sm sm:text-base font-extrabold tracking-tight text-[#f4efe6]">
                     <span>CODE COOL</span>
-                    <span className="rounded-md border border-[#9b5de5]/60 bg-[#25193b] px-1.5 py-0.5 text-[10px] sm:text-[11px] font-extrabold text-[#e9d5ff]">
+                    <span className="text-xs sm:text-[13px] font-bold text-[#c4bdd6]">
                       × LangMind
                     </span>
                   </span>
                   <span className="hidden 2xl:block text-[11px] font-semibold text-[#9a93ad]">
                     {t(
-                      "AI Socratic Mentor & 12-Cell Code Dungeon",
-                      "AI Socratic Mentor & 12-Cell Code Dungeon"
+                      "Open Learning & Code Explanation",
+                      "Multi-Language Code Dungeon & LMS"
                     )}
                   </span>
                 </div>
