@@ -1149,6 +1149,16 @@ export default function ExplainCodeApp() {
 
           {/* Hero Section */}
           <section className="relative text-center max-w-2xl mx-auto mb-12 hero-fade-in">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#9b5de5]/60 bg-[#25193b]/90 px-3.5 py-1 text-xs font-extrabold text-[#e9d5ff] shadow-sm">
+              <Icon name="sparkles" size={14} className="text-[#f6c945]" />
+              <span>
+                {t(
+                  "CODE COOL × NECTEC LangMind AI Agent",
+                  "CODE COOL × NECTEC LangMind AI Agent"
+                )}
+              </span>
+            </div>
+
             <h1 className="mt-4 text-3xl sm:text-5xl font-extrabold tracking-tight text-[#f4efe6] leading-tight">
               <span>{t("เขียนโค้ดได้แล้ว ", "You Can Write Code — ")}</span>
               <span className="mt-2 block text-[#f6c945] underline decoration-[#9b5de5] underline-offset-8">
@@ -1164,8 +1174,8 @@ export default function ExplainCodeApp() {
             </p>
             <p className="text-sm sm:text-base text-[#9a93ad]">
               {t(
-                'ผ่านดันเจี้ยน RPG และตัวช่วยอธิบายโค้ด',
-                'RPG dungeons & AI code breakdown.'
+                "ผ่านดันเจี้ยน RPG 12 มิติ และพี่เลี้ยงอัจฉริยะ LangMind AI Agent",
+                "12-Cell RPG dungeons & LangMind AI Socratic Mentor."
               )}
             </p>
 

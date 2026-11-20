@@ -18,7 +18,7 @@ export default function SiteFooter() {
     <footer className="mt-auto border-t border-[#2d2846] bg-[#0d0b14]/95 text-[#c4bdd6] py-5 px-4">
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs leading-relaxed">
         <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
-          <span className="font-bold text-[#ffe27a]">CODE COOL</span>
+          <span className="font-bold text-[#ffe27a]">CODE COOL × LangMind</span>
           <span className="text-[#6f688a]">•</span>
           <span>
             {isTh

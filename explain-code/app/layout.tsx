@@ -16,7 +16,7 @@ const notoSansThai = Noto_Sans_Thai({
 });
 
 export const metadata: Metadata = {
-  title: "CODE COOL • ฝึกอ่านโค้ด",
+  title: "CODE COOL × LangMind • ระบบพี่เลี้ยง AI ฝึกอ่านโค้ด",
   description:
     "เว็บแอปฝึกอ่านโค้ด JavaScript ตาม Block Model 12 ช่อง ในรูปแบบเกม (อิงลำดับ PRIMM) ช่วยให้นักเรียนที่เขียนโค้ดด้วย AI ได้ อธิบายได้ด้วยว่าโค้ดนั้นทำงานอย่างไร",
   icons: {
