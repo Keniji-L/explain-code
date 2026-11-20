@@ -549,9 +549,35 @@ export function TopicDungeonArena({
           setXp((prev) => prev + extraBattleXp);
           setCoins((prev) => prev + extraBattleCoins);
         }
+      } else if (rewardType === "mimic_omni_relic") {
+        setHearts((h) => Math.min(maxHearts, h + 1));
+        setFloorShieldBonus((s) => s + 1);
+        setBattleProgress((prev) => ({
+          ...prev,
+          focus: Math.min(
+            avatar.stats.maxMp,
+            (prev.focus ?? avatar.stats.initialMp) + 2
+          ),
+        }));
+        setFloorRewardMultiplier(2);
+        if (battleSummary && floorRewardMultiplier === 1) {
+          const extraBattleXp = battleSummary.totalXp;
+          const extraBattleCoins = battleSummary.totalCoins;
+          setBattleSummary((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  totalXp: prev.totalXp * 2,
+                  totalCoins: prev.totalCoins * 2,
+                }
+              : prev
+          );
+          setXp((prev) => prev + extraBattleXp);
+          setCoins((prev) => prev + extraBattleCoins);
+        }
       }
     },
-    [maxHearts, battleSummary, floorRewardMultiplier]
+    [maxHearts, battleSummary, floorRewardMultiplier, avatar.stats.maxMp, avatar.stats.initialMp]
   );
 
   const handleBattleComplete = useCallback(
@@ -948,12 +974,8 @@ export function TopicDungeonArena({
             </div>
           </div>
 
-          {/* Right: Quest Code Scroll & Monster Intel (hidden on mobile until monster is defeated) */}
-          <div
-            className={`${
-              room.isDoorUnlocked ? "flex" : "hidden lg:flex"
-            } lg:col-span-5 min-w-0 flex-col gap-4`}
-          >
+          {/* Right: Quest Code Scroll & Monster Intel (visible on mobile & desktop so learners can trace code before battle) */}
+          <div className="flex lg:col-span-5 min-w-0 flex-col gap-4">
             <div className="rounded-2xl border border-[#2f2d45] bg-[#1c1b2b] p-4 sm:p-5 space-y-4 text-[#f4efe6]">
               {/* Monster Card */}
               <div className="flex items-center gap-3 pb-3 border-b border-[#2f2d45]">
@@ -1098,6 +1120,61 @@ export function TopicDungeonArena({
                   })()
                 )}
               </div>
+
+              {/* Post-Battle Concept Mastery Breakdown */}
+              {room.isDoorUnlocked && battleSummary && battleSummary.phaseResults.length > 0 && (
+                <div className="p-3.5 rounded-xl bg-[#141220] border border-[#9b5de5]/50 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-xs font-extrabold text-[#e9d5ff] flex items-center gap-1.5">
+                      <Icon name="chart" size={14} className="text-[#9b5de5]" />
+                      <span>{t("สรุปความแม่นยำรายเฟส (Block Model)", "Phase Mastery Breakdown")}</span>
+                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {battleSummary.noHitClear && (
+                        <span className="rounded-md bg-[#102a1e] border border-[#2fbf71]/50 px-2 py-0.5 text-[10px] font-bold text-[#86efac]">
+                          No-Hit Clear
+                        </span>
+                      )}
+                      {battleSummary.noSkillPurist && (
+                        <span className="rounded-md bg-[#281d08] border border-[#f6c945]/50 px-2 py-0.5 text-[10px] font-bold text-[#ffe27a]">
+                          No-Skill Purist
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {battleSummary.phaseResults.map((pr, idx) => (
+                      <div
+                        key={pr.questionId || idx}
+                        className="flex items-center justify-between gap-2 rounded-lg border border-[#2f2d45] bg-[#1c1b2b] px-2.5 py-1.5 text-[11px]"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="pixel-font text-[10px] font-bold text-[#ffe27a] shrink-0">
+                            P{idx + 1}
+                          </span>
+                          {pr.blockModelCell && (
+                            <span className="rounded bg-[#25193b] border border-[#9b5de5]/40 px-1.5 py-0.5 font-mono text-[10px] font-bold text-[#d8b4fe] shrink-0">
+                              {pr.blockModelCell}
+                            </span>
+                          )}
+                          <span
+                            className={`truncate font-semibold ${
+                              pr.isCorrectFirstTry ? "text-[#86efac]" : "text-[#fde68a]"
+                            }`}
+                          >
+                            {pr.isCorrectFirstTry
+                              ? t("ตอบถูกครั้งเดียวผ่าน", "Cleared 1st try")
+                              : t(`ลองซ้ำ ${pr.tries} ครั้ง`, `Retried (${pr.tries} tries)`)}
+                          </span>
+                        </div>
+                        <span className="font-mono font-bold text-[#2fbf71] shrink-0">
+                          +{pr.xpEarned} XP
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Optional Modify Bonus Challenge (Unlocked after Monster Defeated) */}
               {room.isDoorUnlocked && activeTopic.modifyChallenge && (

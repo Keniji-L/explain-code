@@ -12,7 +12,11 @@ import { PixelSpriteView } from "./PixelSpriteView";
 import { useUiLanguage } from "../LanguageProvider";
 import { Icon, IconName } from "../Icons";
 
-export type InRunRewardType = "heal_hp" | "add_shield" | "double_rewards";
+export type InRunRewardType =
+  | "heal_hp"
+  | "add_shield"
+  | "double_rewards"
+  | "mimic_omni_relic";
 
 export interface CodeChestModalProps {
   question: DungeonQuestion;
@@ -73,6 +77,10 @@ export function CodeChestModal({
         setFeedbackError(null);
         dungeonSound.playCoin();
         onSolved({ xpAwarded: xpReward, coinsAwarded: coinReward });
+        if (isMimic) {
+          setSelectedInRunReward("mimic_omni_relic");
+          onSelectInRunReward?.("mimic_omni_relic");
+        }
       } else {
         dungeonSound.playHurt();
         if (eliminatedChoices.length >= 1) {
@@ -113,6 +121,7 @@ export function CodeChestModal({
       coinReward,
       onSolved,
       onMimicFailed,
+      onSelectInRunReward,
       onClose,
     ]
   );
@@ -137,11 +146,11 @@ export function CodeChestModal({
   );
 
   const handleCloseModal = useCallback(() => {
-    if (isSolved && enableInRunRewardPicker && !selectedInRunReward) {
+    if (isSolved && enableInRunRewardPicker && !isMimic && !selectedInRunReward) {
       onSelectInRunReward?.("double_rewards");
     }
     onClose();
-  }, [isSolved, enableInRunRewardPicker, selectedInRunReward, onSelectInRunReward, onClose]);
+  }, [isSolved, enableInRunRewardPicker, isMimic, selectedInRunReward, onSelectInRunReward, onClose]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -336,24 +345,24 @@ export function CodeChestModal({
             {isMimic && (
               <div className="rounded-lg border border-[#f6c945]/60 bg-[#281d08]/80 px-3 py-2 text-[#ffe27a] space-y-0.5">
                 <div className="font-extrabold flex items-center gap-1.5">
-                  <Icon name="gift" size={13} className="shrink-0" />
+                  <Icon name="crown" size={14} className="shrink-0 text-[#f6c945]" />
                   <span>
                     {t(
-                      "ของรางวัลระดับแรร์จาก Mimic (ส่วนนี้ยังไม่เสร็จ / กำลังพัฒนา)",
-                      "Rare Mimic Loot (Work in Progress / Coming Soon)"
+                      "สมบัติระดับแรร์จาก Mimic: มงกุฎผู้พิชิตโค้ด!",
+                      "Rare Mimic Relic Unlocked: Code Slayer Crown!"
                     )}
                   </span>
                 </div>
                 <p className="text-[11px] text-[#e8e1cf]">
                   {t(
-                    "ระบบไอเท็มพิเศษจากการปราบกล่องลับ Mimic กำลังอยู่ในระหว่างออกแบบเพิ่มเติมสำหรับอัปเดตถัดไป!",
-                    "Special rare items from defeating Mimic chests are currently being designed for an upcoming update!"
+                    "ได้รับบัฟพิเศษครบชุดทันที: ฟื้น +1 HP, โล่กันดาเมจ +1 ครั้ง และคูณ 2 รางวัลในชั้นนี้!",
+                    "All-in-one blessing activated: +1 HP, +1 Damage Shield, and 2× Floor Rewards!"
                   )}
                 </p>
               </div>
             )}
 
-            {enableInRunRewardPicker && (
+            {enableInRunRewardPicker && !isMimic && (
               <div className="pt-2 border-t border-[#2fbf71]/40 space-y-2">
                 <div className="font-extrabold text-[#ffe27a] text-[11px] flex items-center gap-1.5">
                   <Icon name={selectedInRunReward ? "check" : "gift"} size={12} />

@@ -13,6 +13,7 @@ import { Icon } from "../components/Icons";
 import { ExplainCodeResult } from "../lib/explain-code";
 import { appendLocalExplanationHistory } from "../lib/lms-data";
 import { saveCustomDungeon } from "../lib/custom-dungeon";
+import { LangMindAgentPanel } from "../components/LangMindAgentPanel";
 
 const SAMPLE_SNIPPET_BUTTONS = [
   { key: "javascript", label: "JS" },
@@ -674,6 +675,18 @@ export default function ExplainCodePage() {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="mt-8">
+          <LangMindAgentPanel
+            role="student"
+            context={{
+              studentId: session?.userId,
+              displayName: session?.displayName,
+              code,
+              language: result?.language || "javascript",
+            }}
+          />
         </div>
       </main>
     </div>

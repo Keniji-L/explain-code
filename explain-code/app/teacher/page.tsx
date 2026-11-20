@@ -39,6 +39,7 @@ import {
 } from "../lib/dungeon-save";
 import { LANGUAGE_TRACKS } from "../lib/language-tracks";
 import { TeacherDashboard } from "../components/TeacherDashboard";
+import { LangMindAgentPanel } from "../components/LangMindAgentPanel";
 import { useUiLanguage } from "../components/LanguageProvider";
 import {
   BLOCK_MODEL_CELLS,
@@ -2291,6 +2292,16 @@ export default function TeacherLMSDashboardPage() {
           </div>
         </div>
         )}
+
+        <div className="mt-8">
+          <LangMindAgentPanel
+            role="teacher"
+            context={{
+              displayName: session?.displayName || session?.username,
+              roomCode: classrooms[0]?.roomCode || "JS2026",
+            }}
+          />
+        </div>
 
         {/* Modal สร้าง/แก้ไขคอร์ส */}
         {editingCourse && (

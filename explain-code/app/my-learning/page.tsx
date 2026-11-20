@@ -27,7 +27,12 @@ import {
 } from "../lib/dungeon-save";
 import { LANGUAGE_TRACKS } from "../lib/language-tracks";
 import { BlockModelGrid } from "../components/BlockModelGrid";
-import { BLOCK_MODEL_CELLS, BlockCellId } from "../lib/curriculum";
+import { LangMindAgentPanel } from "../components/LangMindAgentPanel";
+import {
+  BLOCK_MODEL_CELLS,
+  BlockCellId,
+  DEMO_BASELINE_CELL_SCORES,
+} from "../lib/curriculum";
 import {
   DailyQuestState,
   DAILY_QUEST_BONUS_XP,
@@ -61,7 +66,7 @@ export default function MyLearningPage() {
   const [progress, setProgress] = useState<LessonProgress[]>([]);
   const [dungeonSaves, setDungeonSaves] = useState<DungeonSaveRecord[]>([]);
   const [cellScores, setCellScores] = useState<Record<BlockCellId, number>>({
-    ...EMPTY_CELL_SCORES,
+    ...DEMO_BASELINE_CELL_SCORES,
   });
   const [dailyQuest, setDailyQuest] = useState<DailyQuestState>({
     lastActiveDate: "",
@@ -85,22 +90,37 @@ export default function MyLearningPage() {
       setProgress(loadLocalLessonProgress());
       setDungeonSaves(loadUserDungeonSaves(current.userId));
       setDailyQuest(loadDailyQuestState(current.userId));
+      let foundNonZeroLocal = false;
       try {
         const rawStudents = localStorage.getItem("explain_code_students_v2");
         if (rawStudents) {
           const parsedStudents = JSON.parse(rawStudents) as Array<{
             id?: string;
+            nickname?: string;
             cellScores?: Partial<Record<BlockCellId, number>>;
           }>;
           const matched = Array.isArray(parsedStudents)
-            ? parsedStudents.find((s) => s.id === current.userId)
+            ? parsedStudents.find(
+                (s) =>
+                  s.id === current.userId ||
+                  (s.nickname &&
+                    current.displayName &&
+                    s.nickname.toLowerCase() === current.displayName.toLowerCase())
+              )
             : null;
-          if (matched?.cellScores) {
+          if (
+            matched?.cellScores &&
+            Object.values(matched.cellScores).some((v) => typeof v === "number" && v > 0)
+          ) {
+            foundNonZeroLocal = true;
             setCellScores({ ...EMPTY_CELL_SCORES, ...matched.cellScores });
           }
         }
       } catch {
         // ignore storage errors
+      }
+      if (!foundNonZeroLocal) {
+        setCellScores({ ...DEMO_BASELINE_CELL_SCORES });
       }
     };
 
@@ -176,13 +196,7 @@ export default function MyLearningPage() {
             }
           }
           if (Object.keys(remoteLatest).length > 0) {
-            setCellScores((prev) => {
-              const next = { ...prev };
-              (Object.keys(remoteLatest) as BlockCellId[]).forEach((cid) => {
-                next[cid] = Math.max(next[cid] ?? 0, remoteLatest[cid] ?? 0);
-              });
-              return next;
-            });
+            setCellScores({ ...EMPTY_CELL_SCORES, ...remoteLatest });
           }
         })
         .catch(() => {});
@@ -445,6 +459,19 @@ export default function MyLearningPage() {
             />
           </div>
         </section>
+
+        <div className="mb-8">
+          <LangMindAgentPanel
+            role="student"
+            context={{
+              studentId: session.userId,
+              displayName: session.displayName,
+              cellScores,
+              weakestCell: weakestCell.id,
+              language: preferredLang,
+            }}
+          />
+        </div>
 
         {/* ==================== ความคืบหน้าดันเจี้ยนการเรียนรู้ ==================== */}
         {dungeonSaves.length > 0 && (

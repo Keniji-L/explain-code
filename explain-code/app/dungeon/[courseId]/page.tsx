@@ -610,6 +610,10 @@ function DungeonPlayContent() {
         setFloorShieldBonus((s) => s + 1);
       } else if (rewardType === "double_rewards") {
         setFloorRewardMultiplier(2);
+      } else if (rewardType === "mimic_omni_relic") {
+        setHearts((h) => Math.min(maxHearts, h + 1));
+        setFloorShieldBonus((s) => s + 1);
+        setFloorRewardMultiplier(2);
       }
     },
     [maxHearts]

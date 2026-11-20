@@ -1671,6 +1671,21 @@ export const INITIAL_CLASSROOMS: ClassroomRecord[] = [
   },
 ];
 
+export const DEMO_BASELINE_CELL_SCORES: Record<BlockCellId, number> = {
+  T1: 92,
+  E1: 88,
+  F1: 84,
+  T2: 78,
+  E2: 45,
+  F2: 68,
+  T3: 74,
+  E3: 60,
+  F3: 62,
+  T4: 80,
+  E4: 72,
+  F4: 66,
+};
+
 export const INITIAL_STUDENTS: StudentRecord[] = [
   {
     id: "stu-0",

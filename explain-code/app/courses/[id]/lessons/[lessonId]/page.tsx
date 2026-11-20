@@ -61,6 +61,8 @@ function LessonViewContent() {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [runOutput, setRunOutput] = useState<string>("");
+  const [predictedOutput, setPredictedOutput] = useState<string>("");
+  const [predictionFeedback, setPredictionFeedback] = useState<"match" | "mismatch" | null>(null);
 
   // Quiz states
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>(
@@ -117,6 +119,8 @@ function LessonViewContent() {
     setLesson(foundLesson);
     setIsCourseLocked(checkCourseLock(foundCourse, localEnrolls));
     setRunOutput("");
+    setPredictedOutput("");
+    setPredictionFeedback(null);
     setSelectedAnswers({});
     setQuizSubmitted(false);
     setServerQuizResults({});
@@ -262,6 +266,34 @@ function LessonViewContent() {
     [currentRoom.entity?.monsterType, currentIdx, totalLessons]
   );
 
+  const shuffledQuizQuestions = useMemo(() => {
+    const raw = Array.isArray(lesson?.quiz_questions) ? lesson.quiz_questions : [];
+    return raw.map((q) => {
+      const len = q.options.length;
+      if (!quizShuffleSeed || len <= 1) {
+        return {
+          ...q,
+          originalIndices: Array.from({ length: len }, (_, i) => i),
+        };
+      }
+      const indices = shuffleArrayWithSeed(
+        Array.from({ length: len }, (_, i) => i),
+        `${quizShuffleSeed}:${q.id}`
+      );
+      const newOptions = indices.map((i) => q.options[i]);
+      const newCorrectIndex =
+        q.correctIndex >= 0 && q.correctIndex < len
+          ? indices.indexOf(q.correctIndex)
+          : -1;
+      return {
+        ...q,
+        options: newOptions,
+        correctIndex: newCorrectIndex,
+        originalIndices: indices,
+      };
+    });
+  }, [lesson?.quiz_questions, quizShuffleSeed]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0d0b14] text-[#f4efe6]">
@@ -339,19 +371,33 @@ function LessonViewContent() {
         ? "sql"
         : rawLang === "java"
         ? "java"
+        : rawLang === "html"
+        ? "html"
         : "javascript";
 
     const res = runCodeByLanguage(lesson.code_example, normalizedLang);
-    setRunOutput(
-      res.error
-        ? `Error: ${res.error}`
-        : res.outputs.join("\n") ||
-            res.finalOutput ||
-            t(
-              "(รันสำเร็จ ไม่มีข้อความออกทางหน้าจอ)",
-              "(Executed successfully with no output)"
-            )
-    );
+    const actualOut = res.error
+      ? `Error: ${res.error}`
+      : res.outputs.join("\n") ||
+          res.finalOutput ||
+          t(
+            "(รันสำเร็จ ไม่มีข้อความออกทางหน้าจอ)",
+            "(Executed successfully with no output)"
+          );
+    setRunOutput(actualOut);
+
+    if (predictedOutput.trim()) {
+      const norm = (s: string) => s.trim().replace(/\s+/g, " ").toLowerCase();
+      const expected = norm(res.finalOutput || res.outputs.join("\n") || actualOut);
+      const guess = norm(predictedOutput);
+      setPredictionFeedback(
+        expected === guess || expected.includes(guess) || guess.includes(expected)
+          ? "match"
+          : "mismatch"
+      );
+    } else {
+      setPredictionFeedback(null);
+    }
   };
 
   const handleMarkCompleted = async (calculatedScore?: number | null) => {
@@ -419,34 +465,6 @@ function LessonViewContent() {
       // ignore
     }
   };
-
-  const shuffledQuizQuestions = useMemo(() => {
-    const raw = Array.isArray(lesson?.quiz_questions) ? lesson.quiz_questions : [];
-    return raw.map((q) => {
-      const len = q.options.length;
-      if (!quizShuffleSeed || len <= 1) {
-        return {
-          ...q,
-          originalIndices: Array.from({ length: len }, (_, i) => i),
-        };
-      }
-      const indices = shuffleArrayWithSeed(
-        Array.from({ length: len }, (_, i) => i),
-        `${quizShuffleSeed}:${q.id}`
-      );
-      const newOptions = indices.map((i) => q.options[i]);
-      const newCorrectIndex =
-        q.correctIndex >= 0 && q.correctIndex < len
-          ? indices.indexOf(q.correctIndex)
-          : -1;
-      return {
-        ...q,
-        options: newOptions,
-        correctIndex: newCorrectIndex,
-        originalIndices: indices,
-      };
-    });
-  }, [lesson?.quiz_questions, quizShuffleSeed]);
 
   const handleSubmitQuiz = async () => {
     const questions = shuffledQuizQuestions;
@@ -708,6 +726,51 @@ function LessonViewContent() {
                   </button>
                 </div>
               </div>
+              {/* PRIMM Predict Before Run */}
+              <div className="mb-3 rounded-xl border border-[#2f2d45] bg-[#161326] p-3 space-y-2">
+                <label
+                  htmlFor="primm-predict-input"
+                  className="text-[11px] font-bold text-[#d8b4fe] flex items-center gap-1.5"
+                >
+                  <Icon name="bulb" size={13} className="text-[#f6c945]" />
+                  <span>
+                    {t(
+                      "PRIMM Step 1 (Predict): ลองทายก่อนว่าผลลัพธ์ของโค้ดด้านล่างคืออะไร (ไม่บังคับ)",
+                      "PRIMM Step 1 (Predict): Guess the output before running (optional)"
+                    )}
+                  </span>
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    id="primm-predict-input"
+                    type="text"
+                    value={predictedOutput}
+                    onChange={(e) => {
+                      setPredictedOutput(e.target.value);
+                      setPredictionFeedback(null);
+                    }}
+                    placeholder={t("พิมพ์ผลลัพธ์ที่คาดว่าจะได้...", "Type expected output...")}
+                    className="flex-1 rounded-lg border border-[#3d395a] bg-[#0d0b14] px-3 py-1.5 font-mono text-xs text-[#ffe27a] placeholder:text-[#7c7491] focus:border-[#9b5de5] focus:outline-hidden"
+                  />
+                  {predictionFeedback && (
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-bold shrink-0 ${
+                        predictionFeedback === "match"
+                          ? "border-[#2fbf71]/50 bg-[#102a1e] text-[#86efac]"
+                          : "border-[#f6c945]/50 bg-[#281d08] text-[#ffe27a]"
+                      }`}
+                    >
+                      <Icon name={predictionFeedback === "match" ? "check" : "alert"} size={12} />
+                      <span>
+                        {predictionFeedback === "match"
+                          ? t("ทายตรงเป๊ะ!", "Prediction matched!")
+                          : t("ยังไม่ตรง — ดูผลจริงด้านล่าง", "Different — inspect output below")}
+                      </span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
               <pre className="overflow-x-auto font-mono text-xs sm:text-sm leading-relaxed text-[#f4efe6]">
                 {lesson.code_example}
               </pre>

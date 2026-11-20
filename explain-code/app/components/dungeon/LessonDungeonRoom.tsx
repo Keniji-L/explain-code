@@ -332,6 +332,10 @@ export function LessonDungeonRoom({
       setFloorShieldBonus((prev) => prev + 1);
     } else if (rewardType === "double_rewards") {
       setFloorRewardMultiplier(2);
+    } else if (rewardType === "mimic_omni_relic") {
+      setHearts((prev) => Math.min(3, prev + 1));
+      setFloorShieldBonus((prev) => prev + 1);
+      setFloorRewardMultiplier(2);
     }
   }, []);
 
